@@ -7,6 +7,18 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@mockspec/shared": "*"
+    "@mockspec/shared": "*",
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "nanoid": "^5.1.16",
+    "unzipper": "^0.12.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/supertest": "^7.2.0",
+    "@types/unzipper": "^0.10.11",
+    "jszip": "^3.10.1",
+    "supertest": "^7.2.2"
   }
 }

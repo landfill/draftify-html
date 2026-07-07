@@ -1,0 +1,21 @@
+import path from "node:path";
+
+/**
+ * 디스크 저장 레이아웃. 모든 상태는 `data/` 아래에만 둔다 (AGENTS.md §5, ID-14).
+ * 경로도 오리진과 마찬가지로 env(`MOCKSPEC_DATA_DIR`)로 뺀다 — 기본은 cwd의 data/.
+ * env를 매번 읽는(지연 평가) 이유: 테스트가 프로세스마다 임시 디렉토리로 교체할 수 있어야 한다.
+ */
+export const dataDir = (): string =>
+  process.env.MOCKSPEC_DATA_DIR ?? path.resolve(process.cwd(), "data");
+
+export const projectsRoot = (): string => path.join(dataDir(), "projects");
+export const projectDir = (id: string): string => path.join(projectsRoot(), id);
+
+/** zip 해제 결과(정적 서빙 루트). */
+export const mockupDir = (id: string): string => path.join(projectDir(id), "mockup");
+
+/** SpecProject 직렬화 파일. 이 파일을 그대로 내려주는 것이 export/import(백업). */
+export const specFile = (id: string): string => path.join(projectDir(id), "spec.json");
+
+/** 동결 스냅샷 등 asset store. */
+export const assetsDir = (id: string): string => path.join(projectDir(id), "assets");

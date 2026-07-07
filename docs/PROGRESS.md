@@ -9,15 +9,15 @@
 
 ## 현재 단계
 
-**T1 완료(빌드·테스트 통과). 다음은 T2(서버: 업로드·해제·정적 서빙·SDK 주입).**
-T1은 `chore/monorepo-setup-t1` 브랜치에 커밋됨 — main 병합은 사용자 동의 대기 중.
+**T2 완료(빌드·테스트·실기동 스모크 통과). 다음은 T3(Spec API + 파일 저장).**
+T2는 `feat/server-serve-inject-t2` 브랜치 — main 병합은 사용자 동의 대기 중.
 
 ## WBS 체크리스트
 
 원본: `technical-spec.md` §9.2 / `guide/s1-kickoff-spec.md` §10. 두 원본을 고치면 이 표도 같이 갱신한다.
 
 - [x] T1 모노레포 셋업 + shared 타입 (`packages/shared/src/types.ts`가 3패키지에서 import됨) — `npm run build` exit 0, `npm test` 2 passed
-- [ ] T2 서버: 업로드·해제·정적 서빙·SDK 주입 (zip 업로드 → 서브도메인에서 목업 열림, zip-slip 테스트 통과)
+- [x] T2 서버: 업로드·해제·정적 서빙·SDK 주입 (zip 업로드 → 서브도메인에서 목업 열림, zip-slip 테스트 통과) — vitest 20 passed, 실기동 curl 스모크 통과
 - [ ] T3 Spec API + 파일 저장 (전체 엔드포인트 vitest, 왕복 무손실)
 - [ ] T4 SDK: FAB·패널·모드 전환 (Shadow DOM 격리)
 - [ ] T5 SDK: 어노테이션·앵커·마커 (재탐색 성공 1케이스 포함)
@@ -28,6 +28,16 @@ T1은 `chore/monorepo-setup-t1` 브랜치에 커밋됨 — main 병합은 사용
 - [ ] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-07 — T2 서버(업로드·해제·서빙·주입) 완료
+- 브랜치: `feat/server-serve-inject-t2` (main 미병합, 동의 대기).
+- 완료: Host 헤더 분기(`host.ts` — 서브도메인=목업, 루트=콘솔/API, 오리진 하드코딩 없음).
+- 완료: 업로드/해제 — `routes/projects.ts`(multer 200MB, memoryStorage) + `unzip/extract.ts`(unzipper Open.buffer). **zip-slip 방지**(정규화 후 destDir prefix 검증, 이탈 시 zip 전체 거부) + **제외 필터**(node_modules/·.git/·__MACOSX/·.DS_Store·Thumbs.db·*.map, `{pattern,count}[]` 집계를 업로드 응답에 포함).
+- 완료: 정적 서빙 + SDK 주입 — `routes/serve.ts`(경로 정규화로 서빙 단계 traversal 방지, text/html에만 `</body>` 직전 주입, 디렉토리→index.html, 확장자 없는 404→SPA fallback) + `inject.ts`. 예약 경로 `/__mockspec/sdk.js`는 **T4 전까지 플레이스홀더 JS** 서빙.
+- 완료: same-origin API 배선 — 서브도메인의 `/__mockspec/api/*`와 루트의 `/api/*`가 동일 라우터(`app.ts`, CORS 없음). 저장소 `store/projectStore.ts`(spec.json 생성/읽기/목록) + `store/paths.ts`(env `MOCKSPEC_DATA_DIR` 지연평가) + `ids.ts`(소문자 영숫자 nanoid — 서브도메인 케이스 폴딩 회피) + `errors.ts`(ID-10 표준).
+- 검증: `npm run build` exit 0, `npm test` 20 passed(extract/host/inject/app/shared). 실기동: 서버 띄워 curl로 업로드→서브도메인 주입→SPA fallback→sdk.js→node_modules 디스크 제외까지 확인.
+- 다음 할 일: T3 — Spec API 나머지(GET/PUT/DELETE `/projects/:id`, assets POST/GET). PUT은 문서 전체 교체(version·id 불일치 400), 저장 왕복 무손실 vitest. `projectsRouter`에 라우트 추가하고 `projectStore`에 saveSpec/delete/asset I/O 확장. technical-spec §6 참조.
+- 막힌 지점: 없음. **관찰 항목**: 프로젝트 id의 `prj_` 접두 언더스코어가 서브도메인 라벨에 포함됨(`prj_x.localhost`). Node http/테스트는 무관하나 실제 Chrome/Edge에서 *.localhost 언더스코어 라벨 해석은 T4 브라우저 로딩 시 확인 필요 — 문제 시 결정 변경 절차(킥오프 §11)로 id 포맷 조정.
 
 ### 2026-07-07 — T1 모노레포 셋업 완료
 - 브랜치: `chore/monorepo-setup-t1` (main 미병합, 동의 대기).
