@@ -2,8 +2,8 @@ import { customAlphabet } from "nanoid";
 import type { Scene, Annotation, Anchor } from "@mockspec/shared";
 
 /**
- * 편집 상태 (인메모리). SpecProject의 편집 대상 부분집합 — 서버 동기화는 T7,
- * 장면 동결(snapshotAsset)은 T6에서 얹는다.
+ * 편집 상태 (인메모리). SpecProject의 편집 대상 부분집합 — 서버 동기화(PUT)는 T7.
+ * 장면 동결(snapshotAsset·frozenAt)은 setSceneSnapshot으로 기록한다.
  */
 export interface EditorDoc {
   sceneCodeSeq: number;
@@ -24,7 +24,7 @@ export function sceneCode(seq: number): string {
   return `SCR-${String(seq).padStart(3, "0")}`;
 }
 
-/** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 동결은 T6. */
+/** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 동결은 App이 등록 직후 트리거. */
 export function createScene(
   doc: EditorDoc,
   fields: { title: string; route: string; stateNote?: string },
@@ -78,6 +78,21 @@ export function addAnnotation(
       annotations: [...doc.annotations, annotation],
     },
     annotation,
+  };
+}
+
+/** 동결 성공 시 장면에 snapshotAsset·frozenAt 기록 (재동결이면 덮어쓴다). */
+export function setSceneSnapshot(
+  doc: EditorDoc,
+  sceneId: string,
+  snapshotAsset: string,
+  frozenAt: string,
+): EditorDoc {
+  return {
+    ...doc,
+    scenes: doc.scenes.map((s) =>
+      s.id === sceneId ? { ...s, snapshotAsset, frozenAt } : s,
+    ),
   };
 }
 

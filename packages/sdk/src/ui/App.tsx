@@ -2,13 +2,17 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { pickTarget, generateAnchor } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
-  deleteAnnotation, annotationsOfScene, updateAnchorSelector, type EditorDoc,
+  deleteAnnotation, annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
+  type EditorDoc,
 } from "../state.js";
+import { freezeDocument } from "../freeze/freeze.js";
+import { uploadSnapshot } from "../api.js";
 import { useMarkers } from "./useMarkers.js";
 
 /**
- * SDK 편집기 (T5): 장면(그릇) + 어노테이션 부착 + 앵커/마커.
- * 동결(스냅샷)은 T6, 서버 저장·오프라인 큐는 T7에서 얹는다 — 현재 상태는 인메모리.
+ * SDK 편집기 (T6): 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 동결.
+ * 장면 등록 시 현재 DOM을 즉시 동결(single-file-core)해 스냅샷을 업로드한다.
+ * 서버 spec 저장(PUT)·오프라인 큐는 T7 — 현재 편집 상태는 인메모리.
  */
 
 type Mode = "preview" | "edit";
@@ -22,6 +26,9 @@ export function App({ projectId }: { projectId: string }) {
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [selectedAnn, setSelectedAnn] = useState<string | null>(null);
   const [needScene, setNeedScene] = useState(false);
+  // 동결 진행/실패 상태 (성공은 scene.snapshotAsset로 표현). sceneId → 값.
+  const [freezing, setFreezing] = useState<Record<string, boolean>>({});
+  const [freezeErr, setFreezeErr] = useState<Record<string, string>>({});
 
   // 옵저버/전역 리스너가 최신 상태를 읽도록 ref 래핑
   const docRef = useRef(doc); docRef.current = doc;
@@ -103,6 +110,24 @@ export function App({ projectId }: { projectId: string }) {
     el?.focus();
   }, [selectedAnn, doc]);
 
+  // 장면 동결: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
+  // 등록 직후 자동 실행 + 각 장면의 재동결 버튼에서 재호출.
+  const runFreeze = async (sceneId: string) => {
+    setFreezing((f) => ({ ...f, [sceneId]: true }));
+    setFreezeErr((e) => { const { [sceneId]: _drop, ...rest } = e; return rest; });
+    try {
+      const html = await freezeDocument();
+      const assetKey = await uploadSnapshot(projectId, html);
+      setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString()));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "동결 실패";
+      setFreezeErr((e) => ({ ...e, [sceneId]: msg }));
+      console.warn("[mockspec] 동결 실패:", err);
+    } finally {
+      setFreezing((f) => { const { [sceneId]: _drop, ...rest } = f; return rest; });
+    }
+  };
+
   const registerScene = () => {
     const title = document.title || "장면";
     const route = location.pathname + location.search + location.hash;
@@ -110,6 +135,7 @@ export function App({ projectId }: { projectId: string }) {
     setDoc(nd);
     setCurrentSceneId(scene.id);
     setNeedScene(false);
+    void runFreeze(scene.id); // 등록 즉시 자동 동결
   };
 
   const removeScene = (id: string) => {
@@ -167,10 +193,30 @@ export function App({ projectId }: { projectId: string }) {
           <ul class="list">
             {doc.scenes.map((s) => (
               <li key={s.id} class={`scene${s.id === currentSceneId ? " scene--cur" : ""}`}>
-                <button class="scene__pick" onClick={() => setCurrentSceneId(s.id)}>
-                  <span class="scene__code">{s.code}</span> {s.title || "(제목 없음)"}
-                </button>
-                <button class="scene__del" title="삭제" onClick={() => removeScene(s.id)}>×</button>
+                <div class="scene__row">
+                  <button class="scene__pick" onClick={() => setCurrentSceneId(s.id)}>
+                    <span class="scene__code">{s.code}</span> {s.title || "(제목 없음)"}
+                  </button>
+                  <button
+                    class="scene__refreeze" title="다시 동결"
+                    disabled={freezing[s.id]}
+                    onClick={() => void runFreeze(s.id)}
+                  >⟳</button>
+                  <button class="scene__del" title="삭제" onClick={() => removeScene(s.id)}>×</button>
+                </div>
+                <div class="scene__frz">
+                  {freezing[s.id] ? (
+                    <span class="frz frz--busy"><span class="spin" /> 동결 중…</span>
+                  ) : freezeErr[s.id] ? (
+                    <button class="frz frz--err" title={freezeErr[s.id]} onClick={() => void runFreeze(s.id)}>
+                      동결 실패 — 재시도
+                    </button>
+                  ) : s.snapshotAsset ? (
+                    <span class="frz frz--ok">✓ 동결됨 {s.frozenAt ? new Date(s.frozenAt).toLocaleTimeString() : ""}</span>
+                  ) : (
+                    <span class="frz frz--none">아직 동결 안 됨</span>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

@@ -81,17 +81,42 @@ export const STYLES = /* css */ `
 .hint--warn { background: #fff4e5; color: #b5560a; }
 
 .list { list-style: none; margin: 8px 0 0; padding: 0; }
-.scene { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.scene { margin-bottom: 6px; }
+.scene__row { display: flex; align-items: center; gap: 4px; }
 .scene__pick {
   flex: 1; text-align: left; border: 1px solid #e2e2e2; background: #fafafa;
   border-radius: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; color: #333;
 }
 .scene--cur .scene__pick { border-color: #2f6feb; background: #eef3ff; }
 .scene__code { font: 600 11px ui-monospace, monospace; color: #2f6feb; margin-right: 4px; }
+.scene__refreeze {
+  border: 1px solid #d5d5d5; background: #fafafa; color: #666; cursor: pointer;
+  font-size: 13px; line-height: 1; border-radius: 6px; padding: 4px 6px;
+}
+.scene__refreeze:hover:not(:disabled) { border-color: #2f6feb; color: #2f6feb; }
+.scene__refreeze:disabled { opacity: .4; cursor: default; }
 .scene__del, .ann__del {
   border: none; background: transparent; color: #bbb; cursor: pointer; font-size: 15px; padding: 2px 5px;
 }
 .scene__del:hover, .ann__del:hover { color: #d9480f; }
+
+/* 동결 상태 (장면 항목 하단) */
+.scene__frz { margin: 3px 0 0 2px; font-size: 11px; }
+.frz { display: inline-flex; align-items: center; gap: 5px; }
+.frz--busy { color: #7a7a7a; }
+.frz--ok { color: #2b8a3e; }
+.frz--none { color: #aaa; }
+.frz--err {
+  border: 1px solid #f3b0b0; background: #fff0f0; color: #c92a2a;
+  border-radius: 5px; padding: 2px 7px; cursor: pointer; font-size: 11px;
+}
+.frz--err:hover { background: #ffe3e3; }
+.spin {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid #cfd6e4; border-top-color: #2f6feb;
+  display: inline-block; animation: mockspec-spin .7s linear infinite;
+}
+@keyframes mockspec-spin { to { transform: rotate(360deg); } }
 
 .ann { border: 1px solid #eee; border-radius: 6px; padding: 8px; margin-top: 6px; }
 .ann--sel { border-color: #d9480f; }
