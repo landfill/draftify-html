@@ -9,8 +9,8 @@
 
 ## 현재 단계
 
-**T2 완료(빌드·테스트·실기동 스모크 통과). 다음은 T3(Spec API + 파일 저장).**
-T2는 `feat/server-serve-inject-t2` 브랜치 — main 병합은 사용자 동의 대기 중.
+**T3 완료(빌드·테스트 통과). 다음은 T4(SDK: FAB·패널·모드 전환).**
+T3는 `feat/spec-api-store-t3` 브랜치 — main 병합은 사용자 동의 대기 중.
 
 ## WBS 체크리스트
 
@@ -18,7 +18,7 @@ T2는 `feat/server-serve-inject-t2` 브랜치 — main 병합은 사용자 동�
 
 - [x] T1 모노레포 셋업 + shared 타입 (`packages/shared/src/types.ts`가 3패키지에서 import됨) — `npm run build` exit 0, `npm test` 2 passed
 - [x] T2 서버: 업로드·해제·정적 서빙·SDK 주입 (zip 업로드 → 서브도메인에서 목업 열림, zip-slip 테스트 통과) — vitest 20 passed, 실기동 curl 스모크 통과
-- [ ] T3 Spec API + 파일 저장 (전체 엔드포인트 vitest, 왕복 무손실)
+- [x] T3 Spec API + 파일 저장 (전체 엔드포인트 vitest, 왕복 무손실) — vitest 27 passed, PUT 왕복 무손실·ID-11 asset 정리 검증
 - [ ] T4 SDK: FAB·패널·모드 전환 (Shadow DOM 격리)
 - [ ] T5 SDK: 어노테이션·앵커·마커 (재탐색 성공 1케이스 포함)
 - [ ] T6 SDK: 장면 등록 + 동결 (단독 오픈 시 시각적 동일 + `<script>` 0개)
@@ -28,6 +28,15 @@ T2는 `feat/server-serve-inject-t2` 브랜치 — main 병합은 사용자 동�
 - [ ] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-07 — T3 Spec API + 파일 저장 완료
+- 브랜치: `feat/spec-api-store-t3` (main 미병합, 동의 대기).
+- 완료: `routes/projects.ts`에 GET/PUT/DELETE `/projects/:id`, POST/GET `/projects/:id/assets` 추가. PUT은 문서 전체 교체 + `version`(=1)·`id` 검증(불일치 400), updatedAt은 서버 시각으로 갱신.
+- 완료: `store/projectStore.ts` 확장 — `replaceSpec`(전체 교체 + **미참조 asset 즉시 삭제로 ID-11 구현**, 별도 GC 없음), `deleteProject`, `saveAsset`/`readAsset`/`deleteAsset`(asset 키 형식 검증으로 경로 이탈 차단). asset 50MB 제한(multer).
+- 완료: export(POST /:id/export)는 **T8로 미룸** — 뷰어 번들 의존. 의도적 범위 제외.
+- 검증: `npm run build` exit 0, `npm test` 27 passed. PUT 왕복 무손실(updatedAt만 서버 갱신, anchor.rect까지 완전 일치), ID-11(장면이 참조 놓으면 asset 즉시 삭제), 경로 이탈 차단 모두 supertest 통합으로 실 HTTP 검증.
+- 다음 할 일: T4 — SDK(Preact + Shadow DOM). FAB·우측 패널·편집/미리보기 모드 전환. Vite lib mode로 `dist/sdk.js`(IIFE 1파일) 빌드, 서버 serve.ts의 SDK_PLACEHOLDER를 이 번들로 교체. **T4 브라우저 로딩 시 서브도메인 언더스코어 라벨(관찰 항목) 실동작 확인.** technical-spec §1.3·킥오프 §6 참조.
+- 막힌 지점: 없음.
 
 ### 2026-07-07 — T2 서버(업로드·해제·서빙·주입) 완료
 - 브랜치: `feat/server-serve-inject-t2` (main 미병합, 동의 대기).
