@@ -58,4 +58,50 @@ export const STYLES = /* css */ `
   border: 2px solid #2f6feb; background: rgba(47,111,235,.08);
   border-radius: 3px; transition: all .04s linear;
 }
+
+/* 숫자 마커 (요소 우상단, viewport 좌표) */
+.marker {
+  position: fixed; z-index: 2147482500; transform: translate(-50%, -50%);
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  border: 2px solid #fff; background: #2f6feb; color: #fff;
+  font: 600 11px/16px system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+.marker--sel { background: #d9480f; }
+.marker--uncertain { background: #999; border-style: dashed; }
+
+.row { display: flex; align-items: center; gap: 6px; }
+.row h4 { flex: 1; }
+.btn {
+  border: 1px solid #2f6feb; background: #eef3ff; color: #2f6feb;
+  border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer;
+}
+.btn:hover { background: #dfe8ff; }
+
+.hint--warn { background: #fff4e5; color: #b5560a; }
+
+.list { list-style: none; margin: 8px 0 0; padding: 0; }
+.scene { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.scene__pick {
+  flex: 1; text-align: left; border: 1px solid #e2e2e2; background: #fafafa;
+  border-radius: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; color: #333;
+}
+.scene--cur .scene__pick { border-color: #2f6feb; background: #eef3ff; }
+.scene__code { font: 600 11px ui-monospace, monospace; color: #2f6feb; margin-right: 4px; }
+.scene__del, .ann__del {
+  border: none; background: transparent; color: #bbb; cursor: pointer; font-size: 15px; padding: 2px 5px;
+}
+.scene__del:hover, .ann__del:hover { color: #d9480f; }
+
+.ann { border: 1px solid #eee; border-radius: 6px; padding: 8px; margin-top: 6px; }
+.ann--sel { border-color: #d9480f; }
+.ann__num {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 10px; background: #2f6feb; color: #fff;
+  font: 600 11px/20px system-ui, sans-serif; text-align: center;
+}
+.ann__title { flex: 1; border: 1px solid #ddd; border-radius: 4px; padding: 5px 7px; font-size: 12px; }
+.ann__desc {
+  width: 100%; margin-top: 6px; border: 1px solid #ddd; border-radius: 4px;
+  padding: 5px 7px; font-size: 12px; font-family: system-ui, sans-serif; resize: vertical; min-height: 44px;
+}
 `;
