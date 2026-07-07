@@ -6,19 +6,14 @@ import { RESERVED_PATH_PREFIX } from "@mockspec/shared";
 import { mockupDir } from "../store/paths.js";
 import { readSpec } from "../store/projectStore.js";
 import { injectSdkTag } from "../inject.js";
+import { readSdkBundle } from "../sdkBundle.js";
 import { sendError } from "../errors.js";
 
 /**
  * 목업 서빙 (technical-spec §3.2): 서브도메인으로 들어온 요청을 해당 프로젝트의
  * mockup/ 디렉토리에서 정적 서빙하고, text/html에는 SDK 태그를 주입한다.
- * 예약 경로 /__mockspec/* 는 목업 파일보다 우선.
+ * 예약 경로 /__mockspec/* 는 목업 파일보다 우선. SDK 번들은 sdkBundle.ts가 해석.
  */
-
-/** T4에서 Vite IIFE 번들(packages/sdk/dist/sdk.js)로 교체. 지금은 경로·주입 검증용 플레이스홀더. */
-const SDK_PLACEHOLDER =
-  `/* mockspec SDK placeholder — 실제 번들은 T4에서 제공 (technical-spec §4~7) */\n` +
-  `console.info("[mockspec] SDK placeholder loaded. project =",\n` +
-  `  document.currentScript && document.currentScript.getAttribute("data-project"));\n`;
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -77,7 +72,8 @@ export async function serveMockup(
   try {
     // 예약 경로: SDK 자산
     if (req.path === `${RESERVED_PATH_PREFIX}/sdk.js`) {
-      res.type("text/javascript; charset=utf-8").send(SDK_PLACEHOLDER);
+      const { body } = await readSdkBundle();
+      res.type("text/javascript; charset=utf-8").send(body);
       return;
     }
     // /__mockspec/api/* 는 app.ts에서 이미 API 라우터로 처리됨 (여기 도달 시 미구현 경로)

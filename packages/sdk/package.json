@@ -3,10 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./dist/sdk.js": "./dist/sdk.js"
+  },
   "scripts": {
-    "build": "tsc -b"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json && vite build"
   },
   "dependencies": {
-    "@mockspec/shared": "*"
+    "@mockspec/shared": "*",
+    "preact": "^10.29.4"
+  },
+  "devDependencies": {
+    "vite": "^8.1.3"
   }
 }

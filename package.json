@@ -13,8 +13,8 @@
     "packages/viewer"
   ],
   "scripts": {
-    "build": "tsc -b",
-    "typecheck": "tsc -b",
+    "build": "tsc -b && npm run build -w @mockspec/sdk",
+    "typecheck": "tsc -b && npm run typecheck -w @mockspec/sdk",
     "clean": "tsc -b --clean",
     "test": "vitest run"
   },
