@@ -1,0 +1,26 @@
+{
+  "name": "mockspec-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mockup-as-Spec (mockspec) — 목업을 등록하면 단독 실행 기획서 HTML을 만들어 주는 사내 서비스",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/sdk",
+    "packages/server",
+    "packages/viewer"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.10"
+  }
+}
