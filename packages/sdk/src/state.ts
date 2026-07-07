@@ -1,8 +1,8 @@
 import { customAlphabet } from "nanoid";
-import type { Scene, Annotation, Anchor } from "@mockspec/shared";
+import type { SpecProject, Scene, Annotation, Anchor } from "@mockspec/shared";
 
 /**
- * 편집 상태 (인메모리). SpecProject의 편집 대상 부분집합 — 서버 동기화(PUT)는 T7.
+ * 편집 상태 (인메모리). 서버 저장 시 SpecProject에 다시 합쳐 전체 문서 PUT으로 보낸다.
  * 장면 동결(snapshotAsset·frozenAt)은 setSceneSnapshot으로 기록한다.
  */
 export interface EditorDoc {
@@ -17,6 +17,32 @@ const annId = () => `ann_${nano()}`;
 
 export function emptyDoc(): EditorDoc {
   return { sceneCodeSeq: 1, scenes: [], annotations: [] };
+}
+
+export function docFromProject(project: SpecProject): EditorDoc {
+  return {
+    sceneCodeSeq: project.sceneCodeSeq,
+    scenes: project.scenes,
+    annotations: project.annotations,
+  };
+}
+
+export function applyDocToProject(project: SpecProject, doc: EditorDoc): SpecProject {
+  return {
+    ...project,
+    sceneCodeSeq: doc.sceneCodeSeq,
+    scenes: doc.scenes,
+    annotations: doc.annotations,
+  };
+}
+
+/**
+ * 서버가 updatedAt을 갱신해도 같은 문서를 다시 저장하지 않기 위한 비교 키.
+ * S1은 전체 문서 PUT이고 단일 편집자 전제라 updatedAt 외 메타/본문을 그대로 비교한다.
+ */
+export function projectContentSignature(project: SpecProject): string {
+  const { updatedAt: _updatedAt, ...content } = project;
+  return JSON.stringify(content);
 }
 
 /** SCR-### 표시 코드 (생성 순, 영구 불변 — output-standard §1.2). */

@@ -34,6 +34,13 @@ export const STYLES = /* css */ `
   color: #666; line-height: 1; padding: 2px 6px;
 }
 .panel__close:hover { color: #111; }
+.save {
+  flex: 0 1 auto; min-width: 0; max-width: 128px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: 11px; color: #666;
+}
+.save--saved { color: #2b8a3e; }
+.save--saving, .save--loading { color: #7a7a7a; }
+.save--offline, .save--error { color: #c92a2a; }
 
 .seg { display: flex; margin: 12px 14px; border: 1px solid #d5d5d5; border-radius: 8px; overflow: hidden; }
 .seg button {
@@ -77,6 +84,8 @@ export const STYLES = /* css */ `
   border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer;
 }
 .btn:hover { background: #dfe8ff; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled:hover { background: #eef3ff; }
 
 .hint--warn { background: #fff4e5; color: #b5560a; }
 

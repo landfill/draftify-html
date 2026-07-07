@@ -1,39 +1,66 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import type { SpecProject } from "@mockspec/shared";
 import { pickTarget, generateAnchor } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
   deleteAnnotation, annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
+  docFromProject, applyDocToProject, projectContentSignature,
   type EditorDoc,
 } from "../state.js";
 import { freezeDocument } from "../freeze/freeze.js";
-import { uploadSnapshot } from "../api.js";
+import {
+  fetchProject,
+  flushPendingProject,
+  readPendingProject,
+  saveProjectWithQueue,
+  uploadSnapshot,
+} from "../api.js";
 import { useMarkers } from "./useMarkers.js";
 
 /**
- * SDK 편집기 (T6): 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 동결.
+ * SDK 편집기: 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 동결 + 저장.
  * 장면 등록 시 현재 DOM을 즉시 동결(single-file-core)해 스냅샷을 업로드한다.
- * 서버 spec 저장(PUT)·오프라인 큐는 T7 — 현재 편집 상태는 인메모리.
+ * 편집 상태는 500ms 디바운스로 전체 SpecProject PUT, 실패 시 최신본 1개를 localStorage에 둔다.
  */
 
 type Mode = "preview" | "edit";
+type SaveStatus = "loading" | "saved" | "saving" | "offline" | "error";
 interface Rect { top: number; left: number; width: number; height: number; }
+
+function saveStatusLabel(status: SaveStatus): string {
+  if (status === "saved") return "저장됨 ✓";
+  if (status === "saving") return "저장 중…";
+  if (status === "offline") return "오프라인 — 로컬 보관 중";
+  if (status === "error") return "불러오기 실패";
+  return "불러오는 중…";
+}
+
+function firstSceneId(project: SpecProject): string | null {
+  return project.scenes[0]?.id ?? null;
+}
 
 export function App({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("edit");
   const [hover, setHover] = useState<Rect | null>(null);
+  const [project, setProject] = useState<SpecProject | null>(null);
   const [doc, setDoc] = useState<EditorDoc>(emptyDoc());
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [selectedAnn, setSelectedAnn] = useState<string | null>(null);
   const [needScene, setNeedScene] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
   // 동결 진행/실패 상태 (성공은 scene.snapshotAsset로 표현). sceneId → 값.
   const [freezing, setFreezing] = useState<Record<string, boolean>>({});
   const [freezeErr, setFreezeErr] = useState<Record<string, string>>({});
 
   // 옵저버/전역 리스너가 최신 상태를 읽도록 ref 래핑
+  const projectRef = useRef(project); projectRef.current = project;
   const docRef = useRef(doc); docRef.current = doc;
   const sceneRef = useRef(currentSceneId); sceneRef.current = currentSceneId;
   const modeRef = useRef(mode); modeRef.current = mode;
+  const lastSyncedRef = useRef<string | null>(null);
+  const flushingRef = useRef(false);
   const getDoc = useRef(() => docRef.current).current;
   const onSelectorUpdate = useRef((annId: string, selector: string) => {
     setDoc((d) => updateAnchorSelector(d, annId, selector));
@@ -43,6 +70,148 @@ export function App({ projectId }: { projectId: string }) {
     ? annotationsOfScene(doc, currentSceneId).map((a) => `${a.id}:${a.anchor.selector}`).join(",")
     : "";
   const markers = useMarkers(getDoc, currentSceneId, open, onSelectorUpdate, annSignature);
+
+  // SDK 초기 로드: pending이 있으면 로컬 우선으로 즉시 표시하고 PUT을 먼저 시도(ID-05).
+  useEffect(() => {
+    let cancelled = false;
+
+    const applyLoadedProject = (next: SpecProject, status: SaveStatus) => {
+      lastSyncedRef.current = projectContentSignature(next);
+      setLoadError(null);
+      setProject(next);
+      setDoc(docFromProject(next));
+      setCurrentSceneId(firstSceneId(next));
+      setSaveStatus(status);
+    };
+
+    const boot = async () => {
+      const pending = readPendingProject(projectId);
+      if (pending) {
+        if (!cancelled) applyLoadedProject(pending, "saving");
+        try {
+          const saved = await flushPendingProject(projectId);
+          if (!cancelled && saved) applyLoadedProject(saved, "saved");
+        } catch (err) {
+          if (!cancelled) {
+            setSaveStatus("offline");
+            console.warn("[mockspec] pending spec 재전송 실패:", err);
+          }
+        }
+        return;
+      }
+
+      try {
+        const remote = await fetchProject(projectId);
+        if (!cancelled) applyLoadedProject(remote, "saved");
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "프로젝트 불러오기 실패";
+          setLoadError(message);
+          setSaveStatus("error");
+          console.warn("[mockspec] 프로젝트 불러오기 실패:", err);
+        }
+      }
+    };
+
+    void boot();
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const currentProjectSnapshot = useCallback((): SpecProject | null => {
+    const base = projectRef.current;
+    if (!base) return null;
+    return applyDocToProject(base, docRef.current);
+  }, []);
+
+  const flushQueued = useCallback(async () => {
+    if (flushingRef.current) return;
+    const pending = readPendingProject(projectId);
+    if (!pending) return;
+
+    flushingRef.current = true;
+    setSaveStatus("saving");
+    const pendingSignature = projectContentSignature(pending);
+    try {
+      const saved = await flushPendingProject(projectId);
+      if (!saved) return;
+      const savedSignature = projectContentSignature(saved);
+      lastSyncedRef.current = savedSignature;
+
+      const current = currentProjectSnapshot();
+      const currentSignature = current ? projectContentSignature(current) : null;
+      setProject(saved);
+
+      if (!currentSignature || currentSignature === pendingSignature) {
+        setDoc(docFromProject(saved));
+        setCurrentSceneId((id) => saved.scenes.some((s) => s.id === id) ? id : firstSceneId(saved));
+        setSaveStatus("saved");
+      } else {
+        // 로컬에서 더 새 변경이 이미 생겼으면 다음 디바운스 저장이 이어받는다.
+        setSaveStatus("saving");
+      }
+    } catch (err) {
+      setSaveStatus("offline");
+      console.warn("[mockspec] pending spec 재전송 실패:", err);
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [currentProjectSnapshot, projectId]);
+
+  // online 이벤트와 서버 재기동 케이스를 모두 커버: pending이 있으면 짧게 재시도한다.
+  useEffect(() => {
+    const onOnline = () => { void flushQueued(); };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushQueued]);
+
+  useEffect(() => {
+    if (saveStatus !== "offline") return;
+    const timer = window.setInterval(() => { void flushQueued(); }, 2000);
+    return () => window.clearInterval(timer);
+  }, [flushQueued, saveStatus]);
+
+  // 편집 변경 저장: 500ms 디바운스 + 전체 SpecProject PUT + 실패 시 최신본 1개 큐.
+  useEffect(() => {
+    if (!project || loadError) return;
+    const next = applyDocToProject(project, doc);
+    const nextSignature = projectContentSignature(next);
+    if (nextSignature === lastSyncedRef.current) return;
+
+    setSaveStatus("saving");
+    const timer = window.setTimeout(() => {
+      const snapshot = currentProjectSnapshot();
+      if (!snapshot) return;
+      const sentSignature = projectContentSignature(snapshot);
+
+      void saveProjectWithQueue(snapshot).then((result) => {
+        if (result.queued) {
+          const current = currentProjectSnapshot();
+          if (!current || projectContentSignature(current) === sentSignature) {
+            setSaveStatus("offline");
+          }
+          console.warn("[mockspec] 저장 실패, localStorage 큐에 보관:", result.error);
+          return;
+        }
+
+        const saved = result.project;
+        const savedSignature = projectContentSignature(saved);
+        lastSyncedRef.current = savedSignature;
+        const current = currentProjectSnapshot();
+        const currentSignature = current ? projectContentSignature(current) : null;
+        setProject(saved);
+
+        if (!currentSignature || currentSignature === sentSignature) {
+          setDoc(docFromProject(saved));
+          setCurrentSceneId((id) => saved.scenes.some((s) => s.id === id) ? id : firstSceneId(saved));
+          setSaveStatus("saved");
+        } else {
+          setSaveStatus("saving");
+        }
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [currentProjectSnapshot, doc, loadError, project]);
 
   // 패널 도킹 시 목업 레이아웃 360px 축소
   useEffect(() => {
@@ -75,6 +244,7 @@ export function App({ projectId }: { projectId: string }) {
 
     const onClickCapture = (e: MouseEvent) => {
       if (isOwn(e.target)) return;
+      if (!projectRef.current) return;
       e.preventDefault();
       e.stopPropagation();
       const scene = sceneRef.current;
@@ -129,6 +299,7 @@ export function App({ projectId }: { projectId: string }) {
   };
 
   const registerScene = () => {
+    if (!projectRef.current) return;
     const title = document.title || "장면";
     const route = location.pathname + location.search + location.hash;
     const { doc: nd, scene } = createScene(doc, { title, route });
@@ -175,6 +346,7 @@ export function App({ projectId }: { projectId: string }) {
           <span class="panel__title">mockspec</span>
           <span class="panel__pid">{projectId}</span>
           <span class="panel__spacer" />
+          <span class={`save save--${saveStatus}`}>{saveStatusLabel(saveStatus)}</span>
           <span class="status">{mode === "edit" ? "편집 중" : "미리보기"}</span>
           <button class="panel__close" title="닫기" onClick={() => setOpen(false)}>×</button>
         </div>
@@ -184,12 +356,15 @@ export function App({ projectId }: { projectId: string }) {
           <button class={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}>편집</button>
         </div>
 
+        {loadError && <div class="hint hint--warn">{loadError}</div>}
+
         <div class="section">
           <div class="row">
             <h4>장면</h4>
-            <button class="btn" onClick={registerScene}>+ 현재 화면을 장면으로</button>
+            <button class="btn" disabled={!project} onClick={registerScene}>+ 현재 화면을 장면으로</button>
           </div>
-          {doc.scenes.length === 0 && <div class="muted">아직 장면이 없습니다. 위 버튼으로 현재 화면을 장면으로 등록하세요.</div>}
+          {!project && !loadError && <div class="muted">프로젝트를 불러오는 중입니다.</div>}
+          {project && doc.scenes.length === 0 && <div class="muted">아직 장면이 없습니다. 위 버튼으로 현재 화면을 장면으로 등록하세요.</div>}
           <ul class="list">
             {doc.scenes.map((s) => (
               <li key={s.id} class={`scene${s.id === currentSceneId ? " scene--cur" : ""}`}>
