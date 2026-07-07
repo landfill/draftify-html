@@ -9,8 +9,7 @@
 
 ## 현재 단계
 
-**T6 완료(빌드·테스트·실브라우저 검증 통과). 다음은 T7(SDK: 저장·오프라인 큐).**
-T6은 `feat/sdk-scene-freeze-t6` 브랜치 — main 병합은 사용자 동의 대기 중.
+**T6 완료(빌드·테스트·실브라우저 검증 통과) 및 main 병합 완료. 다음은 T7(SDK: 저장·오프라인 큐).**
 
 ## WBS 체크리스트
 
@@ -30,7 +29,7 @@ T6은 `feat/sdk-scene-freeze-t6` 브랜치 — main 병합은 사용자 동의 �
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-07 — T6 SDK 장면 등록 + 동결 완료
-- 브랜치: `feat/sdk-scene-freeze-t6` (main 미병합, 동의 대기).
+- 브랜치: `feat/sdk-scene-freeze-t6` → `main` 병합 완료.
 - 완료: **동결 모듈** `freeze/freeze.ts`(single-file-core를 클라이언트에서 실행 — 서버 헤드리스 재현 금지 결정의 구현). 진입점 `getPageData(opts, {})`. `freeze/verify.ts`로 `<script>` 0개 검증기를 **분리**(single-file-core를 로드하지 않는 순수 모듈 → node/happy-dom 유닛 테스트 가능). 검증은 **모든 `<script>` 태그 0개 엄격**(ld+json 등 비실행 데이터도 실패 처리 — 뷰어 srcdoc 무해화 제1 방어선).
 - 완료: **동결 옵션**(§5) — `blockScripts:true`(모든 script 제거), `removedElementsSelector:"[data-mockspec-root]"`(SDK 자신 제외), `saveFilenameTemplateData:false`(동결 후 옵션 JSON `<script>` 재삽입 방지), CSS 인라인·이미지/폰트 data URI화·미사용 스타일 제거는 single-file 기본. `<html>`의 패널 margin-right는 동결 중 임시 제거(원본 레이아웃 보존).
 - 완료: **API 클라이언트** `api.ts` — `uploadSnapshot`(`POST /__mockspec/api/projects/:id/assets`, field `snapshot`, 상대 경로만). **상태** `state.ts::setSceneSnapshot`(snapshotAsset·frozenAt 기록). **App.tsx** — 장면 등록 **직후 자동 동결**(`void runFreeze`), 각 장면 **재동결 버튼(⟳)**, 스피너/`✓ 동결됨 {시각}`/**"동결 실패 — 재시도" 배지**(클릭 시 재동결) UX(§3.7).
