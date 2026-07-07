@@ -13,8 +13,9 @@ import {
 } from "../store/projectStore.js";
 import { mockupDir } from "../store/paths.js";
 import { sendError } from "../errors.js";
+import { exportProjectHtml } from "./export.js";
 
-/** Spec API 전체 (technical-spec §6). export(POST /:id/export)는 뷰어 의존이라 T8. */
+/** Spec API 전체 (technical-spec §6). */
 
 /** zip 업로드 200MB 하드 리밋 (압축 파일 기준 — 해제 전에 걸림, technical-spec §3.2). */
 const uploadZip = multer({
@@ -91,6 +92,8 @@ export function projectsRouter(): Router {
       next(err);
     }
   });
+
+  router.post("/projects/:id/export", exportProjectHtml);
 
   router.post("/projects/:id/assets", (req, res, next) => {
     uploadAsset.single("snapshot")(req, res, (err: unknown) => {
