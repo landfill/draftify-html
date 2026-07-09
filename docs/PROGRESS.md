@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**T9 완료(콘솔만으로 업로드→편집 열기→export 실 Chrome 검증). 다음은 T10(Playwright E2E) + 편집기 포커스 버그 픽스.**
+**T9 완료 + 편집기·viewer 결함 3건 픽스 완료. 다음은 T10(Playwright E2E). T9·fix 브랜치 main 병합 동의 대기.**
 
 ## WBS 체크리스트
 
@@ -27,6 +27,15 @@
 - [ ] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-09 — 편집기 포커스 강탈 + viewer 마커 결함 2건 픽스
+- 브랜치: `fix/editor-focus-viewer-markers` (`feat/console-page-t9` 위에 스택 — PROGRESS 충돌 회피. main 병합은 T9 → fix 순서로, 동의 대기).
+- 완료: **SDK 포커스 강탈 픽스** — `App.tsx` title 자동 포커스 useEffect 의존성에서 `doc` 제거(`[selectedAnn]`만). doc이 있으면 편집 키스트로크마다 effect가 재실행되어 description 입력 포커스를 title이 강탈했음.
+- 완료: **viewer resize 리스너 누적 픽스** — `renderStage`가 장면 전환마다 `window.resize` 리스너를 새로 달던 것을, `renderViewer`의 단일 리스너 + 현재 장면 콜백(`markerRefresh.current`) 교체 방식으로 변경. 스냅샷 없는 장면 진입 시 stale 콜백도 무효화.
+- 완료: **viewer 목록→마커 스크롤** — `syncActive`가 어노테이션 목록 항목에 더해 마커도 `scrollIntoView`(양방향 상호 하이라이트·스크롤, detailed-spec §4.1 충족).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 68 passed. **실 Chrome 검증(포커스)**: 기존 어노테이션 description에 긴 문장 타이핑 — 디바운스 저장 여러 번을 지나도 문장 전체가 description에 유지 + `shadow.activeElement === textarea` 확인(수정 전엔 첫 재렌더에 title로 유출). viewer 수정은 export 산출물 인라인 반영 확인(단일 리스너 코드·마커 scrollIntoView 포함), 라이브 resize/스크롤 동작은 T10 E2E에서 함께 커버 예정.
+- 다음 할 일: T10 — Playwright E2E(S1 DoD, technical-spec §9.1). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
+- 막힌 지점: 없음.
 
 ### 2026-07-09 — T9 콘솔 페이지 완료 + T7·T8 품질 검토
 - 브랜치: `feat/console-page-t9` (main 미병합, 동의 대기).

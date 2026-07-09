@@ -272,13 +272,15 @@ export function App({ projectId }: { projectId: string }) {
     };
   }, [open, mode]);
 
-  // 새 어노테이션 title 자동 포커스
+  // 새 어노테이션 title 자동 포커스.
+  // 의존성은 selectedAnn만: doc을 넣으면 편집 키스트로크(=doc 변경)마다 effect가
+  // 재실행되어 description 등 다른 입력의 포커스를 title이 강탈한다 (2026-07-09 실버그).
   useEffect(() => {
     if (!selectedAnn) return;
     const el = document.querySelector("[data-mockspec-root]")?.shadowRoot
       ?.querySelector<HTMLInputElement>(`[data-ann-title="${selectedAnn}"]`);
     el?.focus();
-  }, [selectedAnn, doc]);
+  }, [selectedAnn]);
 
   // 장면 동결: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
   // 등록 직후 자동 실행 + 각 장면의 재동결 버튼에서 재호출.

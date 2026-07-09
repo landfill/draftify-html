@@ -239,8 +239,13 @@ function syncActive(root: HTMLElement, id: string | null): void {
     el.classList.toggle("is-active", id != null && el.dataset.annotationId === id);
   }
   if (id) {
+    // 마커 ↔ 목록 상호 하이라이트·스크롤 (detailed-spec §4.1) — 양방향 모두 보이게 한다
     root.querySelector<HTMLElement>(`.ms-annotation[data-annotation-id="${escapeSelectorId(id)}"]`)?.scrollIntoView({
       block: "nearest",
+    });
+    root.querySelector<HTMLElement>(`.ms-marker[data-annotation-id="${escapeSelectorId(id)}"]`)?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
     });
   }
 }
@@ -392,7 +397,9 @@ function renderStage(
   snapshots: Map<string, string>,
   state: ViewerState,
   root: HTMLElement,
+  markerRefresh: { current: (() => void) | null },
 ): HTMLElement {
+  markerRefresh.current = null; // 이전 장면의 stale 콜백 제거 (스냅샷 없는 장면 포함)
   const main = child("main", "ms-main");
 
   const header = child("div", "ms-stage-header");
@@ -430,9 +437,11 @@ function renderStage(
   wrap.append(iframe, layer);
   main.append(wrap);
 
-  window.addEventListener("resize", () => {
+  // resize 재계산은 renderViewer의 단일 리스너가 이 콜백을 호출한다
+  // (장면 전환마다 window 리스너를 새로 달면 누적됨)
+  markerRefresh.current = () => {
     renderMarkers(scene, project.annotations, iframe, layer, state, root);
-  });
+  };
 
   return main;
 }
@@ -460,6 +469,10 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
   };
   const generatedAt = document.querySelector<HTMLMetaElement>('meta[name="mockspec-generated-at"]')?.content ?? null;
 
+  // 현재 장면의 마커 재계산 콜백. window 리스너는 여기 1개만 등록한다.
+  const markerRefresh: { current: (() => void) | null } = { current: null };
+  window.addEventListener("resize", () => markerRefresh.current?.());
+
   const render = (): void => {
     root.innerHTML = "";
     const shell = child("div", "ms-shell");
@@ -486,7 +499,7 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
         state.activeAnnotationId = null;
         render();
       }),
-      renderStage(selectedScene, project, snapshots, state, root),
+      renderStage(selectedScene, project, snapshots, state, root, markerRefresh),
       renderAnnotationPanel(selectedScene, project.annotations, state, root),
     );
     shell.append(layout);
