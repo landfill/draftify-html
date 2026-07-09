@@ -1,0 +1,19 @@
+:root { font-family: sans-serif; color: #1f2328; }
+body { margin: 0; background: #f6f8fa; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+h1 { font-size: 20px; margin: 0 0 16px; }
+nav a { margin-left: 10px; color: #0969da; text-decoration: none; }
+nav a.active { font-weight: 700; text-decoration: underline; }
+.row { display: flex; gap: 8px; margin-bottom: 14px; }
+#new-todo { flex: 1; padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 6px; }
+button { padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; cursor: pointer; }
+#add-todo { background: #1f883d; border-color: #1f883d; color: #fff; font-weight: 600; }
+#todo-count { color: #57606a; font-size: 13px; }
+ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+li { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px 12px; }
+li.done .todo-text { text-decoration: line-through; color: #8c959f; }
+.todo-text { flex: 1; }
+.stats-card { background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; margin-top: 12px; }
+.filters { display: flex; gap: 8px; margin-top: 12px; }
+.filters button.active { background: #ddf4ff; border-color: #0969da; }

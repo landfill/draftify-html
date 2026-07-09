@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**T9 완료 + 편집기·viewer 결함 3건 픽스 완료(모두 main 병합됨). 다음은 T10(Playwright E2E).**
+**T10 완료 — S1 WBS 전 항목(T1~T10) 완료. E2E 1본이 S1 DoD를 자동 검증. 남은 것: 실사용 1회 판정(킥오프 §11 기록) → S2 계획.**
 
 ## WBS 체크리스트
 
@@ -24,9 +24,18 @@
 - [x] T7 SDK: 저장·오프라인 큐 (서버 중단 후 재기동 시 자동 반영) — SDK App 테스트로 PUT 실패→localStorage 보관→2초 재시도 성공 검증, vitest 53 passed
 - [x] T8 뷰어 + export 조립 (산출물 HTML이 file://로 열림) — export API + viewer 런타임 테스트, Chrome file:// 스모크(마커·패널·iframe·외부 네트워크 0건) 통과
 - [x] T9 콘솔 페이지 (업로드→편집 열기→export가 콘솔만으로 가능) — vitest 68 passed, 실 Chrome에서 콘솔 업로드→장면 등록→export 다운로드 검증
-- [ ] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화
+- [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-09 — T10 Playwright E2E 완료 (S1 WBS 전 항목 종료)
+- 브랜치: `feat/e2e-playwright-t10` (main 미병합, 동의 대기).
+- 완료: **fixtures/todo-app** (ID-12) — Vite + vanilla TS SPA, 외부 런타임 의존성 0, 라우트 2개(`/` 할 일 목록: 입력창·추가·항목별 완료/삭제, `/stats` 통계: 필터 버튼 2개), history 라우팅(SPA fallback 검증), 부착 대상 4+, 상태 따라 텍스트 바뀌는 요소(`#todo-count`). npm workspace로 편입, `npm run fixtures:zip`이 빌드 후 `fixtures/todo-app.zip`(5KB, gitignore) 생성.
+- 완료: **Playwright E2E 1본** — `e2e/s1-dod.spec.ts`가 §9.1 시나리오 그대로: 콘솔 UI로 zip 업로드 → 편집 화면(shadow DOM은 Playwright가 관통)에서 장면 2개 등록(등록 즉시 동결 배지 2개 확인)·어노테이션 각 2개 부착·설명 입력·저장됨 확인 → 콘솔에서 export 다운로드 → **새 브라우저 컨텍스트에서 file:// 오픈** 후 검증: 장면 2개 전환 왕복, 마커 4개가 대상 요소 우상단(오차 ≤2px, is-uncertain 0), 설명 텍스트 일치, 마커↔목록 상호 하이라이트, **네트워크 요청 = 문서 file:// 1건뿐(외부 0건)**.
+- 완료: 설정 — `playwright.config.ts`(webServer가 dist 서버를 PORT 4123·전용 data dir로 기동, globalSetup이 매 실행 초기화), 루트 `test:e2e` 스크립트(빌드→fixtures zip→playwright). vitest include는 `packages/**`라 e2e와 상호 간섭 없음.
+- 검증: `npm run test:e2e` **1 passed (4.4s)** — 첫 실행 통과. `npm test` 68 passed·`npm run typecheck` exit 0 회귀 없음.
+- 다음 할 일: **S1 WBS 종료.** 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 §11에 기록 → S2 계획 입력 (§9.1). 선택: CI 파이프라인(현재 로컬 실행만).
+- 막힌 지점: 없음. 참고: Playwright Chromium은 로컬 캐시(~94MB) 설치 필요 — `npx playwright install chromium`.
 
 ### 2026-07-09 — 편집기 포커스 강탈 + viewer 마커 결함 2건 픽스
 - 브랜치: `fix/editor-focus-viewer-markers` (`feat/console-page-t9` 위에 스택) → `main` 병합 완료(2026-07-09, T9 → fix 순서 fast-forward).

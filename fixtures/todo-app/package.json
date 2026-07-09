@@ -1,0 +1,16 @@
+{
+  "name": "@mockspec/fixture-todo-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "E2E fixtures (ID-12) — 의존성 0의 Todo SPA. 라우트 2개, history 라우팅, 부착 대상 4+",
+  "scripts": {
+    "build": "vite build",
+    "zip": "vite build && node scripts/zip.mjs"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.1",
+    "typescript": "^5.6.0",
+    "vite": "^8.1.3"
+  }
+}
