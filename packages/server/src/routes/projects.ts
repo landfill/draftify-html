@@ -1,4 +1,6 @@
 import express, { Router } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
 import multer from "multer";
 import type { SpecProject } from "@mockspec/shared";
 import { extractZip, ZipSlipError } from "../unzip/extract.js";
@@ -134,16 +136,28 @@ async function handleUpload(
     const project = await createProject(name, file.originalname);
     try {
       const result = await extractZip(file.buffer, mockupDir(project.id));
+
+      // 해제(제외 처리) 후 루트 index.html 없으면 업로드 거부 (detailed-spec §2.2·§6)
+      const hasIndex = await fs
+        .access(path.join(mockupDir(project.id), "index.html"))
+        .then(() => true, () => false);
+      if (!hasIndex) {
+        await deleteProject(project.id);
+        return sendError(res, "INVALID_REQUEST", "빌드 산출물 루트에 index.html이 필요합니다.");
+      }
+
       res.status(201).json({
         project,
         mockupUrl: `//${project.id}.${req.hostname}`, // 서브도메인 — 오리진 하드코딩 없음
         extract: result,
       });
     } catch (extractErr) {
+      // 거부된 업로드의 빈 프로젝트를 남기지 않는다 (zip-slip·해제 실패 공통)
+      await deleteProject(project.id);
       if (extractErr instanceof ZipSlipError) {
         return sendError(res, "INVALID_REQUEST", "zip에 디렉토리를 벗어나는 경로가 있어 거부했습니다.");
       }
-      throw extractErr;
+      return sendError(res, "INVALID_REQUEST", "zip 파일을 확인해주세요.");
     }
   } catch (err) {
     next(err);

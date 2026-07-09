@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { RESERVED_PATH_PREFIX } from "@mockspec/shared";
 import { parseProjectSubdomain } from "./host.js";
+import { consolePage } from "./routes/console.js";
 import { projectsRouter } from "./routes/projects.js";
 import { serveMockup } from "./routes/serve.js";
 import { sendError } from "./errors.js";
@@ -10,7 +11,7 @@ import { sendError } from "./errors.js";
  *
  * Host 헤더 분기 (technical-spec §3.1):
  *  - `{projectId}.localhost` → 목업 서빙 + SDK 주입 + SDK용 /__mockspec/api
- *  - `localhost`(루트)       → 콘솔 + /api  (콘솔 페이지는 T9)
+ *  - `localhost`(루트)       → 콘솔 + /api
  * 두 경우 모두 same-origin API이므로 CORS 없음 (ID-03).
  */
 export function buildApp(): express.Express {
@@ -38,10 +39,9 @@ export function buildApp(): express.Express {
       return api(req, res, next);
     }
 
-    // 콘솔 정적 페이지는 T9. 지금은 헬스 응답만.
-    if (req.path === "/") {
-      res.type("text/plain").send("mockspec server — 콘솔 UI는 T9. API는 /api/*");
-      return;
+    // 루트 = 콘솔 정적 페이지 (T9, detailed-spec §2)
+    if (req.path === "/" && (req.method === "GET" || req.method === "HEAD")) {
+      return consolePage(req, res);
     }
     return next();
   });

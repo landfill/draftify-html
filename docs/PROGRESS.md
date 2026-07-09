@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**T8 완료(빌드·테스트·file:// 스모크 통과). 다음은 T9(콘솔 페이지).**
+**T9 완료(콘솔만으로 업로드→편집 열기→export 실 Chrome 검증). 다음은 T10(Playwright E2E) + 편집기 포커스 버그 픽스.**
 
 ## WBS 체크리스트
 
@@ -23,13 +23,23 @@
 - [x] T6 SDK: 장면 등록 + 동결 (단독 오픈 시 시각적 동일 + `<script>` 0개) — freeze 유닛 5개 + 실 Chrome에서 동결·업로드·`<script>` 0개·CSS/SVG 인라인·단독 시각 동일 검증
 - [x] T7 SDK: 저장·오프라인 큐 (서버 중단 후 재기동 시 자동 반영) — SDK App 테스트로 PUT 실패→localStorage 보관→2초 재시도 성공 검증, vitest 53 passed
 - [x] T8 뷰어 + export 조립 (산출물 HTML이 file://로 열림) — export API + viewer 런타임 테스트, Chrome file:// 스모크(마커·패널·iframe·외부 네트워크 0건) 통과
-- [ ] T9 콘솔 페이지 (업로드→편집 열기→export가 콘솔만으로 가능)
+- [x] T9 콘솔 페이지 (업로드→편집 열기→export가 콘솔만으로 가능) — vitest 68 passed, 실 Chrome에서 콘솔 업로드→장면 등록→export 다운로드 검증
 - [ ] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-09 — T9 콘솔 페이지 완료 + T7·T8 품질 검토
+- 브랜치: `feat/console-page-t9` (main 미병합, 동의 대기).
+- 완료: **콘솔 페이지**(detailed-spec §2) — `routes/console.ts`에 정적 HTML 1장(프레임워크 없음, 인라인 CSS/JS, export.ts의 VIEWER_CSS 선례를 따라 TS 문자열로 관리). 새 프로젝트 폼(이름·zip·안내 문구), 프로젝트 목록(장면·어노테이션 수, 수정일, 편집 열기/내보내기/삭제), 업로드 성공 시 제외 집계 표시 + 편집 링크. 편집 URL은 `location.host` 기준 서브도메인 조립(ID-01). export는 스냅샷 없는 장면 N개 확인 다이얼로그 후 진행, 50MB 경고 헤더 표시, `Content-Disposition filename*` 파싱으로 파일명 유지. 삭제는 확인 다이얼로그 1회.
+- 완료: **업로드 검증 보강**(§2.2·§6 — 스펙에 있었으나 T2에서 누락) — 해제 후 루트 index.html 없으면 400 거부("빌드 산출물 루트에 index.html이 필요합니다"), zip 아님/해제 실패는 400("zip 파일을 확인해주세요"), 모든 거부 경로에서 생성된 빈 프로젝트 정리(기존엔 zip-slip 거부 시 잔존).
+- 완료: **T7·T8 산출물 품질 검토** — T7 스펙 부합(ID-05·§3.8·§6.2 확인). T8 스펙 부합하나 경미 결함: (1) viewer 장면 전환마다 resize 리스너 누적(`viewer/main.ts:433`), (2) 목록→마커 방향 스크롤 미구현(§4.1). 미수정 — fix 브랜치 대상.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **68 passed**(+6: 콘솔 서빙 3, 업로드 검증 3). **실 Chrome 검증**: 콘솔 접속→폼 submit 핸들러로 zip 업로드(제외 집계·편집 링크 표시)→목록 갱신(장면 0·어노테이션 0)→편집 열기 새 탭(SDK 주입)→장면 등록 즉시 동결→어노테이션 1개→콘솔 목록에 장면 1·어노테이션 1 반영→내보내기로 `order-mockup.html` 다운로드(23.5KB, script 3개=spec-data·snapshot·viewer, 외부 URL 참조 0). file:// 오픈은 T8에서 검증된 뷰어 그대로라 생략(자동화 환경이 http→file 이동 차단).
+- **실버그 발견(브라우저 검증이 잡음, 미수정)**: `App.tsx:281` — title 자동 포커스 useEffect 의존성에 `doc`이 포함되어, 설명(textarea) 입력의 매 키스트로크마다 title input으로 포커스 강탈(입력 내용이 title로 새어 들어감). T5 검증 때 title만 타이핑해 미노출. 수정은 의존성을 `[selectedAnn]`으로 축소 — **다음 fix 브랜치에서 처리**(`fix/ann-title-focus-steal` 제안).
+- 다음 할 일: (1) `fix/ann-title-focus-steal` — 위 포커스 버그 + T8 경미 결함 2건 처리 여부 결정. (2) T10 — Playwright E2E(S1 DoD 시나리오, technical-spec §9.1). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
+- 막힌 지점: 없음. 참고: 검증 중 생성된 `~/Downloads/order-mockup.html`은 테스트 산출물.
+
 ### 2026-07-07 — T8 뷰어 + export 조립 완료
-- 브랜치: `feat/viewer-export-t8` (main 미병합, 동의 대기).
+- 브랜치: `feat/viewer-export-t8` → `main` 병합 완료(fast-forward, 2026-07-09 확인 — 병합 직후 이 로그를 갱신하지 못해 뒤늦게 반영).
 - 완료: **서버 export API** — `POST /api/projects/:id/export`가 저장된 `SpecProject`와 scene `snapshotAsset`들을 읽어 단일 HTML로 조립. spec JSON은 `application/json#spec-data`에 안전 이스케이프, 스냅샷은 scene별 base64 `text/plain[data-snapshot]`으로 인라인, `packages/viewer/dist/main.js`를 inline module로 삽입. 한글 파일명은 `filename*`로 보존하고 ASCII `filename` fallback을 둠. 50MB 초과 산출물은 `X-Mockspec-Warning: EXPORT_TOO_LARGE` 헤더로 경고하며 진행.
 - 완료: **vanilla viewer** — 장면 사이드바(order 순), 중앙 `iframe sandbox="allow-same-origin" srcdoc` 스냅샷, 앵커 재해석(selector→text/attrs refind→rect fallback) 마커, 우측 어노테이션 패널, 마커↔목록 상호 하이라이트, 스냅샷 없는 장면 placeholder, description HTML escape 후 제한적 markdown 렌더.
 - 완료: **회귀 테스트** — export API 3개 + HTML 이스케이프 1개, viewer helper/anchor 5개 추가.
