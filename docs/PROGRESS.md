@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**T9 완료 + 편집기·viewer 결함 3건 픽스 완료. 다음은 T10(Playwright E2E). T9·fix 브랜치 main 병합 동의 대기.**
+**T9 완료 + 편집기·viewer 결함 3건 픽스 완료(모두 main 병합됨). 다음은 T10(Playwright E2E).**
 
 ## WBS 체크리스트
 
@@ -29,7 +29,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-09 — 편집기 포커스 강탈 + viewer 마커 결함 2건 픽스
-- 브랜치: `fix/editor-focus-viewer-markers` (`feat/console-page-t9` 위에 스택 — PROGRESS 충돌 회피. main 병합은 T9 → fix 순서로, 동의 대기).
+- 브랜치: `fix/editor-focus-viewer-markers` (`feat/console-page-t9` 위에 스택) → `main` 병합 완료(2026-07-09, T9 → fix 순서 fast-forward).
 - 완료: **SDK 포커스 강탈 픽스** — `App.tsx` title 자동 포커스 useEffect 의존성에서 `doc` 제거(`[selectedAnn]`만). doc이 있으면 편집 키스트로크마다 effect가 재실행되어 description 입력 포커스를 title이 강탈했음.
 - 완료: **viewer resize 리스너 누적 픽스** — `renderStage`가 장면 전환마다 `window.resize` 리스너를 새로 달던 것을, `renderViewer`의 단일 리스너 + 현재 장면 콜백(`markerRefresh.current`) 교체 방식으로 변경. 스냅샷 없는 장면 진입 시 stale 콜백도 무효화.
 - 완료: **viewer 목록→마커 스크롤** — `syncActive`가 어노테이션 목록 항목에 더해 마커도 `scrollIntoView`(양방향 상호 하이라이트·스크롤, detailed-spec §4.1 충족).
@@ -38,7 +38,7 @@
 - 막힌 지점: 없음.
 
 ### 2026-07-09 — T9 콘솔 페이지 완료 + T7·T8 품질 검토
-- 브랜치: `feat/console-page-t9` (main 미병합, 동의 대기).
+- 브랜치: `feat/console-page-t9` → `main` 병합 완료(2026-07-09).
 - 완료: **콘솔 페이지**(detailed-spec §2) — `routes/console.ts`에 정적 HTML 1장(프레임워크 없음, 인라인 CSS/JS, export.ts의 VIEWER_CSS 선례를 따라 TS 문자열로 관리). 새 프로젝트 폼(이름·zip·안내 문구), 프로젝트 목록(장면·어노테이션 수, 수정일, 편집 열기/내보내기/삭제), 업로드 성공 시 제외 집계 표시 + 편집 링크. 편집 URL은 `location.host` 기준 서브도메인 조립(ID-01). export는 스냅샷 없는 장면 N개 확인 다이얼로그 후 진행, 50MB 경고 헤더 표시, `Content-Disposition filename*` 파싱으로 파일명 유지. 삭제는 확인 다이얼로그 1회.
 - 완료: **업로드 검증 보강**(§2.2·§6 — 스펙에 있었으나 T2에서 누락) — 해제 후 루트 index.html 없으면 400 거부("빌드 산출물 루트에 index.html이 필요합니다"), zip 아님/해제 실패는 400("zip 파일을 확인해주세요"), 모든 거부 경로에서 생성된 빈 프로젝트 정리(기존엔 zip-slip 거부 시 잔존).
 - 완료: **T7·T8 산출물 품질 검토** — T7 스펙 부합(ID-05·§3.8·§6.2 확인). T8 스펙 부합하나 경미 결함: (1) viewer 장면 전환마다 resize 리스너 누적(`viewer/main.ts:433`), (2) 목록→마커 방향 스크롤 미구현(§4.1). 미수정 — fix 브랜치 대상.
