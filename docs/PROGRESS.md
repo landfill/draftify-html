@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-10 — T14 쿠키 재바인딩 완료
-- 브랜치: `feat/s2-cookie-rebind-t14` (main 미병합, 동의 대기).
+- 브랜치: `feat/s2-cookie-rebind-t14` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.
 - 완료: **`routes/proxy.ts`** 프록시 응답 헤더 가공 — 오리진의 `Set-Cookie`에서 `Domain` 속성을 제거(host-only 재바인딩). 프록시 환경이 `http`인 경우 브라우저 저장 거부를 막기 위해 `Secure` 속성도 제거.
 - 검증: `npm test` **111 passed**(+1: Set-Cookie 재바인딩 Domain 및 프록시 http 시 Secure 제거 확인).
 - 다음 할 일: **T15 콘솔 온보딩 폼** — URL 등록 폼 추가 및 오리진 도달성 확인, `mockupSource.type` 분기.
