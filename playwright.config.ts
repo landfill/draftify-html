@@ -21,13 +21,15 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: "node packages/server/dist/index.js",
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: false,
-    env: {
-      PORT: String(PORT),
-      MOCKSPEC_DATA_DIR: DATA_DIR,
+    webServer: {
+      command: "node packages/server/dist/index.js",
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: false,
+      env: {
+        PORT: String(PORT),
+        MOCKSPEC_DATA_DIR: DATA_DIR,
+        MOCKSPEC_PROXY_ALLOWLIST: "localhost,127.0.0.1",
+        MOCKSPEC_PROXY_ALLOW_LOOPBACK: "true",
+      },
     },
-  },
 });
