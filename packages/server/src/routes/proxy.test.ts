@@ -42,6 +42,17 @@ beforeAll(async () => {
       res.end();
       return;
     }
+    if (url === "/cookie") {
+      res.writeHead(200, {
+        "content-type": "text/plain",
+        "set-cookie": [
+          "auth=123; Domain=example.com; Path=/; Secure; HttpOnly",
+          "other=abc; domain=.example.com; Secure",
+        ],
+      });
+      res.end("cookie set");
+      return;
+    }
     // 기본: HTML (CSP·XFO 헤더 포함, 절대 URL 포함, </body> 있음)
     res.writeHead(200, {
       "content-type": "text/html; charset=utf-8",
@@ -149,5 +160,16 @@ describe("프록시 코어 (T13)", () => {
     const res = await request(app).get("/").set("Host", HOST);
     expect(res.status).toBe(502);
     expect(res.body.error.code).toBe("BAD_GATEWAY");
+  });
+
+  it("Set-Cookie 재바인딩: Domain 제거 및 프록시 http 시 Secure 제거", async () => {
+    const res = await request(app).get("/cookie").set("Host", HOST);
+    expect(res.status).toBe(200);
+    const cookies = res.headers["set-cookie"] as string[];
+    expect(cookies).toBeDefined();
+    expect(cookies).toHaveLength(2);
+    // Domain 제거됨, HttpOnly는 유지, Secure는 http 환경이므로 제거됨
+    expect(cookies[0]).toBe("auth=123; Path=/; HttpOnly");
+    expect(cookies[1]).toBe("other=abc");
   });
 });

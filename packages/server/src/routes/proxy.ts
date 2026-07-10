@@ -48,10 +48,25 @@ function buildUpstreamHeaders(req: Request, targetHost: string): http.OutgoingHt
   return headers;
 }
 
-function copyResponseHeaders(res: Response, upstream: http.IncomingHttpHeaders): void {
+function copyResponseHeaders(req: Request, res: Response, upstream: http.IncomingHttpHeaders): void {
+  const isProxyHttp = req.protocol === "http" || req.protocol === "ws"; // req.protocol fallback
   for (const [k, v] of Object.entries(upstream)) {
     if (v === undefined) continue;
     if (STRIP_RESPONSE.has(k.toLowerCase())) continue;
+
+    if (k.toLowerCase() === "set-cookie") {
+      let cookies = Array.isArray(v) ? v : [String(v)];
+      cookies = cookies.map((c) => {
+        let modified = c.replace(/;\s*Domain=[^;]+/gi, "");
+        if (isProxyHttp || !req.secure) {
+          modified = modified.replace(/;\s*Secure/gi, "");
+        }
+        return modified;
+      });
+      res.setHeader(k, cookies);
+      continue;
+    }
+
     res.setHeader(k, v);
   }
 }
@@ -140,13 +155,13 @@ function handleUpstream(
       sendError(res, "BAD_GATEWAY", "오리진 밖으로의 리다이렉트는 지원하지 않습니다.");
       return;
     }
-    copyResponseHeaders(res, up.headers);
+    copyResponseHeaders(req, res, up.headers);
     res.setHeader("location", loc.pathname + loc.search + loc.hash); // 오리진 제거 → 프록시 유지
     res.status(status).end();
     return;
   }
 
-  copyResponseHeaders(res, up.headers);
+  copyResponseHeaders(req, res, up.headers);
   const ctype = String(up.headers["content-type"] ?? "");
 
   // text/html만 버퍼링해 가공, 그 외는 스트림 통과 (§3.3)

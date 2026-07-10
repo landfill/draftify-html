@@ -9,14 +9,14 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-10) — T11·T12·T13 완료·main 병합 완료. transport=node:http/https+lookup 확정, §2.1·§7.2 문서 동기화 완료. 다음: T14 쿠키 재바인딩 (킥오프 s2 §8). 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-10) — T11~T14 완료. 다음: T15 콘솔 온보딩 폼 (URL 등록). 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
 - [x] T11 shared 타입 확장 (mockupSource union·maskingRules·maskedSnapshotAsset) — vitest 84 passed, S1 형태 하위 호환·S2 필드 왕복 무손실·마스킹본 ID-11 검증
 - [x] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결) — vitest 103 passed(+19), lookup 훅이 node:http에서 루프백 연결 차단 실측
 - [x] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책) — vitest 110 passed(+7), 실 업스트림 프록시 왕복·IP 리터럴 갭 차단 검증
-- [ ] T14 쿠키 재바인딩
+- [x] T14 쿠키 재바인딩
 - [ ] T15 콘솔 온보딩 폼 (URL 등록)
 - [ ] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
 - [ ] T17 E2E: S2 DoD 시나리오
@@ -38,6 +38,13 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — T14 쿠키 재바인딩 완료
+- 브랜치: `feat/s2-cookie-rebind-t14` (main 미병합, 동의 대기).
+- 완료: **`routes/proxy.ts`** 프록시 응답 헤더 가공 — 오리진의 `Set-Cookie`에서 `Domain` 속성을 제거(host-only 재바인딩). 프록시 환경이 `http`인 경우 브라우저 저장 거부를 막기 위해 `Secure` 속성도 제거.
+- 검증: `npm test` **111 passed**(+1: Set-Cookie 재바인딩 Domain 및 프록시 http 시 Secure 제거 확인).
+- 다음 할 일: **T15 콘솔 온보딩 폼** — URL 등록 폼 추가 및 오리진 도달성 확인, `mockupSource.type` 분기.
+- 막힌 지점: 없음.
 
 ### 2026-07-10 — T13 프록시 코어 + SDK 주입 완료
 - 브랜치: `feat/s2-proxy-core-t13` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 110 passed 재확인). 병합 후 브랜치 삭제.
