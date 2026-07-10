@@ -9,12 +9,12 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-10) — T11 완료·main 병합 완료. 다음: T12 SSRF 가드 모듈 → T13 프록시 코어 (킥오프 s2 §8 의존 순서). 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-10) — T11·T12 완료(T12는 `feat/s2-ssrf-guard-t12`, main 병합 대기). 다음: T13 프록시 코어 (킥오프 s2 §8 의존 순서). T13에서 transport 확정(node:http+lookup vs undici Agent) + §2.1 문구 갱신 필요 — s2 §9 참조. 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
 - [x] T11 shared 타입 확장 (mockupSource union·maskingRules·maskedSnapshotAsset) — vitest 84 passed, S1 형태 하위 호환·S2 필드 왕복 무손실·마스킹본 ID-11 검증
-- [ ] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결)
+- [x] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결) — vitest 103 passed(+19), lookup 훅이 node:http에서 루프백 연결 차단 실측
 - [ ] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책)
 - [ ] T14 쿠키 재바인딩
 - [ ] T15 콘솔 온보딩 폼 (URL 등록)
@@ -38,6 +38,13 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — T12 SSRF 가드 모듈 완료
+- 브랜치: `feat/s2-ssrf-guard-t12` (main 미병합, 동의 대기).
+- 완료: **`packages/server/src/proxy/ssrfGuard.ts`** (킥오프 s2 §4.1, technical-spec §7.2) — transport 비의존 순수 모듈. ① `getAllowlist`/`isAllowlisted` — `MOCKSPEC_PROXY_ALLOWLIST` env 파싱(콤마·trim·소문자), 정확 일치 + `*.` 서브도메인 와일드카드(1단계 이상, 접미 위조 차단), 빈 목록=deny-by-default ② `isBlockedAddress` — hard-deny IP: 0.0.0.0/8·127/8·169.254/16(메타데이터)·::1·::·fe80::/10·fc00::/7(ULA)·IPv4-mapped 언랩·비IP. **사설 대역(10/172.16/192.168)은 미차단**(사내 스테이징) ③ `validateOrigin` — 프로토콜(http/https)→allowlist→resolve→IP 검증, 다중 A레코드 중 하나라도 위험하면 거부, `SsrfError(reason)` ④ `createGuardedLookup` — `dns.lookup` 호환 훅으로 **IP 고정**(매 연결 resolve→검증→안전 IP만 소켓 오픈). 리졸버 주입 가능(테스트는 실 DNS 미접촉).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **103 passed**(+19: allowlist 5, hard-deny IP 3, validateOrigin 7, lookup 훅 4). **실측**: 빌드 산출물의 guardedLookup을 실 `node:http` 요청의 `lookup` 옵션에 꽂아 `localhost`(→127.0.0.1) 연결이 ENOTFOUND로 차단됨을 확인(요청이 서버에 미도달 = 유출 0). 스크래치 스크립트, 커밋 안 함.
+- 다음 할 일: **T13 프록시 코어** — transport 확정이 첫 결정(node:http/https + `lookup: guardedLookup` 이 의존성 0·실측 통과라 유력, undici Agent는 패키지 추가 필요). §2.1 "global fetch" 문구를 그 결정에 맞춰 갱신(s2 §9 이력에 이미 재검토 플래그). 이후 HTML 버퍼링·절대 URL 재작성·SDK 주입·CSP/XFO 제거·리다이렉트 manual.
+- 막힌 지점: 없음. (transport 선택은 T13 정상 결정 사항)
 
 ### 2026-07-10 — T11 shared 타입 확장 완료
 - 브랜치: `feat/s2-shared-types-t11` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 84 passed 재확인). 병합 후 브랜치 삭제.

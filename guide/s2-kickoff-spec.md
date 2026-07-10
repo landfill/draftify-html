@@ -277,4 +277,5 @@ Playwright 자동화 시나리오 (S1 DoD와 별개 spec, 같은 러너):
 | 일자 | 변경 | 이유 |
 |------|------|------|
 | 2026-07-10 | 초판 확정 — 범위(경로 B + 보안 + 마스킹 + CI)는 사용자 결정 | S1 실사용 판정의 S2 계획 입력 (s1-kickoff-spec §11) |
+| 2026-07-10 | T12 구현 중 확인: **IP 고정(§4.1)은 `dns.lookup` 호환 훅으로 실현** — SSRF 가드가 `createGuardedLookup`을 노출하고, 연결 계층이 이를 꽂으면 매 연결마다 resolve→검증→안전 IP로만 소켓을 연다. §2.1의 "global fetch(undici)로 요청"은 **재검토 대상** — 확인 결과 undici 패키지가 미설치라 global fetch로는 커스텀 lookup/IP 고정이 불가능. transport(node:http/https + `lookup` 옵션 vs undici Agent 도입)는 **T13에서 확정**하며, 어느 쪽이든 가드 훅은 그대로 재사용된다 (가드는 transport 비의존) | global fetch는 소켓 lookup 후킹 지점이 없어 "resolve된 IP로 고정"을 직접 못 한다. lookup 훅 방식은 의존성 0이고 node:http에 실측 검증됨(localhost→127.0.0.1 연결 차단 확인). §2.1 문구 갱신은 transport를 실제로 고르는 T13에서 함께 처리 |
 | | (구현 중 이탈 발생 시 여기에 기록) | |
