@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — T17 E2E: S2 DoD 시나리오 완료
-- 브랜치: `feat/s2-e2e-t17` (main 미병합, 동의 대기)
+- 브랜치: `feat/s2-e2e-t17` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.
 - 완료: 
   - `playwright.config.ts`: S2 E2E 테스트를 위해 `webServer.env`에 `MOCKSPEC_PROXY_ALLOWLIST` (localhost, 127.0.0.1) 추가.
   - `e2e/s2-dod.spec.ts`: S2 DoD 요구사항에 맞춘 Playwright 시나리오 작성 완료.
