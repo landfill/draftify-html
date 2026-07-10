@@ -188,12 +188,13 @@ export async function exportProjectHtml(
 
     const snapshots: SnapshotBundle[] = [];
     for (const scene of project.scenes) {
-      if (!scene.snapshotAsset) continue;
-      const data = await readAsset(project.id, scene.snapshotAsset);
+      const assetKey = scene.maskedSnapshotAsset || scene.snapshotAsset;
+      if (!assetKey) continue;
+      const data = await readAsset(project.id, assetKey);
       if (!data) continue;
       snapshots.push({
         sceneId: scene.id,
-        assetKey: scene.snapshotAsset,
+        assetKey: assetKey,
         base64: data.toString("base64"),
         byteLength: data.byteLength,
       });

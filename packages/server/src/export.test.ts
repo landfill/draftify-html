@@ -116,6 +116,48 @@ describe("export API (T8)", () => {
     expect(res.text).not.toContain('data-snapshot="scn_export"');
   });
 
+  it("마스킹된 스냅샷(maskedSnapshotAsset)이 있으면 원본보다 우선하여 조립한다 (T16)", async () => {
+    const project = await newProject();
+    
+    const originalHtml = "<!doctype html><html><body><h1>홍길동 님 환영합니다</h1></body></html>";
+    const maskedHtml = "<!doctype html><html><body><h1>고객명 님 환영합니다</h1></body></html>";
+    
+    // 원본 스냅샷 업로드
+    const origAssetRes = await request(app)
+      .post(`/api/projects/${project.id}/assets`)
+      .set("Host", ROOT)
+      .attach("snapshot", Buffer.from(originalHtml), "snapshot.html");
+    const origKey = origAssetRes.body.assetKey;
+
+    // 마스킹 스냅샷 업로드
+    const maskAssetRes = await request(app)
+      .post(`/api/projects/${project.id}/assets`)
+      .set("Host", ROOT)
+      .attach("snapshot", Buffer.from(maskedHtml), "snapshot.html");
+    const maskKey = maskAssetRes.body.assetKey;
+
+    // 프로젝트 업데이트
+    const next: SpecProject = {
+      ...project,
+      scenes: [scene({ snapshotAsset: origKey, maskedSnapshotAsset: maskKey })],
+      annotations: [],
+      maskingRules: [{ id: "msk_test", find: "홍길동", replace: "고객명" }]
+    };
+    await request(app).put(`/api/projects/${project.id}`).set("Host", ROOT).send(next);
+
+    // Export 요청
+    const res = await request(app).post(`/api/projects/${project.id}/export`).set("Host", ROOT);
+    expect(res.status).toBe(200);
+    
+    const snapMatch = res.text.match(/data-snapshot="scn_export"[^>]*>([^<]+)<\/script>/);
+    expect(snapMatch).not.toBeNull();
+    const exportedHtml = Buffer.from(snapMatch![1]!, "base64").toString("utf8");
+    
+    expect(exportedHtml).toBe(maskedHtml);
+    expect(exportedHtml).toContain("고객명");
+    expect(exportedHtml).not.toContain("홍길동");
+  });
+
   it("프로젝트가 없으면 표준 404를 반환한다", async () => {
     const res = await request(app).post("/api/projects/prj_none/export").set("Host", ROOT);
     expect(res.status).toBe(404);

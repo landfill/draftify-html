@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-11) — T11~T15 완료. 다음: T16 마스킹 (규칙 CRUD + 마스킹본 생성). 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-11) — T11~T16 완료. 다음: T17 E2E: S2 DoD 시나리오. 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -18,7 +18,7 @@
 - [x] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책) — vitest 110 passed(+7), 실 업스트림 프록시 왕복·IP 리터럴 갭 차단 검증
 - [x] T14 쿠키 재바인딩
 - [x] T15 콘솔 온보딩 폼 (URL 등록)
-- [ ] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
+- [x] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
 - [ ] T17 E2E: S2 DoD 시나리오
 - [ ] T18 CI 파이프라인 (전제: 원격 저장소 개설 — 사용자 결정)
 
@@ -38,6 +38,16 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T16 마스킹 기능 완료
+- 브랜치: `feat/s2-masking-t16` (main 미병합, 동의 대기)
+- 완료:
+  - **`routes/export.ts`**: `buildExportHtml`을 위한 스냅샷 조립 시, `scene.maskedSnapshotAsset`이 존재할 경우 `scene.snapshotAsset`보다 우선하여 선택하도록 로직 수정.
+  - **`routes/console.ts`**: 마스킹 규칙(CRUD) 편집 및 전체 적용을 위한 클라이언트 UI 모달 구현. `DOMParser`를 이용해 원문 텍스트 노드 및 주요 속성(`value`, `placeholder` 등)에 규칙을 적용하고 `maskedSnapshotAsset`으로 서버에 업로드한 뒤 저장하는 로직 작성. `exportProject` 실행 시 마스킹 미적용본이 있을 때의 확인 알림 추가.
+  - **`export.test.ts`**: 마스킹된 스냅샷이 원본에 우선해 조립되는지 확인하는 통합 테스트 추가.
+- 검증: `npm test` **113 passed**. 빌드 및 타입 체크 이상 없음.
+- 다음 할 일: **T17 E2E** — Playwright로 S2 DoD 시나리오 작성.
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T15 콘솔 온보딩 폼 완료
 - 브랜치: `feat/s2-console-onboarding-t15` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.

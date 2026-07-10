@@ -51,6 +51,16 @@ button, input { font: inherit; }
 .c-tabpanel { display: none; }
 .c-tabpanel[aria-hidden="false"] { display: block; }
 .c-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a73e8; vertical-align: top; margin-left: 6px; }
+.c-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; place-items: center; z-index: 100; }
+.c-modal-overlay.is-open { display: grid; }
+.c-modal { background: #fff; width: 600px; max-width: 90vw; max-height: 90vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
+.c-modal-header { padding: 18px; border-bottom: 1px solid #dfe3e7; display: flex; justify-content: space-between; align-items: center; }
+.c-modal-header h2 { margin: 0; font-size: 16px; }
+.c-modal-body { padding: 18px; overflow-y: auto; flex: 1 1 auto; }
+.c-modal-footer { padding: 18px; border-top: 1px solid #dfe3e7; display: flex; justify-content: flex-end; gap: 10px; }
+.c-mask-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.c-mask-row input { flex: 1 1 0; padding: 6px 8px; border: 1px solid #c7cdd3; border-radius: 4px; }
+.c-mask-del { border: 0; background: transparent; color: #d93025; cursor: pointer; font-weight: 700; padding: 4px; }
 `.trim();
 
 /**
@@ -148,6 +158,18 @@ async function exportProject(project, statusTarget) {
     var go = window.confirm(missing + "개 장면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?");
     if (!go) return;
   }
+  var unmaskedScenes = 0;
+  if (project.maskingRules && project.maskingRules.length > 0) {
+    for (var i = 0; i < project.scenes.length; i++) {
+      if (project.scenes[i].snapshotAsset && !project.scenes[i].maskedSnapshotAsset) {
+        unmaskedScenes++;
+      }
+    }
+  }
+  if (unmaskedScenes > 0) {
+    var goMask = window.confirm("마스킹 규칙이 설정되었으나 적용되지 않은 장면이 " + unmaskedScenes + "개 있습니다. 원본 스냅샷이 유출될 수 있습니다. 계속 내보낼까요?");
+    if (!goMask) return;
+  }
   setStatus(statusTarget, "내보내는 중…");
   var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/export", { method: "POST" });
   if (!res.ok) {
@@ -207,6 +229,11 @@ function renderProject(project) {
   exportBtn.type = "button";
   exportBtn.addEventListener("click", function () { void exportProject(project, listStatusEl); });
   actions.appendChild(exportBtn);
+
+  var maskBtn = el("button", "c-btn c-btn-ghost", "마스킹 편집");
+  maskBtn.type = "button";
+  maskBtn.addEventListener("click", function () { openMaskingModal(project); });
+  actions.appendChild(maskBtn);
 
   var deleteBtn = el("button", "c-btn c-btn-danger", "삭제");
   deleteBtn.type = "button";
@@ -327,6 +354,149 @@ urlFormEl.addEventListener("submit", function (event) {
     .finally(function () { urlSubmitEl.disabled = false; });
 });
 
+var maskingModalEl = document.getElementById("masking-modal");
+var maskingProjectNameEl = document.getElementById("masking-project-name");
+var maskingRulesEl = document.getElementById("masking-rules");
+var maskingAddBtn = document.getElementById("masking-add");
+var maskingCloseBtn = document.getElementById("masking-close");
+var maskingCancelBtn = document.getElementById("masking-cancel");
+var maskingApplyBtn = document.getElementById("masking-apply");
+var maskingStatusEl = document.getElementById("masking-status");
+var currentMaskingProject = null;
+
+function renderMaskingRow(rule) {
+  var row = el("div", "c-mask-row");
+  var findInput = el("input");
+  findInput.type = "text";
+  findInput.placeholder = "찾을 문자열 (예: 홍길동)";
+  findInput.value = rule.find || "";
+  var replaceInput = el("input");
+  replaceInput.type = "text";
+  replaceInput.placeholder = "치환할 문자열 (예: 고객A)";
+  replaceInput.value = rule.replace || "";
+  var delBtn = el("button", "c-mask-del", "X");
+  delBtn.type = "button";
+  delBtn.addEventListener("click", function() { row.remove(); });
+  row.appendChild(findInput);
+  row.appendChild(replaceInput);
+  row.appendChild(delBtn);
+  maskingRulesEl.appendChild(row);
+}
+
+function openMaskingModal(project) {
+  currentMaskingProject = project;
+  maskingProjectNameEl.textContent = project.name;
+  maskingRulesEl.textContent = "";
+  setStatus(maskingStatusEl, "");
+  var rules = project.maskingRules || [];
+  for (var i = 0; i < rules.length; i++) {
+    renderMaskingRow(rules[i]);
+  }
+  maskingModalEl.classList.add("is-open");
+}
+
+function closeMaskingModal() {
+  maskingModalEl.classList.remove("is-open");
+  currentMaskingProject = null;
+}
+
+maskingCloseBtn.addEventListener("click", closeMaskingModal);
+maskingCancelBtn.addEventListener("click", closeMaskingModal);
+maskingAddBtn.addEventListener("click", function() { renderMaskingRow({ find: "", replace: "" }); });
+
+function applyMaskingText(text, rules) {
+  var res = text;
+  for (var i = 0; i < rules.length; i++) {
+    if (!rules[i].find) continue;
+    res = res.split(rules[i].find).join(rules[i].replace || "");
+  }
+  return res;
+}
+
+function walkDOM(node, rules) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (node.nodeValue) {
+      node.nodeValue = applyMaskingText(node.nodeValue, rules);
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    var attrs = ["value", "placeholder", "title", "alt", "aria-label"];
+    for (var i = 0; i < attrs.length; i++) {
+      if (node.hasAttribute(attrs[i])) {
+        var val = node.getAttribute(attrs[i]);
+        if (val) node.setAttribute(attrs[i], applyMaskingText(val, rules));
+      }
+    }
+    var child = node.firstChild;
+    while (child) {
+      walkDOM(child, rules);
+      child = child.nextSibling;
+    }
+  }
+}
+
+maskingApplyBtn.addEventListener("click", async function() {
+  if (!currentMaskingProject) return;
+  var rows = maskingRulesEl.querySelectorAll(".c-mask-row");
+  var newRules = [];
+  for (var i = 0; i < rows.length; i++) {
+    var inputs = rows[i].querySelectorAll("input");
+    var findVal = inputs[0].value;
+    var replaceVal = inputs[1].value;
+    if (findVal) {
+      newRules.push({ id: "msk_" + Math.random().toString(36).substring(2, 12), find: findVal, replace: replaceVal });
+    }
+  }
+  
+  maskingApplyBtn.disabled = true;
+  setStatus(maskingStatusEl, "스냅샷에 마스킹을 적용하는 중…");
+  try {
+    var updatedProject = JSON.parse(JSON.stringify(currentMaskingProject));
+    updatedProject.maskingRules = newRules;
+    
+    var parser = new DOMParser();
+    for (var i = 0; i < updatedProject.scenes.length; i++) {
+      var scene = updatedProject.scenes[i];
+      if (!scene.snapshotAsset) continue;
+      
+      var assetRes = await fetch("/api/projects/" + updatedProject.id + "/assets/" + scene.snapshotAsset);
+      if (!assetRes.ok) throw new Error("스냅샷을 불러오지 못했습니다.");
+      var html = await assetRes.text();
+      
+      if (newRules.length > 0) {
+        var doc = parser.parseFromString(html, "text/html");
+        walkDOM(doc.body, newRules);
+        var maskedHtml = "<!doctype html>\\n" + doc.documentElement.outerHTML;
+        var blob = new Blob([maskedHtml], { type: "text/html" });
+        var fd = new FormData();
+        fd.append("snapshot", blob);
+        
+        var uploadRes = await fetch("/api/projects/" + updatedProject.id + "/assets", { method: "POST", body: fd });
+        if (!uploadRes.ok) throw new Error("마스킹된 스냅샷 저장 실패");
+        var uploadData = await uploadRes.json();
+        scene.maskedSnapshotAsset = uploadData.assetKey;
+        scene.maskedAt = new Date().toISOString();
+      } else {
+        delete scene.maskedSnapshotAsset;
+        delete scene.maskedAt;
+      }
+    }
+    
+    var putRes = await fetch("/api/projects/" + updatedProject.id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedProject)
+    });
+    if (!putRes.ok) throw new Error("프로젝트 정보 갱신 실패");
+    
+    closeMaskingModal();
+    renderList();
+  } catch (err) {
+    setStatus(maskingStatusEl, err.message || "오류가 발생했습니다.", "error");
+  } finally {
+    maskingApplyBtn.disabled = false;
+  }
+});
+
 void renderList();
 `.trim();
 
@@ -394,6 +564,25 @@ export const CONSOLE_HTML = `<!doctype html>
       <div id="project-list" class="c-list"></div>
       <p id="list-status" class="c-status"></p>
     </section>
+
+    <div id="masking-modal" class="c-modal-overlay">
+      <div class="c-modal">
+        <div class="c-modal-header">
+          <h2>마스킹 편집: <span id="masking-project-name"></span></h2>
+          <button type="button" id="masking-close" class="c-btn c-btn-ghost">닫기</button>
+        </div>
+        <div class="c-modal-body">
+          <p class="c-hint">스냅샷에 포함된 실데이터(고객명, 이메일 등)를 부분 일치로 찾아 치환합니다. 규칙은 전체 장면에 일괄 적용됩니다.</p>
+          <div id="masking-rules"></div>
+          <button type="button" id="masking-add" class="c-btn c-btn-ghost">+ 규칙 추가</button>
+          <p id="masking-status" class="c-status"></p>
+        </div>
+        <div class="c-modal-footer">
+          <button type="button" id="masking-cancel" class="c-btn c-btn-ghost">취소</button>
+          <button type="button" id="masking-apply" class="c-btn">전체 장면에 적용 및 저장</button>
+        </div>
+      </div>
+    </div>
   </div>
   <script>${CONSOLE_JS}</script>
 </body>
