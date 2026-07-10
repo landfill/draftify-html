@@ -51,7 +51,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — T21 콘솔 온보딩 3번째 선택지 완료
-- 브랜치: `feat/s25-console-onboarding-t21` (T19→T20 위에 스택, main 미병합 — 순서대로 병합 대기).
+- 브랜치: `feat/s25-console-onboarding-t21` (T19→T20 위에 스택) → `main` 병합 완료(2026-07-11, T19~T21 스택 fast-forward)·push. 병합 후 세 브랜치 삭제.
 - 완료(서버): ① `POST /projects`의 JSON 분기에 `source:"snippet"` 라우팅 — `handleSnippetRegistration`(이름 검증→생성→토큰 발급→201 `{project, token}`, 오리진 검증·도달성 없음 — fetch하지 않는 경로) ② `POST /projects/:id/token`(재발급, 201 `{token}`, 구 토큰 즉시 무효)·`DELETE /projects/:id/token`(폐기, 204) — 경로 D 한정(그 외 400).
 - 완료(콘솔): ① 3번째 탭 **[내 화면에서 편집 (확장)]** — 이름 입력→생성→**토큰 1회 표시**(복사 버튼, 프로젝트 ID, unpacked 로드·팝업 연결 안내) ② 목록 뱃지 "확장"·`lastSeenOrigin` 메타 ③ snippet 프로젝트 액션: 편집 열기 대신 **[토큰 재발급]**(confirm→새 토큰 prompt 표시) ④ **T20 넘김 사항 해소** — 내보내기·마스킹 적용 시 `snippetAuthHeaders`가 토큰을 물어(sessionStorage 세션 보관) Bearer로 전송, 401이면 보관 토큰 폐기+재입력 유도.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **132 passed**(+6: snippet 등록 201+응답 토큰 실동작 / 이름 없음 400 / 재발급 구토큰 401·신토큰 200 / 폐기 후 401 / upload에 토큰 API 400 / 콘솔 3택 HTML). `npm run test:e2e` 2 passed 회귀 없음. **실 Chrome**: 콘솔 3번째 탭 렌더·폼·안내 확인(제출 흐름은 vitest가 커버).
