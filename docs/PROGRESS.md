@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S2 계획 수립 완료 (2026-07-10) — S2 킥오프 스펙(`guide/s2-kickoff-spec.md`) + docs/ 동기화까지 완료(브랜치 `docs/s2-kickoff-spec`, main 병합 대기). 범위는 사용자 확정: 경로 B(URL 프록시) + SSRF·쿠키 보안 + 마스킹 + CI. 다음: 구현 T11(shared 타입 확장)부터. 새 세션은 여기서 시작.**
+**S2 계획 수립 완료 (2026-07-10) — S2 킥오프 스펙(`guide/s2-kickoff-spec.md`) + docs/ 동기화, main 병합 완료. 범위는 사용자 확정: 경로 B(URL 프록시) + SSRF·쿠키 보안 + 마스킹 + CI. 다음: 구현 T11(shared 타입 확장)부터 — `feat/` 브랜치 분리, 킥오프 s2 §8 의존 순서대로. 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -39,8 +39,8 @@
 
 ## 세션 로그 (최신이 위)
 
-### 2026-07-10 — S2 킥오프 스펙 초판 작성
-- 브랜치: `docs/s2-kickoff-spec` (main 미병합, 리뷰 대기).
+### 2026-07-10 — S2 킥오프 스펙 초판 작성 + docs/ 동기화
+- 브랜치: `docs/s2-kickoff-spec` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.
 - 완료: `guide/s2-kickoff-spec.md` 초판 — 범위는 사용자 확정(경로 B + 필수 보안 + 마스킹 + CI 포함, 경로 D·전이·흐름도·스크린샷 fallback·라벨·이력은 범위 밖). 주요 결정: ① 프록시는 Node 내장 fetch(undici) 직접 구현, HTML만 버퍼링·가공(절대 URL 재작성→SDK 주입→CSP/XFO 스트립), 비HTML 스트림 통과, 리다이렉트는 manual로 클라이언트 왕복(hop별 재검증 대체), WebSocket 미지원 절단 ② SSRF는 `MOCKSPEC_PROXY_ALLOWLIST` env(deny-by-default) + hard-deny IP(메타데이터·루프백·자기 자신, 사설 대역은 예외) + resolve된 IP 고정 연결(DNS rebinding 차단) ③ 쿠키는 Set-Cookie Domain 제거(host-only 재바인딩)+http 시 Secure 제거까지만, SSO는 안 뚫음 ④ 마스킹은 규칙 기반 find→replace(평문 부분 일치, 정규식·클릭 편집기 기각), 콘솔 브라우저 DOMParser로 마스킹본 생성(서버 HTML 파싱 금지), 원본 보존·재마스킹, export는 마스킹본 우선 ⑤ 데이터 모델은 optional 추가만(version 1 유지, S1 파일 호환) ⑥ CI는 GitHub Actions 1본(전제: 원격 개설은 사용자 결정 — 현재 로컬 전용 레포). WBS T11~T18 + S2 DoD(프록시 E2E + 마스킹 원문 0회 + 보안 회귀) 정의.
 - 검증: 문서만 변경. 결정 근거는 PRD §4.2·NFR-03, technical-spec §3.3·§7.2, 서비스 아키텍처 가이드 §4·§5, s1-kickoff-spec §11과 대조.
 - 완료(추가, 같은 날): **docs/ 동기화** — PRD(§7.1 로드맵 표에 S2 확정 범위·"후속 판단" 행 신설, §5 우선순위 주석: P1 중 S2 확정은 FR-ONB-05·FR-EDT-11뿐), detailed-spec(§2.3 온보딩 경로 선택 폼 구체화, §3.12 마스킹 규칙 기반으로 구체화), technical-spec(§1.3 proxy.ts, §2 데이터 모델에 [S2] 필드 통합·§2.2를 "후속 확장"으로 재명명, §3.3 프록시 상세, §6 API [S2] 표기, §7.2 보안 표 구체화, §9.2 WBS T11~T18·§9.3 S2 DoD 신설, §10 [S2] 확정 결정 3행), docs/README(guide 목록에 s2-kickoff-spec).
