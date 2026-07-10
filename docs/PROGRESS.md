@@ -51,7 +51,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — 경로 D 확정 승격 (주입=옵션 E 확장, 사용자 결정) + docs/ 동기화 → S2.5 개시
-- 브랜치: `docs/pathD-kickoff-draft` (main 미병합, 동의 대기).
+- 브랜치: `docs/pathD-kickoff-draft` → `main` 병합 완료(2026-07-11, fast-forward)·push. 병합 후 브랜치 삭제 (초안·확정 커밋 2건 포함).
 - 사용자 결정: **주입 메커니즘 = 옵션 E(브라우저 확장)**. 옵션 S(스니펫)는 범위 밖(후속 실수요 판단).
 - 완료: `guide/pathD-kickoff-spec.md` **초안→확정 승격** — §8 결정 5건 해소(①E 확장 ②토큰=별도 메타 파일 해시·만료 없음·수동 재발급 ③unpacked 로드 ④동결 cross-origin 완화 범위 밖 ⑤로드맵 S2.5). 파생 단순화: 저장 CORS 미구현(background 경유라 불필요 — S 도입 시에만). §9 이력 기록.
 - 완료: **docs/ 동기화** — PRD(§4.2 경로 D를 "클라이언트 주입(확장)"으로 재정의+결정 플로우에 "로그인해야 보인다" 분기, FR-ONB-06 재정의, §5 우선순위 주석, §7.1 로드맵에 S2.5 행 신설·S2 "구현 완료·실사용 판정 대기"), detailed-spec(§2.3에 [S2.5] 3번째 선택지), technical-spec(§2 데이터 모델 snippet 변형, §6 토큰 인증 예외+`POST /projects/:id/token`, §7.3 신설(SSRF 표면 없음·저장 토큰·CORS 미구현·CSP 무관), §9.2에 T19~T25), docs/README(guide 목록 5번).
