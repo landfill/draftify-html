@@ -450,6 +450,7 @@ export function App({ projectId }: { projectId: string }) {
           <button class={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}>편집</button>
         </div>
 
+        <div class="panel__body">
         {loadError && <div class="hint hint--warn">{loadError}</div>}
 
         <div class="section">
@@ -529,6 +530,7 @@ export function App({ projectId }: { projectId: string }) {
               />
             </div>
           ))}
+        </div>
         </div>
       </div>
     </>

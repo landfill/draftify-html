@@ -22,6 +22,8 @@ export const STYLES = /* css */ `
   display: flex; flex-direction: column;
   font-family: system-ui, sans-serif; font-size: 13px;
 }
+/* head·seg 아래 내용의 스크롤 영역 — 어노테이션이 늘어나도 끝까지 접근 가능해야 한다 */
+.panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .panel__head {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 14px; border-bottom: 1px solid #eee;
