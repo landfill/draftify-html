@@ -50,7 +50,9 @@ async function flushPromises(): Promise<void> {
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
-  document.body.innerHTML = `<button id="target">저장</button><button id="other">취소</button><div id="root"></div>`;
+  // #root의 data-mockspec-root는 main.tsx의 호스트 마킹과 동일 — 패널 내부 클릭이
+  // 편집 모드 부착 시퀀스(isOwn 검사)에 잡히지 않게 한다
+  document.body.innerHTML = `<button id="target">저장</button><button id="other">취소</button><div id="root" data-mockspec-root></div>`;
   vi.stubGlobal("ResizeObserver", StubResizeObserver);
 });
 
@@ -94,7 +96,7 @@ async function saveTick(): Promise<void> {
   });
 }
 
-describe("어노테이션 부착 UX (킥오프 §11 4차 개정)", () => {
+describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
   it("이미 어노테이션이 있는 요소 클릭은 선택 — 중복 생성하지 않는다. Shift+클릭은 추가한다", async () => {
     const { getDoc } = await mountWithOpenPanel();
 
@@ -125,19 +127,49 @@ describe("어노테이션 부착 UX (킥오프 §11 4차 개정)", () => {
     expect(getDoc().annotations).toHaveLength(2);
   });
 
-  it("빈 어노테이션은 선택 해제 시 자동 삭제된다", async () => {
+  it("빈 어노테이션은 미작성 핀으로 유지된다 — 요소 먼저 찍고 나중에 작성 (5차 개정)", async () => {
     const { getDoc } = await mountWithOpenPanel();
 
-    await act(async () => { clickMockup("target"); });   // 빈 어노테이션 (오클릭 가정)
-    await act(async () => { clickMockup("other"); });    // 다른 요소 클릭 → 선택 이동
+    // 내용 입력 없이 요소 2개를 연속으로 찍는다
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); });
     await saveTick();
 
-    // target의 빈 어노테이션은 정리되고 other 것만 남는다
+    // 둘 다 남는다 (자동 삭제 없음), 번호 1·2
+    const anns = getDoc().annotations;
+    expect(anns).toHaveLength(2);
+    expect(anns.map((a) => a.number)).toEqual([1, 2]);
+
+    // 미작성 구분 스타일이 마커·목록에 표시된다
+    expect(document.querySelectorAll(".marker--empty")).toHaveLength(2);
+    expect(document.querySelectorAll(".ann--empty")).toHaveLength(2);
+  });
+
+  it("[빈 어노테이션 정리] 버튼이 미작성 핀만 일괄 삭제한다", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); });
+    await act(async () => {
+      // 첫 번째만 제목을 채운다 → 미작성은 두 번째 하나
+      const title = document.querySelector<HTMLInputElement>("input.ann__title")!;
+      title.value = "저장 버튼";
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("button.btn")]
+      .find((b) => b.textContent?.includes("빈 어노테이션 정리"));
+    expect(btn?.textContent).toContain("(1)");
+    await act(async () => { btn!.click(); });
+    await saveTick();
+
     const anns = getDoc().annotations;
     expect(anns).toHaveLength(1);
-    expect(anns[0]?.anchor.text).toContain("취소");
-    // 번호는 재사용하지 않는다 — 두 번째 생성이므로 2
-    expect(anns[0]?.number).toBe(2);
+    expect(anns[0]?.title).toBe("저장 버튼");
+    // 정리 후 버튼은 사라진다 (미작성 0개)
+    expect([...document.querySelectorAll("button.btn")]
+      .some((b) => b.textContent?.includes("빈 어노테이션 정리"))).toBe(false);
   });
 
   it("마커 드래그는 markerOffset(상대 오프셋)으로 저장된다", async () => {

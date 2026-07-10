@@ -78,6 +78,7 @@ export const STYLES = /* css */ `
 .marker--drag { cursor: grabbing; }
 .marker--sel { background: #d9480f; }
 .marker--uncertain { background: #999; border-style: dashed; }
+.marker--empty { opacity: .65; } /* 미작성 핀 — 내용이 비어 있음을 구분 표시 */
 
 .row { display: flex; align-items: center; gap: 6px; }
 .row h4 { flex: 1; }
@@ -130,7 +131,8 @@ export const STYLES = /* css */ `
 @keyframes mockspec-spin { to { transform: rotate(360deg); } }
 
 .ann { border: 1px solid #eee; border-radius: 6px; padding: 8px; margin-top: 6px; }
-.ann--sel { border-color: #d9480f; }
+.ann--empty { border-style: dashed; border-color: #ccc; background: #fafafa; } /* 미작성 핀 */
+.ann--sel { border-color: #d9480f; border-style: solid; }
 .ann__num {
   flex: 0 0 auto; width: 20px; height: 20px; border-radius: 10px; background: #2f6feb; color: #fff;
   font: 600 11px/20px system-ui, sans-serif; text-align: center;

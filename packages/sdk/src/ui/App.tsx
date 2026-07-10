@@ -3,7 +3,8 @@ import type { MarkerOffset, SpecProject } from "@mockspec/shared";
 import { pickTarget, generateAnchor, resolveAnchor } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
-  deleteAnnotation, annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
+  deleteAnnotation, deleteEmptyAnnotations, isEmptyAnnotation,
+  annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
   docFromProject, applyDocToProject, projectContentSignature,
   type EditorDoc,
 } from "../state.js";
@@ -289,23 +290,21 @@ export function App({ projectId }: { projectId: string }) {
     };
   }, [open, mode]);
 
-  // 빈(title·description 모두 공백) 어노테이션은 선택 해제 시 자동 삭제 — 오클릭 잔재 방지
-  // (킥오프 §11 4차 개정). 소비한 번호는 재사용하지 않는다.
-  const prevSelectedRef = useRef<string | null>(null);
-  useEffect(() => {
-    const prev = prevSelectedRef.current;
-    prevSelectedRef.current = selectedAnn;
-    if (!prev || prev === selectedAnn) return;
-    const ann = docRef.current.annotations.find((a) => a.id === prev);
-    if (ann && !ann.title.trim() && !ann.description.trim()) {
-      setDoc((d) => deleteAnnotation(d, prev));
-    }
-  }, [selectedAnn]);
+  // 빈 어노테이션은 "미작성 핀"으로 유지한다 — 요소를 먼저 찍고 내용은 나중에 작성하는
+  // 워크플로우 지원 (킥오프 §11 5차 개정, 4차 개정의 선택 해제 시 자동 삭제 철회).
+  // 잔재 정리는 아래 [빈 어노테이션 정리] 버튼(사용자 주도)으로.
 
-  // 장면 전환·패널 닫기 시 선택 해제 (위 자동 정리가 이어서 동작)
+  // 장면 전환·패널 닫기 시 선택 해제 (다른 장면 소속 선택이 남지 않도록)
   useEffect(() => {
     setSelectedAnn(null);
   }, [currentSceneId, open]);
+
+  const clearEmptyAnns = (sceneId: string) => {
+    const count = annotationsOfScene(doc, sceneId).filter(isEmptyAnnotation).length;
+    if (count === 0) return;
+    if (!confirm(`제목·설명이 빈 어노테이션 ${count}개를 삭제합니다. 번호는 재사용되지 않습니다.`)) return;
+    setDoc((d) => deleteEmptyAnnotations(d, sceneId));
+  };
 
   // 마커 드래그: 이동량을 markerOffset(기본 위치 기준 상대값)으로 커밋.
   // 절대 좌표를 저장하지 않아야 앵커 재해석(요소 추적)과 공존한다 (§3.5).
@@ -410,6 +409,7 @@ export function App({ projectId }: { projectId: string }) {
 
   const scene = doc.scenes.find((s) => s.id === currentSceneId) ?? null;
   const anns = scene ? annotationsOfScene(doc, scene.id) : [];
+  const emptyAnnIds = new Set(anns.filter(isEmptyAnnotation).map((a) => a.id));
 
   return (
     <>
@@ -423,9 +423,9 @@ export function App({ projectId }: { projectId: string }) {
         return (
           <button
             key={m.annId}
-            class={`marker${m.uncertain ? " marker--uncertain" : ""}${selectedAnn === m.annId ? " marker--sel" : ""}${drag?.annId === m.annId ? " marker--drag" : ""}`}
+            class={`marker${m.uncertain ? " marker--uncertain" : ""}${selectedAnn === m.annId ? " marker--sel" : ""}${drag?.annId === m.annId ? " marker--drag" : ""}${emptyAnnIds.has(m.annId) ? " marker--empty" : ""}`}
             style={{ left: m.x + off.dx, top: m.y + off.dy }}
-            title={m.uncertain ? "위치 불확실" : undefined}
+            title={m.uncertain ? "위치 불확실" : emptyAnnIds.has(m.annId) ? "미작성 — 제목·설명이 비어 있습니다" : undefined}
             onPointerDown={onMarkerPointerDown(m.annId)}
             onClick={() => {
               if (suppressClickRef.current) { suppressClickRef.current = false; return; }
@@ -492,7 +492,14 @@ export function App({ projectId }: { projectId: string }) {
         </div>
 
         <div class="section">
-          <h4>어노테이션 {scene && `· ${scene.code}`}</h4>
+          <div class="row">
+            <h4>어노테이션 {scene && `· ${scene.code}`}</h4>
+            {scene && emptyAnnIds.size > 0 && (
+              <button class="btn" title="제목·설명이 빈 어노테이션을 일괄 삭제" onClick={() => clearEmptyAnns(scene.id)}>
+                빈 어노테이션 정리 ({emptyAnnIds.size})
+              </button>
+            )}
+          </div>
           {!scene && <div class="muted">장면을 선택하면 어노테이션을 달 수 있습니다.</div>}
           {scene && mode !== "edit" && <div class="muted">편집 모드에서 요소를 클릭해 어노테이션을 답니다.</div>}
           {scene && mode === "edit" && anns.length === 0 && (
@@ -504,12 +511,12 @@ export function App({ projectId }: { projectId: string }) {
           )}
           {needScene && <div class="hint hint--warn">먼저 장면을 등록해주세요.</div>}
           {anns.map((a) => (
-            <div key={a.id} class={`ann${selectedAnn === a.id ? " ann--sel" : ""}`}>
+            <div key={a.id} class={`ann${selectedAnn === a.id ? " ann--sel" : ""}${emptyAnnIds.has(a.id) ? " ann--empty" : ""}`}>
               <div class="row">
                 <span class="ann__num">{a.number}</span>
                 <input
                   class="ann__title" data-ann-title={a.id}
-                  placeholder="제목 (비워두면 선택 해제 시 자동 삭제)"
+                  placeholder="제목"
                   value={a.title}
                   onInput={(e) => setDoc(updateAnnotation(doc, a.id, { title: (e.target as HTMLInputElement).value }))}
                 />

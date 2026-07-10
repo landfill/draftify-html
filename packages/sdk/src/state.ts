@@ -134,6 +134,19 @@ export function deleteAnnotation(doc: EditorDoc, id: string): EditorDoc {
   return { ...doc, annotations: doc.annotations.filter((a) => a.id !== id) };
 }
 
+/** 미작성 핀 — title·description 모두 공백. 유지하되 구분 표시한다 (킥오프 §11 5차 개정). */
+export function isEmptyAnnotation(a: Annotation): boolean {
+  return !a.title.trim() && !a.description.trim();
+}
+
+/** 장면 내 미작성(빈) 어노테이션 일괄 삭제 — 패널 [빈 어노테이션 정리] 버튼. */
+export function deleteEmptyAnnotations(doc: EditorDoc, sceneId: string): EditorDoc {
+  return {
+    ...doc,
+    annotations: doc.annotations.filter((a) => a.sceneId !== sceneId || !isEmptyAnnotation(a)),
+  };
+}
+
 export function annotationsOfScene(doc: EditorDoc, sceneId: string): Annotation[] {
   return doc.annotations.filter((a) => a.sceneId === sceneId).sort((a, b) => a.number - b.number);
 }
