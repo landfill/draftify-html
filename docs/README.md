@@ -33,6 +33,7 @@
 1. [guide/mockup-as-spec-guide.md](../guide/mockup-as-spec-guide.md) — 코어 개념 (장면·앵커·동결)
 2. [guide/mockup-as-spec-service-architecture.md](../guide/mockup-as-spec-service-architecture.md) — 서비스 구성 (온보딩 4경로, 컴포넌트, S1~S3)
 3. [guide/s1-kickoff-spec.md](../guide/s1-kickoff-spec.md) — S1 확정 사양 (재검토 대상 아님)
+4. [guide/s2-kickoff-spec.md](../guide/s2-kickoff-spec.md) — S2 확정 사양: 경로 B(URL 프록시)·SSRF/쿠키 보안·마스킹·CI (재검토 대상 아님)
 
 ## 한눈에 보는 핵심
 

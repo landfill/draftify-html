@@ -70,8 +70,9 @@ mockspec/                        # 신규 레포 (기존 Draftify 코드 이식 
 │  ├─ server/                    # Express: 호스팅+주입, Spec API, Export
 │  │  └─ src/
 │  │     ├─ index.ts
-│  │     ├─ routes/projects.ts   # 업로드, CRUD (§6)
+│  │     ├─ routes/projects.ts   # 업로드·URL 등록, CRUD (§6)
 │  │     ├─ routes/serve.ts      # 목업 서빙 + SDK 주입 (§3)
+│  │     ├─ routes/proxy.ts      # [S2] 리버스 프록시 (§3.3) + SSRF 가드 (§7.2)
 │  │     ├─ routes/export.ts     # 산출물 조립 (§8)
 │  │     └─ store/               # JSON 파일 저장, asset store
 │  └─ viewer/                    # 산출물 HTML의 뷰어 (빌드 → server가 템플릿으로 사용)
@@ -96,10 +97,19 @@ export interface SpecProject {
   name: string;
   createdAt: string;             // ISO 8601
   updatedAt: string;
-  mockupSource: { type: "upload"; originalFilename: string; uploadedAt: string };
+  mockupSource:                  // [S2] discriminated union으로 확장 (킥오프 s2 §1)
+    | { type: "upload"; originalFilename: string; uploadedAt: string }
+    | { type: "proxy"; originUrl: string; registeredAt: string };
   sceneCodeSeq: number;          // 다음 SCR-### 번호. 단조 증가 — 삭제된 장면 번호 재사용 방지
   scenes: Scene[];
   annotations: Annotation[];
+  maskingRules?: MaskingRule[];  // [S2] 마스킹 규칙 (detailed-spec §3.12). 없으면 마스킹 미사용
+}
+
+export interface MaskingRule {   // [S2]
+  id: string;                    // "msk_" + nanoid(10)
+  find: string;                  // 찾을 문자열 (평문 부분 일치 — 정규식 금지)
+  replace: string;               // 치환 문자열 (빈 문자열 허용)
 }
 
 export interface Scene {
@@ -112,6 +122,8 @@ export interface Scene {
   annoNumberSeq: number;         // 장면 내 다음 어노테이션 번호. 단조 증가 — 삭제 시 재부여 금지 규칙의 구현
   snapshotAsset?: string;        // asset store 키. 동결 성공 시에만 존재
   frozenAt?: string;
+  maskedSnapshotAsset?: string;  // [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존
+  maskedAt?: string;             // [S2] 마스킹본 생성 시각 (ISO 8601)
 }
 
 export interface Annotation {
@@ -140,7 +152,9 @@ export interface Anchor {
 - 저장 파일: `data/projects/{projectId}/spec.json` = `SpecProject` 직렬화 그대로. **이 파일을 그대로 내려주는 것이 export/import(백업)이다.**
 - 장면 스냅샷(동결 DOM)은 수 MB → JSON이 아니라 asset store(디스크)에 두고 `snapshotAsset` 키로 참조.
 
-### 2.2 S2 확장 예정 필드 (구현 금지, 방향만 기록)
+### 2.2 후속 확장 예정 필드 (구현 금지, 방향만 기록)
+
+아래는 S2 범위 밖으로 확정 (2026-07-10, 킥오프 s2 §0) — S2 종료 후 실수요를 보고 판단.
 
 ```typescript
 // Annotation에 추가 예정
@@ -179,10 +193,28 @@ Project.settings?: { llmDraftEnabled: boolean };
 | 최상위 폴더 언랩 | 해제(제외 필터 적용) 후 모든 엔트리가 하나의 공통 최상위 디렉토리 체인을 공유하면 벗겨서 루트로 승격 (`dist/index.html` → `index.html`). `..`·빈 세그먼트는 접두로 취급하지 않음 — zip-slip 검증은 언랩과 무관하게 유지. 언랩된 접두(`strippedRoot`)를 업로드 응답에 포함해 콘솔이 표시 (킥오프 §11 3차 개정) |
 | zip-slip 방지 | 해제 시 경로 정규화 후 프로젝트 디렉토리 밖 기록 거부 — **필수** |
 
-### 3.3 [S2] 리버스 프록시 (경로 B)
+### 3.3 [S2] 리버스 프록시 (경로 B — server/routes/proxy.ts, 킥오프 s2 §2)
 
-- `{projectId}.spec.internal` → 등록된 오리진으로 프록시, HTML 응답 스트림에 SDK 주입
-- `Content-Security-Policy` / `X-Frame-Options` 응답 헤더 스트립 (SDK 동작 방해 방지)
+- **라우팅**: S1의 Host 헤더 분기 재사용. `mockupSource.type === "proxy"`인 프로젝트는 정적
+  서빙 대신 프록시 핸들러로 분기. `/__mockspec/*` 예약 경로는 프록시 **앞**에서 가로챈다
+  (오리진으로 전달하지 않음).
+- **업스트림 요청**: Node 내장 fetch(undici) 직접 구현 — 프록시 라이브러리 미도입 (SSRF
+  가드의 IP 고정 연결과 HTML 변조 주입을 라이브러리 후킹으로 구현하는 것이 더 복잡).
+  메서드·경로·쿼리·본문 그대로 전달(목업 자체 백엔드 API도 통과), `Host`는 오리진 호스트로
+  교체, `Accept-Encoding: identity` 강제(압축 해제·재압축 로직 제거), hop-by-hop 헤더 제거.
+- **리다이렉트**: `redirect: "manual"` — 3xx `Location`이 오리진 내부면 프록시 경로로 재작성해
+  클라이언트에 반환, 오리진 밖이면 502. 서버가 hop을 따라가지 않으므로 매 hop이 신규 요청
+  검증(§7.2)을 자동으로 거친다.
+- **HTML 가공** (`text/html`만 전체 버퍼링, 그 외는 스트림 통과. 순서대로):
+  1. 본문 내 등록 오리진의 절대 URL → 프록시 오리진으로 문자열 치환 (HTML만 — JS 파일
+     내부까지 잡으려 하지 않음, S1 base path 결정과 동일한 한계 인식)
+  2. `</body>` 직전 SDK `<script>` 주입 — §3.2와 동일 규칙·코드 재사용
+  3. `Content-Security-Policy`(-Report-Only 포함)·`X-Frame-Options` 응답 헤더 제거,
+     `Content-Length` 재계산
+- **WebSocket 업그레이드 미지원** (S2 절단) — 스테이징 URL이 대상이라는 전제. WS 필수
+  목업은 콘솔 안내 문구로 한계 명시 (detailed-spec §2.3).
+- **동결 시 오리진 밖(외부 CDN) 리소스**는 CORS로 인라인 실패 가능 — 실패 리소스는
+  스냅샷에서 제거(네트워크 0건 원칙이 시각적 완전성보다 우선), 동결 배지에 실패 수 표기.
 - 보안 요건은 §7.2
 
 ---
@@ -245,14 +277,14 @@ resolve(anchor):
 
 | 메서드/경로 | 역할 | 비고 |
 |---|---|---|
-| `POST /projects` | multipart(zip, name) → 프로젝트 생성 | 응답: SpecProject + 목업 URL |
+| `POST /projects` | multipart(zip, name) → 프로젝트 생성 | 응답: SpecProject + 목업 URL. [S2] JSON body(`{ name, originUrl }`)도 수용 — §7.2 검증 + 오리진 `GET /` 도달성 확인 후 생성 |
 | `GET /projects` | 목록 (콘솔용) | |
 | `GET /projects/:id` | spec.json 반환 | SDK 초기 로드 |
 | `PUT /projects/:id` | SpecProject **전체 교체** | 500ms 디바운스 저장의 대상. `version`·`id` 불일치 시 400 |
 | `DELETE /projects/:id` | 프로젝트 삭제 | 확인은 콘솔 UI 책임 |
 | `POST /projects/:id/assets` | 동결 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재동결·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
-| `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드 |
+| `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12) |
 
 에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작.
 
@@ -282,13 +314,18 @@ resolve(anchor):
 | 스냅샷 무해화 | `<script>` 0개 검증 (§5) — 뷰어 srcdoc 렌더 시 실행 위험 제거 |
 | SDK 데이터 경계 | SDK가 서버로 보내는 것은 spec 데이터 + 명시적 동결 스냅샷뿐. 텔레메트리로 DOM을 흘리지 않는다 — **코드 리뷰 기준으로 강제** |
 
-### 7.2 S2 (프록시 경로를 여는 순간 필수)
+### 7.2 S2 (프록시 경로를 여는 순간 필수 — 킥오프 s2 §4)
 
 | 항목 | 사양 |
 |------|------|
-| SSRF 방지 | 사내 목업 대역/도메인 **allowlist (deny-by-default)**. 클라우드 메타데이터 IP(169.254.169.254 등)·서비스 자신·인프라 대역 차단. 리다이렉트 추적 시 매 hop 재검증 |
-| 인증 쿠키 | 프록시가 `Set-Cookie`의 Domain을 프록시 도메인으로 재작성. SSO 콜백 등으로 안 풀리는 목업은 경로 D로 우회 안내 — 모든 인증 체계를 프록시로 뚫으려 하지 말 것 |
-| 실데이터 반출 | 내보내기 전 마스킹 편집 (detailed-spec §3.12) |
+| SSRF allowlist | `MOCKSPEC_PROXY_ALLOWLIST` env — 콤마 구분 호스트 패턴(`*.` 서브도메인 와일드카드 지원). **비어 있거나 미설정이면 URL 등록 자체를 400 거부** (deny-by-default). 관리 UI 없음 — 운영자가 env 한 줄로 통제 |
+| 검증 시점 | ① URL 등록 시 ② **매 프록시 요청 시** (allowlist 축소·DNS 변경 반영) |
+| hard-deny IP | DNS resolve 결과가 루프백(127.0.0.0/8, ::1)·링크로컬/클라우드 메타데이터(169.254.0.0/16)·ULA(fd00::/8)·서비스 자신의 바인드 주소면 **allowlist와 무관하게 차단**. 단 사설 대역(10/8, 172.16/12, 192.168/16)은 hard-deny하지 않음 — 사내 스테이징이 그 대역이며, allowlist 명시가 곧 허용 의사 |
+| DNS rebinding | 업스트림 연결은 **검증된 resolve 결과 IP로 고정** (Host 헤더만 원 호스트) — 검증과 연결 사이의 재바인딩 차단 |
+| 리다이렉트 | 서버가 따라가지 않음(`redirect: "manual"`, §3.3) — 매 hop이 클라이언트 왕복으로 신규 요청 검증을 거침 (원 결정 "hop별 재검증"의 구현) |
+| 프로토콜 | `http:`·`https:`만. 포트는 URL에 명시된 것만 |
+| 인증 쿠키 | `Set-Cookie`의 `Domain` 속성 제거(host-only로 프록시 서브도메인에 재바인딩), 프록시가 http일 땐 `Secure`도 제거. `Path` 유지. **여기까지만** — SSO 콜백 등으로 안 풀리는 인증은 프록시로 뚫지 않고 미지원 안내 (경로 D가 열리면 우회 안내로 전환) |
+| 실데이터 반출 | 내보내기 전 마스킹 편집 (detailed-spec §3.12) — 프록시 목업은 스테이징 실데이터를 담을 수 있음 |
 
 ---
 
@@ -358,6 +395,34 @@ fixtures 사양은 implementation-decisions ID-12 (의존성 0의 Todo SPA, 라�
 | T9 | 콘솔 페이지 | 업로드→편집 열기→export가 콘솔만으로 가능 |
 | T10 | E2E (Playwright) | §9.1 시나리오 자동화 통과 |
 
+S2 (킥오프 s2 §8 — T1~T10 완료 후):
+
+| # | 작업 | 완료 기준 (AC) |
+|---|------|---------------|
+| T11 | shared 타입 확장 | mockupSource union·maskingRules·maskedSnapshotAsset 추가, 기존 S1 spec.json 왕복 무손실 |
+| T12 | SSRF 가드 모듈 (§7.2) | allowlist 매칭·hard-deny IP·IP 고정 연결 유닛 테스트. 미설정 시 등록 거부. **T13은 이 모듈 없이 노출 금지** |
+| T13 | 프록시 코어 + SDK 주입 (§3.3) | fixture 오리진 등록 → 프록시 경유로 열리고 sdk.js 태그 존재, CSP/XFO 제거, 비HTML 스트림 통과, 오리진 밖 리다이렉트 502 |
+| T14 | 쿠키 재바인딩 (§7.2) | Set-Cookie Domain·Secure 처리 vitest, 쿠키 세션 fixture로 로그인 유지 확인 |
+| T15 | 콘솔 온보딩 폼 (detailed-spec §2.3) | URL 등록→편집 열기까지 콘솔만으로 가능, 비허용 오리진 400 사유 표시 |
+| T16 | 마스킹 (detailed-spec §3.12) | 규칙 추가→[전체 장면에 적용]→export 산출물에서 원문 0회·치환문 존재 |
+| T17 | E2E: S2 DoD (§9.3) | 프록시 시나리오 추가 통과, S1 시나리오 회귀 없음 |
+| T18 | CI 파이프라인 | GitHub Actions 워크플로우 1본(typecheck→build→test→e2e). 전제: 원격 저장소 개설(사용자 결정) |
+
+### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
+
+```
+1. fixture 목업(Todo 앱)을 로컬 HTTP 서버로 기동 (URL 오리진 역할)
+2. 콘솔에서 URL 등록 (allowlist에 fixture 호스트만 든 전용 env) → 편집 화면이 프록시 경유로 열림
+3. 장면 2개 등록·어노테이션 부착·설명 입력 (S1 편집 플로우가 프록시 위에서 동작)
+4. 마스킹 규칙 1건 추가 → 전체 장면 적용
+5. export → 새 브라우저 컨텍스트에서 file:// 오픈
+6. 검증: 장면 전환·마커 위치(≤2px)·설명 일치, 마스킹 원문 문자열 0회, 네트워크 요청 0건
+7. 보안 회귀: 비허용 오리진·메타데이터 IP 등록이 400 거부 (API 레벨)
+```
+
+통과 후 실사용 1회(실제 스테이징 URL 목업으로 기획서 1부)에서 "zip을 만들지 않고
+가능했는가" 판정을 킥오프 s2 §9에 기록 → S2 종료.
+
 ---
 
 ## 10. 확정 결정 요약 (구현 중 이탈 금지 목록)
@@ -375,4 +440,7 @@ fixtures 사양은 implementation-decisions ID-12 (의존성 0의 Todo SPA, 라�
 | 프레임워크 | SDK=Preact, 뷰어=vanilla, 콘솔=정적 HTML 1장, 서버=Express 5 |
 | 실행 모델 | S1은 로컬 실행. 오리진 하드코딩 금지 (상대 경로 + Host 파싱 + env) — 배포는 설정 변경으로 흡수 |
 | 브라우저 | 편집 환경 Chrome/Edge 최신 한정. 뷰어는 표준 API만 사용 |
-| 결정 변경 절차 | 임의 이탈 금지 — 킥오프 스펙을 먼저 수정하고 §11 이력에 이유 기록 후 진행 |
+| [S2] 프록시 | undici 직접 구현 (프록시 라이브러리 미도입). HTML만 버퍼링·가공, 리다이렉트 manual, WebSocket 미지원 절단 |
+| [S2] SSRF | env allowlist deny-by-default + hard-deny IP(사설 대역 예외) + resolve IP 고정 연결. 미설정 시 등록 거부 |
+| [S2] 마스킹 | 평문 find→replace 규칙만 (정규식·클릭 편집기 기각). 마스킹본은 콘솔 브라우저에서 생성 — 서버 HTML 파싱 금지. 원본 보존 |
+| 결정 변경 절차 | 임의 이탈 금지 — 킥오프 스펙(해당 단계)을 먼저 수정하고 결정 변경 이력에 이유 기록 후 진행 |
