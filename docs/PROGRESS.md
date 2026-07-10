@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — T18 CI 파이프라인 완료 + 원격 저장소 개설 (S2 WBS 종료)
-- 브랜치: `chore/ci-github-actions-t18` (main 미병합, 병합 동의 대기). CI 워크플로우 커밋 1건.
+- 브랜치: `chore/ci-github-actions-t18` → `main` 병합 완료(2026-07-11, fast-forward)·`origin/main` push. 병합 후 브랜치 삭제.
 - 원격 개설: 사용자가 `https://github.com/landfill/draftify-html`(public) 제공. `origin` 추가 후 `main` 초기 push(민감 파일 없음 확인 — `data/`·`.env`·`node_modules` gitignore, 추적 파일에 secret 패턴 0). `package-lock.json` 커밋돼 있어 `npm ci` 가능.
 - 완료: `.github/workflows/ci.yml` — 킥오프 s2 §7대로 `npm ci` → typecheck → build → test → **Playwright Chromium 설치** → test:e2e. push(전 브랜치)·PR 트리거. `concurrency`로 같은 ref 진행 실행 취소, 실패 시 playwright-report 아티팩트 업로드. 명령 자체는 러너 중립(원격 이식 대비).
 - 검증: **로컬** — typecheck·build·test 113 passed·test:e2e 2 passed(S1+S2) 전부 통과. **원격 첫 실행 green**(run 29108846721, verify job 58s, 전 단계 ✓). 스펙 T18 DoD("원격 개설 후 첫 실행 green") 충족.
