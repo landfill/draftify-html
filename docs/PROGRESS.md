@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**T10 완료 — S1 WBS 전 항목(T1~T10) 완료. E2E 1본이 S1 DoD를 자동 검증. 남은 것: 실사용 1회 판정(킥오프 §11 기록) → S2 계획.**
+**S1 WBS 전 항목(T1~T10) 완료 + zip 최상위 폴더 언랩 개선(`feat/zip-root-unwrap`, main 병합 동의 대기). 남은 것: 실사용 1회 판정(킥오프 §11 기록) → S2 계획.**
 
 ## WBS 체크리스트
 
@@ -27,6 +27,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — zip 최상위 폴더 자동 언랩 (실사용 준비 개선)
+- 브랜치: `feat/zip-root-unwrap` (main 미병합, 동의 대기).
+- 배경: 사용자는 보통 `dist` 폴더를 통째로 압축하므로 zip 루트가 `dist/`가 되어 "루트 index.html 없음"(T9 검증)으로 거부됨 — 실사용 판정 전에 발견된 UX 함정. 규약 §4 절차로 진행: 킥오프 §11 **3차 개정** 기록 → §4 본문 추가 → `technical-spec.md` §3.2·`detailed-spec.md` §2.2/엣지 표 동기화 → 구현.
+- 완료: `extract.ts::commonRootPrefix` — 제외 필터 적용 후 모든 엔트리가 공유하는 최상위 디렉토리 체인(중첩 `project/dist`도 전부)을 벗겨 루트로 승격. 각 엔트리는 파일명 1세그먼트를 반드시 남기고, `..`·`.` 세그먼트는 접두 불가(zip-slip 검증은 언랩된 경로에 그대로 적용 — 우회 불가). `ExtractResult.strippedRoot`로 업로드 응답에 포함, 콘솔이 "최상위 폴더 'dist/'를 벗겨 해제했습니다" 표시.
+- 검증: `npm run typecheck` exit 0, `npm test` **75 passed**(+7: extract 언랩 6 — 단일/중첩/루트 파일 존재 시 무언랩/제외 대상 공존/단일 파일/zip-slip 우회 불가, 업로드 API 1 — dist째 zip 201 + 언랩 루트 서빙 확인), `npm run test:e2e` 1 passed(4.1s) 회귀 없음.
+- 다음 할 일: (1) 이 브랜치 main 병합 여부 사용자 확인. (2) 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 §11에 기록 → S2 계획 입력. 선택: CI 파이프라인.
+- 막힌 지점: 없음.
 
 ### 2026-07-09 — T10 Playwright E2E 완료 (S1 WBS 전 항목 종료)
 - 브랜치: `feat/e2e-playwright-t10` → `main` 병합 완료(2026-07-09, fast-forward, 병합 후 vitest 68 passed 재확인).

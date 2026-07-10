@@ -76,6 +76,26 @@ describe("업로드 검증 (detailed-spec §2.2·§6)", () => {
     expect(list.body).toEqual([]);
   });
 
+  it("dist 폴더째 압축한 zip은 최상위 폴더를 벗겨 정상 업로드된다", async () => {
+    const res = await request(app)
+      .post("/api/projects")
+      .set("Host", "localhost:4000")
+      .field("name", "폴더째 압축")
+      .attach(
+        "zip",
+        await zipOf({ "dist/index.html": "<html><body>ok</body></html>", "dist/app.js": "1" }),
+        "dist.zip",
+      );
+    expect(res.status).toBe(201);
+    expect(res.body.extract.strippedRoot).toBe("dist");
+
+    // 언랩된 루트에서 목업이 서빙된다
+    const id = res.body.project.id as string;
+    const page = await request(app).get("/").set("Host", `${id}.localhost:4000`);
+    expect(page.status).toBe(200);
+    expect(page.text).toContain("ok");
+  });
+
   it("zip이 아닌 파일은 400 '(zip 파일을 확인해주세요)'로 거부한다", async () => {
     const res = await request(app)
       .post("/api/projects")

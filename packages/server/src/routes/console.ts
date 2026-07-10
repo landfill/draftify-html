@@ -210,6 +210,11 @@ function excludedSummary(extract) {
   return " 제외됨: " + parts.join(", ") + ".";
 }
 
+function strippedRootSummary(extract) {
+  if (!extract || !extract.strippedRoot) return "";
+  return " 최상위 폴더 '" + extract.strippedRoot + "/'를 벗겨 해제했습니다.";
+}
+
 formEl.addEventListener("submit", function (event) {
   event.preventDefault();
   var file = zipEl.files && zipEl.files[0];
@@ -236,7 +241,7 @@ formEl.addEventListener("submit", function (event) {
       formEl.reset();
       var frag = document.createDocumentFragment();
       frag.appendChild(document.createTextNode(
-        "업로드 완료: " + result.project.name + "." + excludedSummary(result.extract) + " "));
+        "업로드 완료: " + result.project.name + "." + excludedSummary(result.extract) + strippedRootSummary(result.extract) + " "));
       var link = el("a", null, "편집 열기 →");
       link.href = mockupHref(result.project.id);
       link.target = "_blank";

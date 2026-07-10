@@ -175,6 +175,7 @@ Project.settings?: { llmDraftEnabled: boolean };
 | SPA fallback | 확장자 없는 404 → `index.html` |
 | 업로드 제약 | zip 200MB 제한 (**압축 파일 기준** — multer limits는 해제 전에 걸리므로 제외 필터로는 우회 불가. 콘솔에서 "dist만 압축" 안내). SPA는 상대 base(`vite build --base ./`) 또는 루트 base 빌드만 지원 (콘솔에 안내) |
 | 불필요 경로 제외 | 스트리밍 해제 중 엔트리 경로가 제외 목록과 일치하면 스킵 (디스크에 쓰지 않음). 기본 제외: `node_modules/`, `.git/`, `__MACOSX/`, `.DS_Store`, `Thumbs.db`, `*.map`. 제외 결과(`{ pattern, count }[]`)를 업로드 응답에 포함해 콘솔이 표시. unzipper의 entry 스트림에서 `entry.autodrain()`으로 구현 — 비용 거의 없음 |
+| 최상위 폴더 언랩 | 해제(제외 필터 적용) 후 모든 엔트리가 하나의 공통 최상위 디렉토리 체인을 공유하면 벗겨서 루트로 승격 (`dist/index.html` → `index.html`). `..`·빈 세그먼트는 접두로 취급하지 않음 — zip-slip 검증은 언랩과 무관하게 유지. 언랩된 접두(`strippedRoot`)를 업로드 응답에 포함해 콘솔이 표시 (킥오프 §11 3차 개정) |
 | zip-slip 방지 | 해제 시 경로 정규화 후 프로젝트 디렉토리 밖 기록 거부 — **필수** |
 
 ### 3.3 [S2] 리버스 프록시 (경로 B)
