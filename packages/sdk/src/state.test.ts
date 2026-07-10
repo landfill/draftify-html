@@ -34,7 +34,7 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
 
     expect(doc.scenes[0]?.code).toBe("SCR-001");
     expect(next.id).toBe(project.id);
-    expect(next.mockupSource.originalFilename).toBe("dist.zip");
+    expect(next.mockupSource).toEqual(project.mockupSource);
     expect(next.sceneCodeSeq).toBe(3);
   });
 

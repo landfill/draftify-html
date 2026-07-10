@@ -59,8 +59,10 @@ describe("Spec API (T3)", () => {
       ...p,
       name: "수정된 이름",
       sceneCodeSeq: 2,
-      scenes: [scene()],
+      // S2 필드(maskedSnapshotAsset·maskedAt·maskingRules)도 왕복 무손실이어야 한다 (T11)
+      scenes: [scene({ maskedSnapshotAsset: "asset_mask00000001", maskedAt: "2026-07-10T00:00:00.000Z" })],
       annotations: [anno()],
+      maskingRules: [{ id: "msk_rule000001", find: "홍길동", replace: "고객A" }],
     };
     const put = await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT).send(next);
     expect(put.status).toBe(200);
@@ -71,6 +73,19 @@ describe("Spec API (T3)", () => {
     const { updatedAt: _b, ...actual } = got.body as SpecProject;
     expect(actual).toEqual(expected);
     expect(got.body.annotations[0].anchor.rect).toEqual({ x: 0.1, y: 0.2, w: 0.3, h: 0.05 });
+  });
+
+  it("PUT /:id — S1 형태(S2 필드 없음) spec도 그대로 왕복 무손실 (하위 호환, T11)", async () => {
+    const p = await newProject();
+    const s1Shape: SpecProject = { ...p, sceneCodeSeq: 2, scenes: [scene()], annotations: [anno()] };
+    await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT).send(s1Shape);
+
+    const got = (await request(app).get(`/api/projects/${p.id}`).set("Host", ROOT)).body as SpecProject;
+    expect(got.maskingRules).toBeUndefined();
+    expect(got.scenes[0]).not.toHaveProperty("maskedSnapshotAsset");
+    const { updatedAt: _a, ...expected } = s1Shape;
+    const { updatedAt: _b, ...actual } = got;
+    expect(actual).toEqual(expected);
   });
 
   it("PUT /:id — version·id 불일치는 400", async () => {
@@ -119,6 +134,27 @@ describe("Spec API (T3)", () => {
     // 장면 삭제 → 참조 사라짐 → asset 즉시 삭제
     await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT).send({ ...p, scenes: [] });
     expect((await request(app).get(`/api/projects/${p.id}/assets/${key}`).set("Host", ROOT)).status).toBe(404);
+  });
+
+  it("ID-11 — 마스킹본(maskedSnapshotAsset)도 참조로 인정: 유지되다가 참조를 놓으면 삭제 (T11)", async () => {
+    const p = await newProject();
+    const upload = (name: string) =>
+      request(app)
+        .post(`/api/projects/${p.id}/assets`).set("Host", ROOT)
+        .attach("snapshot", Buffer.from(`<html><body>${name}</body></html>`), `${name}.html`);
+    const original = (await upload("original")).body.assetKey as string;
+    const masked = (await upload("masked")).body.assetKey as string;
+
+    // 원본+마스킹본을 함께 참조하는 장면 → 둘 다 유지
+    await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT)
+      .send({ ...p, scenes: [scene({ snapshotAsset: original, maskedSnapshotAsset: masked })] });
+    expect((await request(app).get(`/api/projects/${p.id}/assets/${masked}`).set("Host", ROOT)).status).toBe(200);
+
+    // 마스킹본 참조만 제거 → 마스킹본만 삭제, 원본 유지
+    await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT)
+      .send({ ...p, scenes: [scene({ snapshotAsset: original })] });
+    expect((await request(app).get(`/api/projects/${p.id}/assets/${masked}`).set("Host", ROOT)).status).toBe(404);
+    expect((await request(app).get(`/api/projects/${p.id}/assets/${original}`).set("Host", ROOT)).status).toBe(200);
   });
 
   it("asset 키 형식 위반은 404 (경로 이탈 차단)", async () => {

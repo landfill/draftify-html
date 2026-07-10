@@ -1,6 +1,9 @@
 export type {
   SpecProject,
   MockupSource,
+  UploadMockupSource,
+  ProxyMockupSource,
+  MaskingRule,
   Scene,
   Annotation,
   Anchor,

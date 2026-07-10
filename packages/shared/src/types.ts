@@ -23,14 +23,36 @@ export interface SpecProject {
   sceneCodeSeq: number;
   scenes: Scene[];
   annotations: Annotation[];
+  /** [S2] 마스킹 규칙 (detailed-spec §3.12). 없으면 마스킹 미사용 */
+  maskingRules?: MaskingRule[];
 }
 
-/** S1은 업로드 경로만. S2에서 프록시/빌드 경로 추가 예정. */
-export interface MockupSource {
+/** 온보딩 경로별 목업 출처. A(zip 업로드)=upload, B(URL 프록시)=proxy. (킥오프 s2 §1) */
+export type MockupSource = UploadMockupSource | ProxyMockupSource;
+
+export interface UploadMockupSource {
   type: "upload";
   originalFilename: string;
   /** ISO 8601 */
   uploadedAt: string;
+}
+
+/** [S2] 경로 B — 등록된 오리진으로 리버스 프록시 (technical-spec §3.3) */
+export interface ProxyMockupSource {
+  type: "proxy";
+  originUrl: string;
+  /** ISO 8601 */
+  registeredAt: string;
+}
+
+/** [S2] 마스킹 규칙 — 평문 부분 일치 find→replace (정규식 금지, detailed-spec §3.12) */
+export interface MaskingRule {
+  /** "msk_" + nanoid(10) */
+  id: string;
+  /** 찾을 문자열 (평문 부분 일치) */
+  find: string;
+  /** 치환 문자열 (빈 문자열 허용) */
+  replace: string;
 }
 
 export interface Scene {
@@ -52,6 +74,10 @@ export interface Scene {
   snapshotAsset?: string;
   /** ISO 8601 */
   frozenAt?: string;
+  /** [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존 — 규칙 변경 시 원본에서 재생성 */
+  maskedSnapshotAsset?: string;
+  /** [S2] 마스킹본 생성 시각 (ISO 8601) */
+  maskedAt?: string;
 }
 
 export interface Annotation {

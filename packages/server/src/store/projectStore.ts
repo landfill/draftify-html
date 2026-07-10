@@ -62,11 +62,12 @@ export async function listProjects(): Promise<SpecProject[]> {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-/** 장면들이 참조 중인 스냅샷 asset 키 집합. */
+/** 장면들이 참조 중인 스냅샷 asset 키 집합 (원본 + 마스킹본). */
 function referencedAssets(spec: SpecProject): Set<string> {
   const keys = new Set<string>();
   for (const scene of spec.scenes) {
     if (scene.snapshotAsset) keys.add(scene.snapshotAsset);
+    if (scene.maskedSnapshotAsset) keys.add(scene.maskedSnapshotAsset);
   }
   return keys;
 }

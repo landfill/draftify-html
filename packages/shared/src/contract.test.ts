@@ -31,4 +31,35 @@ describe("shared contract", () => {
     expect(project.version).toBe(1);
     expect(project.scenes).toHaveLength(0);
   });
+
+  it("S2 확장 — proxy 소스·마스킹 필드가 계약에 포함된다 (version 1 유지)", () => {
+    const now = new Date().toISOString();
+    const project: SpecProject = {
+      version: 1,
+      id: "prj_test000002",
+      name: "프록시 샘플",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "proxy", originUrl: "https://mockup.team-a.internal", registeredAt: now },
+      sceneCodeSeq: 2,
+      scenes: [
+        {
+          id: "scn_test00001",
+          code: "SCR-001",
+          title: "홈",
+          route: "/",
+          order: 0,
+          annoNumberSeq: 1,
+          snapshotAsset: "asset_orig00000001",
+          maskedSnapshotAsset: "asset_mask00000001",
+          maskedAt: now,
+        },
+      ],
+      annotations: [],
+      maskingRules: [{ id: "msk_test000001", find: "hong@corp.com", replace: "user@example.com" }],
+    };
+    // 직렬화 왕복 무손실 — spec.json 저장 형식과 동일
+    expect(JSON.parse(JSON.stringify(project))).toEqual(project);
+    expect(project.mockupSource.type).toBe("proxy");
+  });
 });
