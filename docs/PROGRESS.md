@@ -9,13 +9,13 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-10) — T11·T12 완료·main 병합 완료. 다음: T13 프록시 코어 (킥오프 s2 §8 의존 순서). T13에서 transport 확정(node:http+lookup vs undici Agent) + §2.1 문구 갱신 필요 — s2 §9 참조. 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-10) — T11·T12·T13 완료(T13은 `feat/s2-proxy-core-t13`, main 병합 대기). transport=node:http/https+lookup 확정, §2.1·§7.2 문서 동기화 완료. 다음: T14 쿠키 재바인딩 (킥오프 s2 §8). 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
 - [x] T11 shared 타입 확장 (mockupSource union·maskingRules·maskedSnapshotAsset) — vitest 84 passed, S1 형태 하위 호환·S2 필드 왕복 무손실·마스킹본 ID-11 검증
 - [x] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결) — vitest 103 passed(+19), lookup 훅이 node:http에서 루프백 연결 차단 실측
-- [ ] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책)
+- [x] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책) — vitest 110 passed(+7), 실 업스트림 프록시 왕복·IP 리터럴 갭 차단 검증
 - [ ] T14 쿠키 재바인딩
 - [ ] T15 콘솔 온보딩 폼 (URL 등록)
 - [ ] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
@@ -38,6 +38,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — T13 프록시 코어 + SDK 주입 완료
+- 브랜치: `feat/s2-proxy-core-t13` (main 미병합, 동의 대기).
+- 완료: **`routes/proxy.ts`** (technical-spec §3.3, 킥오프 s2 §2) — transport는 **node:http/https + `lookup: guardedLookup`** 확정(undici 미설치로 global fetch는 IP 고정 불가, s2 §9 기록). ① 요청 전달: hop-by-hop·Host·Accept-Encoding·Content-Length 제거 후 Host=오리진·`Accept-Encoding: identity` 재설정, GET/HEAD는 end·그 외 req.pipe ② HTML만 버퍼링 가공: 오리진 절대 URL→프로토콜 상대(`//{proxyHost}`) 재작성 → SDK 태그 주입(inject.ts 재사용) → Content-Length 재계산. 비HTML은 스트림 통과 ③ 응답 헤더에서 CSP·CSP-Report-Only·X-Frame-Options 제거 ④ 리다이렉트 manual: 오리진 내부는 Location을 프록시 경로로 재작성, 밖이면 502 ⑤ 매 요청 재검증(§4.1 ②): 프로토콜+allowlist 동기 재확인, IP는 guardedLookup이 연결 시 검증·고정.
+- 완료(가드·에러 확장): ① `ssrfGuard`에 `MOCKSPEC_PROXY_ALLOW_LOOPBACK` dev/test 스위치 — 127/8·::1·unspecified만 완화(메타데이터·ULA·링크로컬 유지). `isBlockedAddress`/`validateOrigin`/`createGuardedLookup`에 `allowLoopback` 스레딩 ② `errors.ts`에 `BAD_GATEWAY(502)` 추가.
+- **실버그(테스트가 잡음)**: IP 리터럴 오리진(`127.0.0.1`)은 Node가 `lookup`을 호출하지 않아 IP 고정 가드가 우회됨(루프백 OFF인데 200 통과). 프록시 핸들러가 리터럴을 `isBlockedAddress`로 **동기 직접 검증**하도록 수정 — hostname 오리진은 기존대로 guardedLookup이 연결 시 검증.
+- **타입 수정**: guardedLookup 반환 타입을 Node `net.LookupFunction`으로 정렬(family가 `number|"IPv4"|"IPv6"`라 좁은 시그니처는 http.request의 lookup에 비할당). 통합 콜백 `(err, address|addresses, family?)` 사용.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **110 passed**(+7: 프록시 통합 — 실 업스트림 http 서버(127.0.0.1) 대상. HTML 주입+절대 URL 재작성+CSP/XFO 제거 / JSON 통과 / 내부 리다이렉트 경로 재작성 / 외부 리다이렉트 502 / 예약경로 sdk.js 로컬 서빙 / allowlist 축소 시 502 / 루프백 OFF 시 IP 가드 502). `npm run test:e2e` 1 passed(4.0s) 회귀 없음. 프록시 통합 테스트가 실 소켓 왕복을 구동하므로 별도 런타임 확인 생략.
+- 문서 동기화: 킥오프 §2.1(transport 문구·IP 리터럴 주의)·§9(T13 결정 3건), technical-spec §3.3·§7.2(루프백 스위치·hard-deny 목록 보강)·§6(BAD_GATEWAY).
+- 다음 할 일: **T14 쿠키 재바인딩** — 프록시 응답의 `Set-Cookie` Domain 제거(host-only)·http일 때 Secure 제거. 현재 T13은 Set-Cookie를 그대로 통과시킴(seam 존재). 킥오프 s2 §4.2.
+- 막힌 지점: 없음.
 
 ### 2026-07-10 — T12 SSRF 가드 모듈 완료
 - 브랜치: `feat/s2-ssrf-guard-t12` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 103 passed 재확인). 병합 후 브랜치 삭제.

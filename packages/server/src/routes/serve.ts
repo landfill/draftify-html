@@ -7,6 +7,7 @@ import { mockupDir } from "../store/paths.js";
 import { readSpec } from "../store/projectStore.js";
 import { injectSdkTag } from "../inject.js";
 import { readSdkBundle } from "../sdkBundle.js";
+import { proxyMockup } from "./proxy.js";
 import { sendError } from "../errors.js";
 
 /**
@@ -85,6 +86,13 @@ export async function serveMockup(
     const project = await readSpec(projectId);
     if (!project) {
       sendError(res, "NOT_FOUND", `프로젝트 ${projectId}를 찾을 수 없습니다.`);
+      return;
+    }
+
+    // 경로 B: URL 프록시 프로젝트는 정적 서빙 대신 오리진으로 프록시 (§3.3).
+    // 예약 경로(/__mockspec/sdk.js·api)는 위에서 이미 로컬 처리됨 — 프록시로 넘어가지 않는다.
+    if (project.mockupSource.type === "proxy") {
+      proxyMockup(req, res, project.mockupSource.originUrl, projectId);
       return;
     }
 

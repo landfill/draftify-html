@@ -82,9 +82,13 @@ maskedAt?: string;                   // 마스킹본 생성 시각 (ISO 8601)
   `mockupSource.type === "proxy"`인 프로젝트는 정적 서빙 대신 프록시 핸들러로 분기.
 - `/__mockspec/*` 예약 경로(SDK 자산·API)는 프록시 **앞**에서 가로챈다 — S1과 동일하게
   서비스가 응답하고, 오리진으로 전달하지 않는다.
-- 업스트림 요청은 **Node 내장 fetch(undici)** 로 보낸다. 프록시 라이브러리
-  (http-proxy-middleware 등)는 도입하지 않는다 — SSRF 가드(§4.1)의 IP 고정 연결과
-  HTML 변조 주입을 라이브러리 후킹으로 구현하는 것이 직접 구현보다 복잡하다.
+- 업스트림 요청은 **Node 내장 `http`/`https` 모듈 + `lookup: guardedLookup`** 으로 보낸다
+  (§9 T13 확정 — global fetch는 undici 미설치로 IP 고정이 불가능해 배제). 프록시 라이브러리
+  (http-proxy-middleware 등)는 도입하지 않는다 — SSRF 가드(§4.1)의 IP 고정 연결과 HTML 변조
+  주입을 라이브러리 후킹으로 구현하는 것이 직접 구현보다 복잡하다.
+  - **IP 리터럴 오리진 주의**: 호스트가 IP 리터럴(`127.0.0.1`, `[::1]`)이면 Node가 `lookup`을
+    호출하지 않아 가드 훅이 우회된다. 프록시 핸들러가 리터럴 오리진을 `isBlockedAddress`로
+    **동기 직접 검증**해 이 갭을 막는다 (hostname 오리진은 `guardedLookup`이 연결 시점 검증).
 - 전달 규칙:
   - 메서드·경로·쿼리·요청 본문 그대로 전달 (목업의 자체 백엔드 API 호출도 통과)
   - `Host` 헤더는 오리진 호스트로 교체, `Accept-Encoding: identity`로 강제
@@ -277,5 +281,6 @@ Playwright 자동화 시나리오 (S1 DoD와 별개 spec, 같은 러너):
 | 일자 | 변경 | 이유 |
 |------|------|------|
 | 2026-07-10 | 초판 확정 — 범위(경로 B + 보안 + 마스킹 + CI)는 사용자 결정 | S1 실사용 판정의 S2 계획 입력 (s1-kickoff-spec §11) |
+| 2026-07-10 | T13 확정: **transport = Node `http`/`https` + `lookup: guardedLookup`** (§2.1 문구 갱신, "global fetch(undici)" 배제). 추가 결정 3건: ① **IP 리터럴 오리진 동기 검증** — Node가 IP 리터럴엔 lookup을 안 부르는 갭을 프록시 핸들러의 `isBlockedAddress` 직접 호출로 차단 ② **dev/test 루프백 스위치** `MOCKSPEC_PROXY_ALLOW_LOOPBACK` — 127/8·::1만 완화(메타데이터·ULA·링크로컬 차단 유지), fixture/로컬 dev가 127.0.0.1에 뜨므로 프록시 검증에 필요, 운영 OFF ③ 에러 표준에 `BAD_GATEWAY(502)` 추가 — 오리진 실패·오리진 밖 리다이렉트 (§2.2의 "502" 구현) | global fetch는 소켓 lookup 후킹이 없어 IP 고정 불가(undici 미설치). IP 리터럴 갭은 통합 테스트가 잡음(루프백 OFF인데 200 통과 → 동기 검증 추가). 루프백 스위치 없이는 프록시 경로를 로컬에서 검증 불가. 502는 ID-10이 "4개로 시작"이라 확장 여지를 둔 대로 추가 |
 | 2026-07-10 | T12 구현 중 확인: **IP 고정(§4.1)은 `dns.lookup` 호환 훅으로 실현** — SSRF 가드가 `createGuardedLookup`을 노출하고, 연결 계층이 이를 꽂으면 매 연결마다 resolve→검증→안전 IP로만 소켓을 연다. §2.1의 "global fetch(undici)로 요청"은 **재검토 대상** — 확인 결과 undici 패키지가 미설치라 global fetch로는 커스텀 lookup/IP 고정이 불가능. transport(node:http/https + `lookup` 옵션 vs undici Agent 도입)는 **T13에서 확정**하며, 어느 쪽이든 가드 훅은 그대로 재사용된다 (가드는 transport 비의존) | global fetch는 소켓 lookup 후킹 지점이 없어 "resolve된 IP로 고정"을 직접 못 한다. lookup 훅 방식은 의존성 0이고 node:http에 실측 검증됨(localhost→127.0.0.1 연결 차단 확인). §2.1 문구 갱신은 transport를 실제로 고르는 T13에서 함께 처리 |
 | | (구현 중 이탈 발생 시 여기에 기록) | |

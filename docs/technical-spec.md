@@ -198,10 +198,11 @@ Project.settings?: { llmDraftEnabled: boolean };
 - **라우팅**: S1의 Host 헤더 분기 재사용. `mockupSource.type === "proxy"`인 프로젝트는 정적
   서빙 대신 프록시 핸들러로 분기. `/__mockspec/*` 예약 경로는 프록시 **앞**에서 가로챈다
   (오리진으로 전달하지 않음).
-- **업스트림 요청**: Node 내장 fetch(undici) 직접 구현 — 프록시 라이브러리 미도입 (SSRF
-  가드의 IP 고정 연결과 HTML 변조 주입을 라이브러리 후킹으로 구현하는 것이 더 복잡).
-  메서드·경로·쿼리·본문 그대로 전달(목업 자체 백엔드 API도 통과), `Host`는 오리진 호스트로
-  교체, `Accept-Encoding: identity` 강제(압축 해제·재압축 로직 제거), hop-by-hop 헤더 제거.
+- **업스트림 요청**: Node 내장 `http`/`https` + `lookup: guardedLookup` (킥오프 s2 §9 T13 —
+  global fetch는 undici 미설치로 IP 고정 불가). 프록시 라이브러리 미도입. 메서드·경로·쿼리·
+  본문 그대로 전달(목업 자체 백엔드 API도 통과), `Host`는 오리진 호스트로 교체,
+  `Accept-Encoding: identity` 강제(압축 해제·재압축 로직 제거), hop-by-hop 헤더 제거.
+  IP 리터럴 오리진은 Node가 lookup을 안 부르므로 `isBlockedAddress`로 동기 직접 검증.
 - **리다이렉트**: `redirect: "manual"` — 3xx `Location`이 오리진 내부면 프록시 경로로 재작성해
   클라이언트에 반환, 오리진 밖이면 502. 서버가 hop을 따라가지 않으므로 매 hop이 신규 요청
   검증(§7.2)을 자동으로 거친다.
@@ -286,7 +287,7 @@ resolve(anchor):
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
 | `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12) |
 
-에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작.
+에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작. [S2] 프록시(경로 B)가 `BAD_GATEWAY`(502) 추가 — 오리진 도달 실패·오리진 밖 리다이렉트.
 
 ### 6.1 저장 방식의 근거
 
@@ -320,8 +321,9 @@ resolve(anchor):
 |------|------|
 | SSRF allowlist | `MOCKSPEC_PROXY_ALLOWLIST` env — 콤마 구분 호스트 패턴(`*.` 서브도메인 와일드카드 지원). **비어 있거나 미설정이면 URL 등록 자체를 400 거부** (deny-by-default). 관리 UI 없음 — 운영자가 env 한 줄로 통제 |
 | 검증 시점 | ① URL 등록 시 ② **매 프록시 요청 시** (allowlist 축소·DNS 변경 반영) |
-| hard-deny IP | DNS resolve 결과가 루프백(127.0.0.0/8, ::1)·링크로컬/클라우드 메타데이터(169.254.0.0/16)·ULA(fd00::/8)·서비스 자신의 바인드 주소면 **allowlist와 무관하게 차단**. 단 사설 대역(10/8, 172.16/12, 192.168/16)은 hard-deny하지 않음 — 사내 스테이징이 그 대역이며, allowlist 명시가 곧 허용 의사 |
-| DNS rebinding | 업스트림 연결은 **검증된 resolve 결과 IP로 고정** (Host 헤더만 원 호스트) — 검증과 연결 사이의 재바인딩 차단 |
+| hard-deny IP | DNS resolve 결과가 루프백(127.0.0.0/8, ::1)·unspecified·링크로컬/클라우드 메타데이터(169.254.0.0/16, fe80::/10)·ULA(fc00::/7, fd00::/8 포함)면 **allowlist와 무관하게 차단**. 단 사설 대역(10/8, 172.16/12, 192.168/16)은 hard-deny하지 않음 — 사내 스테이징이 그 대역이며, allowlist 명시가 곧 허용 의사. IPv4-mapped IPv6는 언랩 후 판정 |
+| DNS rebinding | 업스트림 연결은 `lookup: guardedLookup`으로 **검증된 resolve 결과 IP로 고정** (Host 헤더만 원 호스트) — 검증과 연결 사이의 재바인딩 차단. IP 리터럴 오리진은 lookup을 안 타므로 프록시 핸들러가 동기 직접 검증 |
+| dev/test 스위치 | `MOCKSPEC_PROXY_ALLOW_LOOPBACK`(참이면 127/8·::1·unspecified만 완화, 메타데이터·ULA·링크로컬 차단은 유지). fixture·로컬 dev 서버가 127.0.0.1에 뜨므로 프록시 경로 검증에 필요. **운영 배포에서는 끈다** (루프백=서비스 자신) |
 | 리다이렉트 | 서버가 따라가지 않음(`redirect: "manual"`, §3.3) — 매 hop이 클라이언트 왕복으로 신규 요청 검증을 거침 (원 결정 "hop별 재검증"의 구현) |
 | 프로토콜 | `http:`·`https:`만. 포트는 URL에 명시된 것만 |
 | 인증 쿠키 | `Set-Cookie`의 `Domain` 속성 제거(host-only로 프록시 서브도메인에 재바인딩), 프록시가 http일 땐 `Secure`도 제거. `Path` 유지. **여기까지만** — SSO 콜백 등으로 안 풀리는 인증은 프록시로 뚫지 않고 미지원 안내 (경로 D가 열리면 우회 안내로 전환) |
