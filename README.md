@@ -27,9 +27,11 @@ node packages/server/dist/index.js     # 기본 포트 4000
 [mockspec] 콘솔: http://localhost:4000  |  목업: http://{projectId}.localhost:4000
 ```
 
-- **콘솔** (`localhost:4000` 루트): 프로젝트 업로드·목록·내보내기·삭제
-- **목업** (`{projectId}.localhost:4000` 서브도메인): 업로드한 목업이 편집 SDK가 주입된 채 서빙됨.
-  모던 브라우저는 `*.localhost`를 DNS 설정 없이 127.0.0.1로 해석한다
+- **콘솔** (`localhost:4000` 루트): 프로젝트 업로드·목록·내보내기·삭제. 사용자가 직접 여는 곳은 여기뿐이다
+- **목업** (`{projectId}.localhost:4000` 서브도메인): 업로드하면 서버가 **자동으로** 이 주소에서
+  목업을 편집 SDK가 주입된 채 서빙한다. 별도 설정은 필요 없다 — Chrome/Edge는 `*.localhost`를
+  DNS·hosts 설정 없이 로컬로 해석한다. 프로젝트마다 호스트를 나누는 이유는 목업 간
+  localStorage·쿠키 격리와 절대 경로(`/assets/…`) 빌드의 무수정 동작 (technical-spec §3.1)
 
 옵션 (오리진 하드코딩 금지 원칙 — 설정은 env로만):
 
