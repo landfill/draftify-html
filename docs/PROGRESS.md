@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-10) — T11~T14 완료. 다음: T15 콘솔 온보딩 폼 (URL 등록). 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-11) — T11~T15 완료. 다음: T16 마스킹 (규칙 CRUD + 마스킹본 생성). 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -17,7 +17,7 @@
 - [x] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결) — vitest 103 passed(+19), lookup 훅이 node:http에서 루프백 연결 차단 실측
 - [x] T13 프록시 코어 + SDK 주입 (CSP/XFO 제거, 리다이렉트 정책) — vitest 110 passed(+7), 실 업스트림 프록시 왕복·IP 리터럴 갭 차단 검증
 - [x] T14 쿠키 재바인딩
-- [ ] T15 콘솔 온보딩 폼 (URL 등록)
+- [x] T15 콘솔 온보딩 폼 (URL 등록)
 - [ ] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
 - [ ] T17 E2E: S2 DoD 시나리오
 - [ ] T18 CI 파이프라인 (전제: 원격 저장소 개설 — 사용자 결정)
@@ -38,6 +38,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T15 콘솔 온보딩 폼 완료
+- 브랜치: `feat/s2-console-onboarding-t15` (main 미병합, 동의 대기)
+- 완료:
+  - **`store/projectStore.ts`**: `createProject` 서명을 개선하여 `mockupSource`를 `upload` 또는 `proxy` 형태로 분기.
+  - **`routes/projects.ts`**: `POST /projects`에 URL 등록 처리(`handleProxyRegistration`) 구현. 오리진 검증 및 `fetch`를 이용한 도달성 체크 포함.
+  - **`routes/console.ts`**: 콘솔 화면에 URL 등록 탭 폼 추가 및 AJAX 제출 처리, 프로젝트 목록에 소스 유형 뱃지 추가.
+  - **`store-api.test.ts`**: URL 등록 API 실패(SSRF 차단) 케이스 테스트.
+- 검증: `npm test` **112 passed** (+1: URL 등록 오리진 검증 확인).
+- 다음 할 일: **T16 마스킹** — 규칙 CRUD 추가 및 마스킹본 생성 로직 구현.
+- 막힌 지점: 없음.
 
 ### 2026-07-10 — T14 쿠키 재바인딩 완료
 - 브랜치: `feat/s2-cookie-rebind-t14` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.

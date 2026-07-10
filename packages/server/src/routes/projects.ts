@@ -4,6 +4,7 @@ import path from "node:path";
 import multer from "multer";
 import type { SpecProject } from "@mockspec/shared";
 import { extractZip, ZipSlipError } from "../unzip/extract.js";
+import { validateOrigin, SsrfError } from "../proxy/ssrfGuard.js";
 import {
   createProject,
   listProjects,
@@ -48,13 +49,21 @@ export function projectsRouter(): Router {
   });
 
   router.post("/projects", (req, res, next) => {
-    uploadZip.single("zip")(req, res, (err: unknown) => {
-      if (err) {
-        if (isMulterLimit(err)) return sendError(res, "TOO_LARGE", "zip 파일이 200MB 제한을 초과했습니다.");
-        return next(err);
-      }
-      void handleUpload(req, res, next);
-    });
+    const contentType = req.headers["content-type"] || "";
+    if (contentType.includes("application/json")) {
+      express.json({ limit: "32mb" })(req, res, (err) => {
+        if (err) return next(err);
+        void handleProxyRegistration(req, res, next);
+      });
+    } else {
+      uploadZip.single("zip")(req, res, (err: unknown) => {
+        if (err) {
+          if (isMulterLimit(err)) return sendError(res, "TOO_LARGE", "zip 파일이 200MB 제한을 초과했습니다.");
+          return next(err);
+        }
+        void handleUpload(req, res, next);
+      });
+    }
   });
 
   router.get("/projects/:id", async (req, res, next) => {
@@ -133,7 +142,7 @@ async function handleUpload(
         ? req.body.name.trim()
         : file.originalname.replace(/\.zip$/i, "");
 
-    const project = await createProject(name, file.originalname);
+    const project = await createProject(name, { type: "upload", originalFilename: file.originalname });
     try {
       const result = await extractZip(file.buffer, mockupDir(project.id));
 
@@ -175,6 +184,48 @@ async function handleAssetUpload(
     if (!req.file) return sendError(res, "INVALID_REQUEST", "스냅샷 파일(field: snapshot)이 필요합니다.");
     const assetKey = await saveAsset(req.params.id, req.file.buffer);
     res.status(201).json({ assetKey });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function handleProxyRegistration(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+): Promise<void> {
+  try {
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    const originUrl = typeof req.body.originUrl === "string" ? req.body.originUrl.trim() : "";
+
+    if (!name || !originUrl) {
+      return sendError(res, "INVALID_REQUEST", "프로젝트 이름과 오리진 URL이 필요합니다.");
+    }
+
+    try {
+      await validateOrigin(originUrl);
+    } catch (e) {
+      if (e instanceof SsrfError) {
+        return sendError(res, "INVALID_REQUEST", e.message);
+      }
+      throw e;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      await fetch(originUrl, { method: "GET", signal: controller.signal });
+      clearTimeout(timeout);
+    } catch (err) {
+      return sendError(res, "INVALID_REQUEST", "오리진에 도달할 수 없습니다.");
+    }
+
+    const project = await createProject(name, { type: "proxy", originUrl });
+
+    res.status(201).json({
+      project,
+      mockupUrl: `//${project.id}.${req.hostname}`,
+    });
   } catch (err) {
     next(err);
   }

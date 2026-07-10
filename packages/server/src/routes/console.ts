@@ -45,6 +45,12 @@ button, input { font: inherit; }
 .c-project-meta { color: #5f6368; font-size: 12.5px; white-space: nowrap; }
 .c-project-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .c-empty { color: #5f6368; padding: 18px; text-align: center; border: 1px dashed #c7cdd3; border-radius: 8px; }
+.c-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #dfe3e7; }
+.c-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-weight: 700; color: #5f6368; border-bottom: 2px solid transparent; }
+.c-tab[aria-selected="true"] { color: #1a73e8; border-bottom-color: #1a73e8; }
+.c-tabpanel { display: none; }
+.c-tabpanel[aria-hidden="false"] { display: block; }
+.c-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a73e8; vertical-align: top; margin-left: 6px; }
 `.trim();
 
 /**
@@ -60,6 +66,25 @@ var zipEl = document.getElementById("project-zip");
 var submitEl = document.getElementById("upload-submit");
 var uploadStatusEl = document.getElementById("upload-status");
 var listStatusEl = document.getElementById("list-status");
+var tabs = document.querySelectorAll(".c-tab");
+var panels = document.querySelectorAll(".c-tabpanel");
+var urlNameEl = document.getElementById("url-project-name");
+var originUrlEl = document.getElementById("origin-url");
+var urlFormEl = document.getElementById("url-form");
+var urlSubmitEl = document.getElementById("url-submit");
+var urlStatusEl = document.getElementById("url-status");
+
+function switchTab(index) {
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].setAttribute("aria-selected", i === index ? "true" : "false");
+    panels[i].setAttribute("aria-hidden", i === index ? "false" : "true");
+  }
+}
+for (var i = 0; i < tabs.length; i++) {
+  (function(idx) {
+    tabs[idx].addEventListener("click", function() { switchTab(idx); });
+  })(i);
+}
 
 function setStatus(el, text, kind) {
   el.textContent = "";
@@ -161,10 +186,14 @@ async function deleteProject(project) {
 function renderProject(project) {
   var card = el("div", "c-project");
   var head = el("div", "c-project-head");
-  head.appendChild(el("span", "c-project-name", project.name));
-  head.appendChild(el("span", "c-project-meta",
-    "장면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
-    " · " + formatDate(project.updatedAt) + " 수정"));
+  var title = el("span", "c-project-name", project.name);
+  var isProxy = project.mockupSource && project.mockupSource.type === "proxy";
+  title.appendChild(el("span", "c-badge", isProxy ? "URL 프록시" : "ZIP 업로드"));
+  head.appendChild(title);
+  var metaText = "장면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
+    " · " + formatDate(project.updatedAt) + " 수정";
+  if (isProxy) metaText += " · " + project.mockupSource.originUrl;
+  head.appendChild(el("span", "c-project-meta", metaText));
   card.appendChild(head);
 
   var actions = el("div", "c-project-actions");
@@ -256,6 +285,48 @@ formEl.addEventListener("submit", function (event) {
     .finally(function () { submitEl.disabled = false; });
 });
 
+urlFormEl.addEventListener("submit", function (event) {
+  event.preventDefault();
+  var name = urlNameEl.value.trim();
+  var originUrl = originUrlEl.value.trim();
+  if (!name || !originUrl) {
+    setStatus(urlStatusEl, "모든 필드를 입력해주세요.", "error");
+    return;
+  }
+
+  urlSubmitEl.disabled = true;
+  setStatus(urlStatusEl, "오리진 도달성 확인 및 등록 중…");
+  fetch("/api/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name, originUrl: originUrl })
+  })
+    .then(async function (res) {
+      if (!res.ok) {
+        var body = null;
+        try { body = await res.json(); } catch (e) { /* 비JSON */ }
+        throw new Error(apiErrorMessage(body, "등록에 실패했습니다."));
+      }
+      return res.json();
+    })
+    .then(function (result) {
+      urlFormEl.reset();
+      var frag = document.createDocumentFragment();
+      frag.appendChild(document.createTextNode("등록 완료: " + result.project.name + " "));
+      var link = el("a", null, "편집 열기 →");
+      link.href = mockupHref(result.project.id);
+      link.target = "_blank";
+      link.rel = "noopener";
+      frag.appendChild(link);
+      setStatus(urlStatusEl, frag, "ok");
+      return renderList();
+    })
+    .catch(function (err) {
+      setStatus(urlStatusEl, err && err.message ? err.message : "등록에 실패했습니다.", "error");
+    })
+    .finally(function () { urlSubmitEl.disabled = false; });
+});
+
 void renderList();
 `.trim();
 
@@ -272,24 +343,50 @@ export const CONSOLE_HTML = `<!doctype html>
     <h1 class="c-title">${WORKING_NAME}</h1>
 
     <section class="c-card">
-      <h2>새 프로젝트</h2>
-      <form id="upload-form">
-        <div class="c-row">
-          <label for="project-name">프로젝트 이름</label>
-          <input id="project-name" type="text" name="name" placeholder="예: 주문 개편 목업">
-        </div>
-        <div class="c-row">
-          <label for="project-zip">빌드 zip</label>
-          <input id="project-zip" type="file" name="zip" accept=".zip,application/zip" required>
-        </div>
-        <p class="c-hint">
-          빌드 결과물 폴더(dist 등)만 압축해주세요. node_modules가 포함되면 파일이 커져
-          업로드가 거부될 수 있습니다 (제한 200MB — 압축 파일 기준).<br>
-          ⓘ SPA는 상대 base(vite build --base ./) 또는 루트 base 빌드만 지원합니다.
-        </p>
-        <button id="upload-submit" class="c-btn" type="submit">업로드하고 시작</button>
-        <p id="upload-status" class="c-status"></p>
-      </form>
+      <h2>새 프로젝트 시작</h2>
+      <div class="c-tabs" role="tablist">
+        <button type="button" class="c-tab" role="tab" aria-selected="true">ZIP 업로드</button>
+        <button type="button" class="c-tab" role="tab" aria-selected="false">URL 등록</button>
+      </div>
+
+      <div class="c-tabpanel" role="tabpanel" aria-hidden="false">
+        <form id="upload-form">
+          <div class="c-row">
+            <label for="project-name">프로젝트 이름</label>
+            <input id="project-name" type="text" name="name" placeholder="예: 주문 개편 목업">
+          </div>
+          <div class="c-row">
+            <label for="project-zip">빌드 zip</label>
+            <input id="project-zip" type="file" name="zip" accept=".zip,application/zip" required>
+          </div>
+          <p class="c-hint">
+            빌드 결과물 폴더(dist 등)만 압축해주세요. node_modules가 포함되면 파일이 커져
+            업로드가 거부될 수 있습니다 (제한 200MB — 압축 파일 기준).<br>
+            ⓘ SPA는 상대 base(vite build --base ./) 또는 루트 base 빌드만 지원합니다.
+          </p>
+          <button id="upload-submit" class="c-btn" type="submit">업로드하고 시작</button>
+          <p id="upload-status" class="c-status"></p>
+        </form>
+      </div>
+
+      <div class="c-tabpanel" role="tabpanel" aria-hidden="true">
+        <form id="url-form">
+          <div class="c-row">
+            <label for="url-project-name">프로젝트 이름</label>
+            <input id="url-project-name" type="text" placeholder="예: 스테이징 환경 목업" required>
+          </div>
+          <div class="c-row">
+            <label for="origin-url">오리진 URL</label>
+            <input id="origin-url" type="text" placeholder="예: https://staging.mockup.internal" required>
+          </div>
+          <p class="c-hint">
+            이미 배포된 스테이징이나 개발 서버 URL을 입력하세요. 서버가 도달 가능한 허용된 도메인이어야 합니다.<br>
+            ⓘ WebSocket 기반 HMR이나 SSO 리다이렉트가 필수인 환경은 정상 동작하지 않을 수 있습니다.
+          </p>
+          <button id="url-submit" class="c-btn" type="submit">URL 등록하고 시작</button>
+          <p id="url-status" class="c-status"></p>
+        </form>
+      </div>
     </section>
 
     <section class="c-card">
