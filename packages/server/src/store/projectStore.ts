@@ -17,22 +17,29 @@ async function writeSpec(spec: SpecProject): Promise<void> {
   await fs.writeFile(specFile(spec.id), JSON.stringify(spec, null, 2), "utf8");
 }
 
-/** 업로드된 목업 또는 등록된 URL로 새 프로젝트를 만든다. mockup/·assets/ 디렉토리와 spec.json 생성. */
+/** 업로드·URL 등록·확장(경로 D)으로 새 프로젝트를 만든다. mockup/·assets/ 디렉토리와 spec.json 생성. */
 export async function createProject(
   name: string,
-  sourceInfo: { type: "upload"; originalFilename: string } | { type: "proxy"; originUrl: string }
+  sourceInfo:
+    | { type: "upload"; originalFilename: string }
+    | { type: "proxy"; originUrl: string }
+    | { type: "snippet" }
 ): Promise<SpecProject> {
   const id = makeProjectId();
   const now = new Date().toISOString();
+  const mockupSource: SpecProject["mockupSource"] =
+    sourceInfo.type === "upload"
+      ? { type: "upload", originalFilename: sourceInfo.originalFilename, uploadedAt: now }
+      : sourceInfo.type === "proxy"
+        ? { type: "proxy", originUrl: sourceInfo.originUrl, registeredAt: now }
+        : { type: "snippet", registeredAt: now };
   const spec: SpecProject = {
     version: 1,
     id,
     name,
     createdAt: now,
     updatedAt: now,
-    mockupSource: sourceInfo.type === "upload"
-      ? { type: "upload", originalFilename: sourceInfo.originalFilename, uploadedAt: now }
-      : { type: "proxy", originUrl: sourceInfo.originUrl, registeredAt: now },
+    mockupSource,
     sceneCodeSeq: 1,
     scenes: [],
     annotations: [],

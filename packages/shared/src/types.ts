@@ -27,8 +27,11 @@ export interface SpecProject {
   maskingRules?: MaskingRule[];
 }
 
-/** 온보딩 경로별 목업 출처. A(zip 업로드)=upload, B(URL 프록시)=proxy. (킥오프 s2 §1) */
-export type MockupSource = UploadMockupSource | ProxyMockupSource;
+/**
+ * 온보딩 경로별 목업 출처. A(zip 업로드)=upload, B(URL 프록시)=proxy,
+ * D(브라우저 확장 클라이언트 주입)=snippet. (킥오프 s2 §1, pathD §5)
+ */
+export type MockupSource = UploadMockupSource | ProxyMockupSource | SnippetMockupSource;
 
 export interface UploadMockupSource {
   type: "upload";
@@ -43,6 +46,20 @@ export interface ProxyMockupSource {
   originUrl: string;
   /** ISO 8601 */
   registeredAt: string;
+}
+
+/**
+ * [S2.5] 경로 D — 브라우저 확장(content script)이 사용자 세션 위에 SDK 주입 (pathD 킥오프 §5).
+ * 서버가 fetch할 originUrl이 없다. 저장 인증 토큰은 spec.json에 넣지 않는다 —
+ * spec.json은 클라이언트 PUT이 전체 교체하는 파일이라 담으면 덮어쓰기·유출 표면
+ * (서버 데이터 디렉토리의 별도 메타 파일에 해시로 저장).
+ */
+export interface SnippetMockupSource {
+  type: "snippet";
+  /** ISO 8601 */
+  registeredAt: string;
+  /** 마지막 저장 요청의 Origin — 참고·표시용. 서버가 저장 시 갱신 */
+  lastSeenOrigin?: string;
 }
 
 /** [S2] 마스킹 규칙 — 평문 부분 일치 find→replace (정규식 금지, detailed-spec §3.12) */

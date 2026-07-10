@@ -19,3 +19,10 @@ export const specFile = (id: string): string => path.join(projectDir(id), "spec.
 
 /** 동결 스냅샷 등 asset store. */
 export const assetsDir = (id: string): string => path.join(projectDir(id), "assets");
+
+/**
+ * [S2.5] 경로 D 저장 인증 토큰 메타(해시만 보관). spec.json 밖에 두는 이유:
+ * spec.json은 클라이언트 PUT이 전체 교체하는 파일이라 토큰을 담으면
+ * 덮어쓰기·응답 유출 표면이 된다 (pathD 킥오프 §8-2).
+ */
+export const tokenFile = (id: string): string => path.join(projectDir(id), "token.json");

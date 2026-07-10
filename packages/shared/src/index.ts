@@ -3,6 +3,7 @@ export type {
   MockupSource,
   UploadMockupSource,
   ProxyMockupSource,
+  SnippetMockupSource,
   MaskingRule,
   Scene,
   Annotation,

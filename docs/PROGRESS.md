@@ -14,7 +14,7 @@
 
 ## S2.5 WBS 체크리스트 (pathD 킥오프 §7)
 
-- [ ] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장)
+- [x] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장) — vitest 120 passed(+7), 평문 미보관·재발급 무효·왕복 무손실 검증
 - [ ] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트)
 - [ ] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내)
 - [ ] T22 확장 스캐폴드 + content script SDK 주입
@@ -49,6 +49,15 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T19 데이터 모델 + 토큰 발급/검증 완료
+- 브랜치: `feat/s25-token-model-t19` (main 미병합, 동의 대기).
+- 완료: **shared** — `SnippetMockupSource`(`type:"snippet"`, `registeredAt`, `lastSeenOrigin?`)를 `MockupSource` union에 추가, index export. 전부 optional/변형 추가라 `version: 1` 유지.
+- 완료: **server/store** — ① `paths.ts::tokenFile`(projectDir 하위 `token.json` — spec.json 밖, PUT 전체 교체와 격리) ② `tokenStore.ts` 신설: `issueToken`(`tok_`+192bit base64url, **SHA-256 해시만 보관**, 평문 1회 반환, 재발급 시 구 토큰 즉시 무효), `verifyToken`(timingSafeEqual, 미발급·불일치 false), `revokeToken`, `hasToken` ③ `projectStore.createProject`에 `{type:"snippet"}` 분기.
+- 확인: `serve.ts`·`console.ts`의 `mockupSource.type` 분기는 if 기반이라 신규 변형에 타입 안전 — snippet 프로젝트의 서빙·콘솔 표시는 T21 몫.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **120 passed**(+7: shared 계약 snippet 왕복·토큰 필드 부재 1 / tokenStore 6 — 발급·검증·오토큰 거부 / 메타에 평문·해시 격리(spec.json에 미포함) / 재발급 무효 / 폐기·hasToken / 프로젝트 삭제 시 정리 / snippet 생성 왕복 무손실). `npm run test:e2e` 2 passed 회귀 없음.
+- 다음 할 일: **T20 저장 경로 토큰 인증** — 경로 D 프로젝트의 PUT/assets/export에 Bearer 게이트(401), 타 프로젝트 토큰 거부 (pathD 킥오프 §4.1, technical-spec §6 예외 문단).
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — 경로 D 확정 승격 (주입=옵션 E 확장, 사용자 결정) + docs/ 동기화 → S2.5 개시
 - 브랜치: `docs/pathD-kickoff-draft` → `main` 병합 완료(2026-07-11, fast-forward)·push. 병합 후 브랜치 삭제 (초안·확정 커밋 2건 포함).

@@ -62,4 +62,24 @@ describe("shared contract", () => {
     expect(JSON.parse(JSON.stringify(project))).toEqual(project);
     expect(project.mockupSource.type).toBe("proxy");
   });
+
+  it("S2.5 확장 — snippet 소스(경로 D)가 계약에 포함된다 (version 1 유지, 토큰 필드 없음)", () => {
+    const now = new Date().toISOString();
+    const project: SpecProject = {
+      version: 1,
+      id: "prj_test000003",
+      name: "확장 주입 샘플",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "snippet", registeredAt: now, lastSeenOrigin: "https://app.internal" },
+      sceneCodeSeq: 1,
+      scenes: [],
+      annotations: [],
+    };
+    // 직렬화 왕복 무손실 + 토큰이 계약(spec.json)에 존재하지 않음을 형태로 보증
+    expect(JSON.parse(JSON.stringify(project))).toEqual(project);
+    expect(project.mockupSource.type).toBe("snippet");
+    expect(Object.keys(project.mockupSource)).not.toContain("token");
+    expect(Object.keys(project.mockupSource)).not.toContain("tokenHash");
+  });
 });
