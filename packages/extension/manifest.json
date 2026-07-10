@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "mockspec — 내 화면에서 편집",
+  "version": "0.1.0",
+  "description": "로그인해 둔 화면 위에 mockspec 편집기를 띄웁니다 (경로 D — 서버는 아무것도 fetch하지 않음).",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sdk.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "mockspec"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -17,7 +17,7 @@
 - [x] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장) — vitest 120 passed(+7), 평문 미보관·재발급 무효·왕복 무손실 검증
 - [x] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트) — vitest 126 passed(+6), PUT/assets/export 게이트·타 프로젝트 토큰 거부·기존 경로 무영향 검증
 - [x] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내) — vitest 132 passed(+6), snippet 등록·토큰 재발급/폐기 API·콘솔 3택 검증, 실 Chrome 렌더 확인
-- [ ] T22 확장 스캐폴드 + content script SDK 주입
+- [x] T22 확장 스캐폴드 + content script SDK 주입 (+팝업 바인딩 선행) — 실 Chromium unpacked 로드로 FAB·패널·미바인딩 미주입 검증
 - [ ] T23 확장 팝업(프로젝트 바인딩) + background 저장
 - [ ] T24 E2E: 로그인 뒤 화면 시나리오 (DoD)
 - [ ] T25 docs/ 최종 동기화 + 실사용 판정 기록
@@ -49,6 +49,18 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T22 확장 스캐폴드 + content script SDK 주입 완료
+- 브랜치: `feat/s25-extension-scaffold-t22` (main 미병합, 동의 대기).
+- 완료: **`packages/extension`** 신설 (npm workspace 편입, 루트 build·typecheck 연결) —
+  ① `manifest.json` MV3: content script `<all_urls>`·`web_accessible_resources: sdk.js`·`host_permissions`(localhost — background 저장용, T23)·popup·background
+  ② `src/content.ts` — **바인딩된 오리진에만** `<script src=chrome.runtime.getURL("sdk.js") data-project>` 주입 (확장 자원이라 페이지 CSP script-src 무관, 기존 sdk.js가 `document.currentScript`로 그대로 부트). 경로 A/B 이중 주입 방지
+  ③ `src/popup.ts`+`popup.html` — 현재 탭 오리진에 프로젝트 ID·토큰·서버 주소 바인딩(chrome.storage.local, activeTab) — **T23 몫이던 팝업 바인딩을 선행**(주입 검증에 필요)
+  ④ `src/binding.ts` — 오리진별 바인딩 저장 모듈 ⑤ `src/background.ts` — 설치 로그만(저장 릴레이는 T23) ⑥ `build.mjs` — 엔트리별 vite lib(IIFE) 빌드 + manifest/popup.html/sdk.js(재사용) 조립 → `dist/`가 unpacked 로드 대상. 신규 번들러 의존성 0(vite 재사용), `@types/chrome`만 devDep 추가.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 132 passed·`npm run test:e2e` 2 passed 회귀 없음. **실 Chromium(Playwright persistent context + `--load-extension`, channel "chromium" 신 headless)**: 바인딩 저장 → fixture 페이지에서 SDK 호스트 주입·FAB 렌더·패널 오픈 확인, 패널은 "불러오기 실패" 표시(정상 — API 릴레이 전), **미바인딩 오리진 미주입** 확인. 스크래치 스크립트, 커밋 안 함.
+- 참고: 구 headless shell은 확장 미지원 — `channel: "chromium"` 필요 (킥오프 §7 참고 문구 실측 확인). 빈 background.js는 SW 등록이 안 잡혀 onInstalled 리스너 1개 추가.
+- 다음 할 일: **T23 background 저장 릴레이** — SDK api 계층에 transport 훅(페이지 → content script postMessage → background fetch(serverUrl+Bearer)) + `lastSeenOrigin` 스탬프. 팝업 바인딩은 T22에서 선행 완료.
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T21 콘솔 온보딩 3번째 선택지 완료
 - 브랜치: `feat/s25-console-onboarding-t21` (T19→T20 위에 스택) → `main` 병합 완료(2026-07-11, T19~T21 스택 fast-forward)·push. 병합 후 세 브랜치 삭제.

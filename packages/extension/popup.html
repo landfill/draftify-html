@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; width: 320px; margin: 0; padding: 14px; color: #202124; }
+    h1 { font-size: 14px; margin: 0 0 4px; }
+    .origin { font-size: 12px; color: #5f6368; word-break: break-all; margin-bottom: 12px; }
+    label { display: block; font-size: 12px; font-weight: 700; margin: 8px 0 3px; }
+    input { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #dfe3e7; border-radius: 6px; font-size: 13px; }
+    .row { display: flex; gap: 8px; margin-top: 12px; }
+    button { flex: 1; padding: 7px 0; border-radius: 6px; border: 1px solid #dfe3e7; background: #fff; cursor: pointer; font-weight: 700; font-size: 13px; }
+    button.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+    button.danger { color: #d93025; }
+    .status { font-size: 12px; margin: 10px 0 0; min-height: 16px; }
+    .status.ok { color: #188038; }
+    .status.error { color: #d93025; }
+    .hint { font-size: 11px; color: #5f6368; margin-top: 10px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>mockspec — 내 화면에서 편집</h1>
+  <div class="origin" id="origin">현재 탭 확인 중…</div>
+
+  <label for="project-id">프로젝트 ID</label>
+  <input id="project-id" type="text" placeholder="prj_…" autocomplete="off">
+
+  <label for="token">프로젝트 토큰</label>
+  <input id="token" type="password" placeholder="tok_…" autocomplete="off">
+
+  <label for="server-url">서버 주소</label>
+  <input id="server-url" type="text" value="http://localhost:4000" autocomplete="off">
+
+  <div class="row">
+    <button id="save" class="primary" type="button">이 사이트에서 활성화</button>
+    <button id="remove" class="danger" type="button">해제</button>
+  </div>
+  <p id="status" class="status"></p>
+  <p class="hint">활성화 후 페이지를 새로고침하면 화면 우하단에 편집 버튼이 나타납니다.
+    프로젝트 ID·토큰은 콘솔의 [내 화면에서 편집 (확장)] 탭에서 발급받습니다.</p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

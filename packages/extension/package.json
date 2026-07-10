@@ -1,0 +1,17 @@
+{
+  "name": "@mockspec/extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json && node build.mjs"
+  },
+  "dependencies": {
+    "@mockspec/shared": "*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "vite": "^8.1.3"
+  }
+}

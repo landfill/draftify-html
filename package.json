@@ -11,11 +11,12 @@
     "packages/sdk",
     "packages/server",
     "packages/viewer",
+    "packages/extension",
     "fixtures/todo-app"
   ],
   "scripts": {
-    "build": "tsc -b && npm run build -w @mockspec/sdk",
-    "typecheck": "tsc -b && npm run typecheck -w @mockspec/sdk",
+    "build": "tsc -b && npm run build -w @mockspec/sdk && npm run build -w @mockspec/extension",
+    "typecheck": "tsc -b && npm run typecheck -w @mockspec/sdk && npm run typecheck -w @mockspec/extension",
     "clean": "tsc -b --clean",
     "test": "vitest run",
     "fixtures:zip": "npm run zip -w @mockspec/fixture-todo-app",
