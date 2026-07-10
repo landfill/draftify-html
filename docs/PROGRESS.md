@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-10) — T11 완료(`feat/s2-shared-types-t11`, main 병합 대기). 다음: T12 SSRF 가드 모듈 → T13 프록시 코어 (킥오프 s2 §8 의존 순서). 새 세션은 여기서 시작.**
+**S2 구현 중 (2026-07-10) — T11 완료·main 병합 완료. 다음: T12 SSRF 가드 모듈 → T13 프록시 코어 (킥오프 s2 §8 의존 순서). 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-10 — T11 shared 타입 확장 완료
-- 브랜치: `feat/s2-shared-types-t11` (main 미병합, 동의 대기).
+- 브랜치: `feat/s2-shared-types-t11` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 84 passed 재확인). 병합 후 브랜치 삭제.
 - 완료: **shared 타입 S2 확장** (킥오프 s2 §1) — ① `MockupSource`를 discriminated union으로 (`UploadMockupSource | ProxyMockupSource`, proxy는 `originUrl`·`registeredAt`) ② `SpecProject.maskingRules?: MaskingRule[]`(`id`·`find`·`replace`, 평문 부분 일치) ③ `Scene.maskedSnapshotAsset?`·`maskedAt?`. 전부 optional 추가라 `version: 1` 유지. index.ts export에 신규 타입 3종 추가.
 - 완료(부수): ① `projectStore.ts::referencedAssets`가 `maskedSnapshotAsset`도 참조로 인정 — 이 수정 없이는 PUT 시 마스킹본이 고아로 오인·삭제됨(ID-11 상호작용, 킥오프 s2 §6에 명시된 유지 사항) ② `sdk/state.test.ts`의 `.originalFilename` 직접 접근을 union 안전 비교로 교체.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **84 passed**(+3: shared 계약에 proxy 소스·마스킹 필드 직렬화 왕복 / S1 형태(S2 필드 없음) spec PUT 왕복 무손실 하위 호환 / 마스킹본 asset 유지→참조 해제 시 삭제·원본 보존). 기존 왕복 무손실 테스트 fixture에 S2 필드 포함. `npm run test:e2e` 1 passed(4.1s) 회귀 없음.
