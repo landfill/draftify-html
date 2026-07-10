@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S1 WBS 전 항목(T1~T10) 완료 + 실사용 피드백 반영(마커 드래그·부착 UX·미작성 핀, main 병합 완료). 남은 것: 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.**
+**S1 WBS 전 항목(T1~T10) 완료 + 실사용 피드백 반영 중(`fix/panel-scroll`→`feat/editor-export` 스택, 병합 동의 대기). 남은 것: 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.**
 
 ## WBS 체크리스트
 
@@ -27,6 +27,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — 편집 화면 내보내기 버튼 (실사용 3회 피드백 ②, 킥오프 §11 6차 개정)
+- 브랜치: `feat/editor-export` (`fix/panel-scroll` 위에 스택, main 미병합, 동의 대기).
+- 배경: 내보내기가 콘솔에만 있어 편집 후 목록 화면으로 빠져나가야 다운로드 가능 — 편집→확인 루프를 끊는 동선. export 엔드포인트는 이미 same-origin 프록시로 서브도메인에 열려 있어 **서버 변경 없음**.
+- 완료: 패널 하단 고정 푸터에 **[내보내기 (HTML 다운로드)]** 버튼 — 콘솔과 동일 규칙(스냅샷 없는 장면 N개 확인 다이얼로그, 50MB 경고는 버튼 아래 힌트), `api.ts::exportProjectHtml`(+`filenameFromDisposition` — filename* 한글 우선, ASCII fallback), blob 다운로드. 프로젝트 로드 전·진행 중 비활성. detailed-spec §3.9 신설(기존 3.9~3.11 → 3.10~3.12 밀림, technical-spec 교차 참조 1건 갱신 — 기존 §3.10 오참조도 함께 수정).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **81 passed**(+2: 내보내기 버튼 → confirm 경유 → export POST → filename* 파일명으로 다운로드 트리거 / confirm 취소 시 미호출), `npm run test:e2e` 1 passed(4.1s).
+- 다음 할 일: fix/panel-scroll → feat/editor-export 순 main 병합 여부 사용자 확인 → 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.
+- 막힌 지점: 없음.
 
 ### 2026-07-10 — 패널 스크롤 결함 픽스 (실사용 3회 피드백 ①)
 - 브랜치: `fix/panel-scroll` (main 미병합, 동의 대기).

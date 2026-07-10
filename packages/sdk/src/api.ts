@@ -54,6 +54,37 @@ export async function fetchProject(projectId: string): Promise<SpecProject> {
   return (await res.json()) as SpecProject;
 }
 
+/** Content-Disposition에서 파일명 추출 — 한글은 filename*(RFC 5987) 우선, ASCII fallback. */
+export function filenameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star) {
+    try { return decodeURIComponent(star[1]); } catch { /* 손상 시 ASCII fallback */ }
+  }
+  const plain = /filename="([^"]+)"/i.exec(header);
+  return plain ? plain[1] : null;
+}
+
+export interface ExportResult {
+  blob: Blob;
+  filename: string;
+  /** 50MB 초과 등 서버 경고 헤더 (X-Mockspec-Warning). 없으면 null. */
+  warning: string | null;
+}
+
+/** 산출물 HTML 다운로드 — 편집 패널 [내보내기] 버튼 (킥오프 §11 6차 개정). */
+export async function exportProjectHtml(projectId: string): Promise<ExportResult> {
+  const res = await fetch(`${apiBase}/projects/${projectId}/export`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(await errorMessage(res, "내보내기 실패"));
+  }
+  return {
+    blob: await res.blob(),
+    filename: filenameFromDisposition(res.headers.get("content-disposition")) ?? `${projectId}.html`,
+    warning: res.headers.get("x-mockspec-warning"),
+  };
+}
+
 export async function putProject(project: SpecProject): Promise<SpecProject> {
   const res = await fetch(`${apiBase}/projects/${project.id}`, {
     method: "PUT",

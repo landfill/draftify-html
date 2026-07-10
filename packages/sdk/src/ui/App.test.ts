@@ -213,6 +213,84 @@ describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
   });
 });
 
+describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
+  it("내보내기 버튼이 export API를 호출하고 파일명대로 다운로드를 트리거한다", async () => {
+    const confirmSpy = vi.fn(() => true);
+    vi.stubGlobal("confirm", confirmSpy);
+    const exportCalls: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/export") && init?.method === "POST") {
+        exportCalls.push(url);
+        return new Response("<!doctype html><html></html>", {
+          status: 200,
+          headers: {
+            "content-type": "text/html",
+            "content-disposition": `attachment; filename="mockup.html"; filename*=UTF-8''${encodeURIComponent("주문 목업.html")}`,
+          },
+        });
+      }
+      if (!init?.method) return jsonResponse(project);
+      return jsonResponse({ ...JSON.parse(String(init.body)), updatedAt: "2026-07-10T00:00:05.000Z" });
+    });
+    // happy-dom에 없는 다운로드 경로 스텁
+    vi.stubGlobal("URL", Object.assign(Object.create(URL), {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    }));
+    const clicked: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push(this.download);
+    });
+
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".fab")!.click();
+      await flushPromises();
+    });
+
+    const btn = document.querySelector<HTMLButtonElement>("button.btn--export")!;
+    expect(btn.disabled).toBe(false);
+    await act(async () => {
+      btn.click();
+      await flushPromises();
+    });
+
+    // 스냅샷 없는 장면 1개 → 확인 다이얼로그 경유
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(confirmSpy.mock.calls[0][0]).toContain("1개 장면에 스냅샷이 없습니다");
+    expect(exportCalls).toEqual([`/__mockspec/api/projects/${project.id}/export`]);
+    // filename*(한글) 우선으로 다운로드 파일명 유지
+    expect(clicked).toEqual(["주문 목업.html"]);
+  });
+
+  it("확인 다이얼로그에서 취소하면 export를 호출하지 않는다", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (!init?.method) return jsonResponse(project);
+      return jsonResponse({ ...JSON.parse(String(init.body)), updatedAt: "2026-07-10T00:00:05.000Z" });
+    });
+
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".fab")!.click();
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>("button.btn--export")!.click();
+      await flushPromises();
+    });
+
+    expect(fetchSpy.mock.calls.every(([u]) => !String(u).endsWith("/export"))).toBe(true);
+  });
+});
+
 describe("App 저장·오프라인 큐 (T7)", () => {
   it("편집 변경 PUT 실패 후 localStorage에 보관하고 서버 복귀 시 자동 재전송한다", async () => {
     const savedBodies: SpecProject[] = [];

@@ -10,6 +10,7 @@ import {
 } from "../state.js";
 import { freezeDocument } from "../freeze/freeze.js";
 import {
+  exportProjectHtml,
   fetchProject,
   flushPendingProject,
   readPendingProject,
@@ -60,6 +61,8 @@ export function App({ projectId }: { projectId: string }) {
   const [freezing, setFreezing] = useState<Record<string, boolean>>({});
   const [freezeErr, setFreezeErr] = useState<Record<string, string>>({});
   const [drag, setDrag] = useState<MarkerDrag | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportNote, setExportNote] = useState<string | null>(null);
 
   // 옵저버/전역 리스너가 최신 상태를 읽도록 ref 래핑
   const projectRef = useRef(project); projectRef.current = project;
@@ -383,6 +386,30 @@ export function App({ projectId }: { projectId: string }) {
     }
   };
 
+  // 편집 화면 내보내기 — 콘솔과 동일 규칙(스냅샷 없는 장면 확인·50MB 경고), §3.9·킥오프 §11 6차.
+  const runExport = async () => {
+    const d = docRef.current;
+    const missing = d.scenes.filter((s) => !s.snapshotAsset).length;
+    if (missing > 0 && !confirm(`${missing}개 장면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?`)) return;
+
+    setExporting(true);
+    setExportNote(null);
+    try {
+      const { blob, filename, warning } = await exportProjectHtml(projectId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (warning) setExportNote(`경고: ${warning}`);
+    } catch (err) {
+      setExportNote(err instanceof Error ? err.message : "내보내기 실패");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const registerScene = () => {
     if (!projectRef.current) return;
     const title = document.title || "장면";
@@ -531,6 +558,13 @@ export function App({ projectId }: { projectId: string }) {
             </div>
           ))}
         </div>
+        </div>
+
+        <div class="panel__foot">
+          <button class="btn btn--export" disabled={!project || exporting} onClick={() => void runExport()}>
+            {exporting ? "내보내는 중…" : "내보내기 (HTML 다운로드)"}
+          </button>
+          {exportNote && <div class="hint hint--warn">{exportNote}</div>}
         </div>
       </div>
     </>

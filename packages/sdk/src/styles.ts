@@ -24,6 +24,10 @@ export const STYLES = /* css */ `
 }
 /* head·seg 아래 내용의 스크롤 영역 — 어노테이션이 늘어나도 끝까지 접근 가능해야 한다 */
 .panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* 패널 하단 고정 — 내보내기 (§3.9) */
+.panel__foot { flex: 0 0 auto; padding: 10px 14px; border-top: 1px solid #eee; }
+.btn--export { width: 100%; padding: 8px; font-size: 12px; font-weight: 600; }
+.btn--export:disabled { opacity: .5; cursor: default; }
 .panel__head {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 14px; border-bottom: 1px solid #eee;
