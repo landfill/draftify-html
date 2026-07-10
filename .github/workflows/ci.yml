@@ -1,0 +1,53 @@
+# CI 파이프라인 (S2 T18, 킥오프 s2 §7)
+# typecheck → build → test → test:e2e 를 push·PR에서 실행.
+# 테스트 명령 자체는 러너 중립 — 원격이 GitHub가 아니게 되면 러너 형식만 이식한다.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# 같은 ref에서 새 커밋이 오면 진행 중 실행을 취소 (CI 큐 절약)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit / API tests
+        run: npm test
+
+      # E2E는 Playwright Chromium 필요. fixture 서버를 localhost로 띄우므로 외부 네트워크 의존 없음.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (S1 + S2 DoD)
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
