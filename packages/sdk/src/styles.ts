@@ -73,7 +73,9 @@ export const STYLES = /* css */ `
   border: 2px solid #fff; background: #2f6feb; color: #fff;
   font: 600 11px/16px system-ui, sans-serif; cursor: pointer;
   box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  touch-action: none; /* 포인터 드래그(마커 이동)용 */
 }
+.marker--drag { cursor: grabbing; }
 .marker--sel { background: #d9480f; }
 .marker--uncertain { background: #999; border-style: dashed; }
 

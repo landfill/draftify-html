@@ -122,6 +122,7 @@ export interface Annotation {
   title: string;
   description: string;           // 마크다운 허용 (뷰어에서 렌더)
   policyRefs?: string[];         // "POL-014" 등. S1은 저장·표시만
+  markerOffset?: { dx: number; dy: number }; // 마커 표시 오프셋(px) — 기본 위치(요소 우상단)에서 드래그로 옮긴 상대값 (킥오프 §11 4차 개정)
 }
 
 export interface Anchor {

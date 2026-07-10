@@ -293,6 +293,9 @@ function renderMarkers(
       left = (annotation.anchor.rect.x + annotation.anchor.rect.w) * docWidth;
       top = annotation.anchor.rect.y * docHeight;
     }
+    // 편집기에서 드래그로 옮긴 마커 오프셋(기본 위치 기준 상대값) 동일 적용 — SDK와 대칭
+    left += annotation.markerOffset?.dx ?? 0;
+    top += annotation.markerOffset?.dy ?? 0;
 
     const marker = child("button", `ms-marker${resolved.mode === "rect-fallback" ? " is-uncertain" : ""}`);
     marker.type = "button";

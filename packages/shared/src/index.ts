@@ -5,6 +5,7 @@ export type {
   Annotation,
   Anchor,
   Rect,
+  MarkerOffset,
 } from "./types.js";
 
 export {

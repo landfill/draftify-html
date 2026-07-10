@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S1 WBS 전 항목(T1~T10) 완료 + zip 최상위 폴더 언랩 개선(main 병합 완료). 남은 것: 실사용 1회 판정(킥오프 §11 기록) → S2 계획.**
+**S1 WBS 전 항목(T1~T10) 완료. 실사용 1회 피드백 반영 중 — 마커 드래그·부착 UX(`feat/marker-drag-attach-ux`, main 병합 동의 대기). 남은 것: 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.**
 
 ## WBS 체크리스트
 
@@ -27,6 +27,15 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-10 — 실사용 피드백 반영: 마커 드래그 + 부착 UX (킥오프 §11 4차 개정)
+- 브랜치: `feat/marker-drag-attach-ux` (main 미병합, 동의 대기).
+- 배경: 사용자 실사용 1회에서 피드백 2건 — (a) 마커가 요소 우상단 고정이라 위치 조정 불가, (b) 클릭=생성 방식의 중복 생성·오클릭 잔재 혼란. 대안 검토 후 "클릭=생성 유지 + 기존 요소 클릭은 선택(Shift+클릭=추가) + 빈 어노테이션 자동 정리 + 마커 드래그" 채택(핀 도구 분리·확인 팝오버는 매 부착 비용으로 기각). 규약 §4 절차: 킥오프 §5·§6.2·§11(4차 개정) → detailed-spec §3.3/§3.4/§3.5·technical-spec 데이터 모델 동기화 → 구현.
+- 완료: **`Annotation.markerOffset?: {dx,dy}`**(shared) — 절대 좌표가 아닌 기본 위치(요소 우상단) 기준 상대 오프셋이라 앵커 재해석(요소 추적)과 공존. SDK 마커 pointerdown 드래그(편집 모드 한정, 이동 임계값 4px로 클릭/드래그 구분, 드래그 직후 click 억제 플래그는 setTimeout 0으로 해제해 잔류 방지), viewer도 동일 오프셋 적용(SDK↔산출물 대칭).
+- 완료: **부착 UX** — 편집 모드 클릭 시 대상 요소에 현재 장면 어노테이션이 있으면(resolveAnchor 요소 동일성 비교) 선택으로 전환, Shift+클릭은 강제 생성. title·description 모두 공백인 어노테이션은 선택 해제 시(다른 선택·장면 전환·패널 닫기) 자동 삭제 — 소비 번호는 재사용 안 함(기존 규칙 유지). 패널 힌트·title placeholder("비워두면 선택 해제 시 자동 삭제")로 안내.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **78 passed**(+3 App 통합: 중복 방지+Shift 추가 / 빈 어노테이션 자동 정리+번호 미재사용 / 드래그 오프셋 커밋+임계값 이하 무시. store-api 왕복 fixture에 markerOffset 포함해 서버 무손실 확인), `npm run test:e2e` 1 passed(4.0s — 기본 위치 오차 ≤2px 회귀 없음). **실 Chrome 드래그 검증은 미수행** — 드래그 UX 체감(관성·겹침)은 다음 실사용에서 확인 요망.
+- 다음 할 일: (1) 이 브랜치 main 병합 여부 사용자 확인. (2) 실사용 재검증(마커 드래그·부착 UX 포함) 후 판정을 킥오프 §11에 기록 → S2 계획 입력.
+- 막힌 지점: 없음.
 
 ### 2026-07-10 — 루트 README.md 사용 가이드 신설
 - 브랜치: `docs/root-readme-usage-guide` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.

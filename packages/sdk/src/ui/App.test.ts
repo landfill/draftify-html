@@ -50,7 +50,7 @@ async function flushPromises(): Promise<void> {
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
-  document.body.innerHTML = `<button id="target">저장</button><div id="root"></div>`;
+  document.body.innerHTML = `<button id="target">저장</button><button id="other">취소</button><div id="root"></div>`;
   vi.stubGlobal("ResizeObserver", StubResizeObserver);
 });
 
@@ -59,6 +59,126 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+/** 서버 저장을 항상 성공시키는 fetch 스텁 + 마운트·패널 열기까지 공통 수행. */
+async function mountWithOpenPanel(): Promise<{ getDoc: () => SpecProject }> {
+  let lastSaved: SpecProject = project;
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+    if (!init?.method) return jsonResponse(lastSaved);
+    lastSaved = JSON.parse(String(init.body)) as SpecProject;
+    return jsonResponse({ ...lastSaved, updatedAt: "2026-07-10T00:00:05.000Z" });
+  });
+
+  await act(async () => {
+    render(h(App, { projectId: project.id }), document.getElementById("root")!);
+    await flushPromises();
+  });
+  await act(async () => {
+    document.querySelector<HTMLButtonElement>(".fab")!.click();
+    await flushPromises();
+  });
+  return { getDoc: () => lastSaved };
+}
+
+function clickMockup(id: string, opts: MouseEventInit = {}): void {
+  document.getElementById(id)!.dispatchEvent(new MouseEvent("click", {
+    bubbles: true, cancelable: true, clientX: 1, clientY: 1, ...opts,
+  }));
+}
+
+async function saveTick(): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+    await flushPromises();
+  });
+}
+
+describe("어노테이션 부착 UX (킥오프 §11 4차 개정)", () => {
+  it("이미 어노테이션이 있는 요소 클릭은 선택 — 중복 생성하지 않는다. Shift+클릭은 추가한다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => { clickMockup("target"); });
+    await act(async () => {
+      // 제목을 채워 자동 정리 대상에서 제외
+      const title = document.querySelector<HTMLInputElement>("input.ann__title")!;
+      title.value = "저장 버튼";
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().annotations).toHaveLength(1);
+
+    // 같은 요소 재클릭 → 생성 아님(선택)
+    await act(async () => { clickMockup("target"); });
+    await saveTick();
+    expect(getDoc().annotations).toHaveLength(1);
+
+    // Shift+클릭 → 같은 요소에 추가
+    await act(async () => { clickMockup("target", { shiftKey: true }); });
+    await act(async () => {
+      const titles = document.querySelectorAll<HTMLInputElement>("input.ann__title");
+      const t = titles[titles.length - 1];
+      t.value = "저장 버튼 (에러 케이스)";
+      t.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().annotations).toHaveLength(2);
+  });
+
+  it("빈 어노테이션은 선택 해제 시 자동 삭제된다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => { clickMockup("target"); });   // 빈 어노테이션 (오클릭 가정)
+    await act(async () => { clickMockup("other"); });    // 다른 요소 클릭 → 선택 이동
+    await saveTick();
+
+    // target의 빈 어노테이션은 정리되고 other 것만 남는다
+    const anns = getDoc().annotations;
+    expect(anns).toHaveLength(1);
+    expect(anns[0]?.anchor.text).toContain("취소");
+    // 번호는 재사용하지 않는다 — 두 번째 생성이므로 2
+    expect(anns[0]?.number).toBe(2);
+  });
+
+  it("마커 드래그는 markerOffset(상대 오프셋)으로 저장된다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => { clickMockup("target"); });
+    await act(async () => {
+      const title = document.querySelector<HTMLInputElement>("input.ann__title")!;
+      title.value = "저장 버튼";
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // 각 이벤트를 별도 act로 — pointerdown의 드래그 effect(window 리스너 부착)가
+    // 다음 이벤트 전에 flush되어야 한다
+    const marker = document.querySelector<HTMLButtonElement>("button.marker")!;
+    await act(async () => {
+      marker.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true, clientX: 100, clientY: 100 }));
+    });
+    await act(async () => {
+      window.dispatchEvent(new MouseEvent("pointermove", { clientX: 130, clientY: 80 }));
+    });
+    await act(async () => {
+      window.dispatchEvent(new MouseEvent("pointerup", { clientX: 130, clientY: 80 }));
+    });
+    await saveTick();
+
+    expect(getDoc().annotations[0]?.markerOffset).toEqual({ dx: 30, dy: -20 });
+
+    // 임계값(4px) 이하 이동은 드래그가 아니다 — 오프셋 불변
+    await act(async () => {
+      marker.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true, clientX: 100, clientY: 100 }));
+    });
+    await act(async () => {
+      window.dispatchEvent(new MouseEvent("pointermove", { clientX: 101, clientY: 101 }));
+    });
+    await act(async () => {
+      window.dispatchEvent(new MouseEvent("pointerup", { clientX: 101, clientY: 101 }));
+    });
+    await saveTick();
+    expect(getDoc().annotations[0]?.markerOffset).toEqual({ dx: 30, dy: -20 });
+  });
 });
 
 describe("App 저장·오프라인 큐 (T7)", () => {

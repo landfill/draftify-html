@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { SpecProject } from "@mockspec/shared";
-import { pickTarget, generateAnchor } from "../anchor/anchor.js";
+import type { MarkerOffset, SpecProject } from "@mockspec/shared";
+import { pickTarget, generateAnchor, resolveAnchor } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
   deleteAnnotation, annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
@@ -26,6 +26,11 @@ import { useMarkers } from "./useMarkers.js";
 type Mode = "preview" | "edit";
 type SaveStatus = "loading" | "saved" | "saving" | "offline" | "error";
 interface Rect { top: number; left: number; width: number; height: number; }
+
+/** 마커 드래그 진행 상태. moved=임계값(4px) 초과 — 클릭(선택)과 드래그를 구분한다. */
+interface MarkerDrag { annId: string; startX: number; startY: number; dx: number; dy: number; moved: boolean; }
+
+const DRAG_THRESHOLD_PX = 4;
 
 function saveStatusLabel(status: SaveStatus): string {
   if (status === "saved") return "저장됨 ✓";
@@ -53,12 +58,15 @@ export function App({ projectId }: { projectId: string }) {
   // 동결 진행/실패 상태 (성공은 scene.snapshotAsset로 표현). sceneId → 값.
   const [freezing, setFreezing] = useState<Record<string, boolean>>({});
   const [freezeErr, setFreezeErr] = useState<Record<string, string>>({});
+  const [drag, setDrag] = useState<MarkerDrag | null>(null);
 
   // 옵저버/전역 리스너가 최신 상태를 읽도록 ref 래핑
   const projectRef = useRef(project); projectRef.current = project;
   const docRef = useRef(doc); docRef.current = doc;
   const sceneRef = useRef(currentSceneId); sceneRef.current = currentSceneId;
   const modeRef = useRef(mode); modeRef.current = mode;
+  const dragRef = useRef(drag); dragRef.current = drag;
+  const suppressClickRef = useRef(false);
   const lastSyncedRef = useRef<string | null>(null);
   const flushingRef = useRef(false);
   const getDoc = useRef(() => docRef.current).current;
@@ -250,6 +258,15 @@ export function App({ projectId }: { projectId: string }) {
       const scene = sceneRef.current;
       if (!scene) { setNeedScene(true); return; }      // 장면 없으면 안내
       const target = pickTarget(e.target as Element);   // ID-08
+
+      // 이미 어노테이션이 달린 요소는 선택으로 — 중복 생성 방지 (킥오프 §11 4차 개정).
+      // 같은 요소에 하나 더 달려면 Shift+클릭.
+      if (!e.shiftKey) {
+        const existing = annotationsOfScene(docRef.current, scene)
+          .find((a) => resolveAnchor(a.anchor, document).el === target);
+        if (existing) { setSelectedAnn(existing.id); return; }
+      }
+
       const anchor = generateAnchor(target);            // ID-06
       const { doc: nd, annotation } = addAnnotation(docRef.current, scene, anchor);
       setDoc(nd);
@@ -271,6 +288,73 @@ export function App({ projectId }: { projectId: string }) {
       setHover(null);
     };
   }, [open, mode]);
+
+  // 빈(title·description 모두 공백) 어노테이션은 선택 해제 시 자동 삭제 — 오클릭 잔재 방지
+  // (킥오프 §11 4차 개정). 소비한 번호는 재사용하지 않는다.
+  const prevSelectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = selectedAnn;
+    if (!prev || prev === selectedAnn) return;
+    const ann = docRef.current.annotations.find((a) => a.id === prev);
+    if (ann && !ann.title.trim() && !ann.description.trim()) {
+      setDoc((d) => deleteAnnotation(d, prev));
+    }
+  }, [selectedAnn]);
+
+  // 장면 전환·패널 닫기 시 선택 해제 (위 자동 정리가 이어서 동작)
+  useEffect(() => {
+    setSelectedAnn(null);
+  }, [currentSceneId, open]);
+
+  // 마커 드래그: 이동량을 markerOffset(기본 위치 기준 상대값)으로 커밋.
+  // 절대 좌표를 저장하지 않아야 앵커 재해석(요소 추적)과 공존한다 (§3.5).
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: PointerEvent) => {
+      setDrag((d) => {
+        if (!d) return d;
+        const dx = e.clientX - d.startX;
+        const dy = e.clientY - d.startY;
+        return { ...d, dx, dy, moved: d.moved || Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD_PX };
+      });
+    };
+    const onUp = () => {
+      const d = dragRef.current;
+      if (d && d.moved) {
+        // 드래그 직후의 click은 선택으로 처리하지 않는다. click이 아예 안 오는 경우
+        // (pointerup이 마커 밖에서 끝남)에 플래그가 남아 다음 클릭을 삼키지 않도록 곧 해제.
+        suppressClickRef.current = true;
+        window.setTimeout(() => { suppressClickRef.current = false; }, 0);
+        const ann = docRef.current.annotations.find((a) => a.id === d.annId);
+        const base = ann?.markerOffset ?? { dx: 0, dy: 0 };
+        setDoc((cur) => updateAnnotation(cur, d.annId, {
+          markerOffset: { dx: base.dx + d.dx, dy: base.dy + d.dy },
+        }));
+      }
+      setDrag(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [drag !== null]);
+
+  const onMarkerPointerDown = (annId: string) => (e: PointerEvent) => {
+    if (modeRef.current !== "edit") return; // 드래그는 편집 모드에서만
+    e.preventDefault();
+    setDrag({ annId, startX: e.clientX, startY: e.clientY, dx: 0, dy: 0, moved: false });
+  };
+
+  /** 마커 렌더 위치 = useMarkers 기본 위치 + 저장 오프셋 + (드래그 중이면) 진행 델타. */
+  const markerOffsetOf = (annId: string): MarkerOffset => {
+    const base = docRef.current.annotations.find((a) => a.id === annId)?.markerOffset
+      ?? { dx: 0, dy: 0 };
+    if (drag && drag.annId === annId) return { dx: base.dx + drag.dx, dy: base.dy + drag.dy };
+    return base;
+  };
 
   // 새 어노테이션 title 자동 포커스.
   // 의존성은 selectedAnn만: doc을 넣으면 편집 키스트로크(=doc 변경)마다 effect가
@@ -332,16 +416,24 @@ export function App({ projectId }: { projectId: string }) {
       {mode === "edit" && hover && (
         <div class="hl" style={{ top: hover.top, left: hover.left, width: hover.width, height: hover.height }} />
       )}
-      {/* 마커: 미리보기·편집 양쪽에서 현재 장면 소속만 렌더 (ID-09) */}
-      {markers.map((m) => (
-        <button
-          key={m.annId}
-          class={`marker${m.uncertain ? " marker--uncertain" : ""}${selectedAnn === m.annId ? " marker--sel" : ""}`}
-          style={{ left: m.x, top: m.y }}
-          title={m.uncertain ? "위치 불확실" : undefined}
-          onClick={() => setSelectedAnn(m.annId)}
-        >{m.number}</button>
-      ))}
+      {/* 마커: 미리보기·편집 양쪽에서 현재 장면 소속만 렌더 (ID-09).
+          위치 = 기본(요소 우상단) + markerOffset. 편집 모드에선 드래그로 오프셋 조정 (§3.5) */}
+      {markers.map((m) => {
+        const off = markerOffsetOf(m.annId);
+        return (
+          <button
+            key={m.annId}
+            class={`marker${m.uncertain ? " marker--uncertain" : ""}${selectedAnn === m.annId ? " marker--sel" : ""}${drag?.annId === m.annId ? " marker--drag" : ""}`}
+            style={{ left: m.x + off.dx, top: m.y + off.dy }}
+            title={m.uncertain ? "위치 불확실" : undefined}
+            onPointerDown={onMarkerPointerDown(m.annId)}
+            onClick={() => {
+              if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+              setSelectedAnn(m.annId);
+            }}
+          >{m.number}</button>
+        );
+      })}
 
       <div class="panel" role="complementary" aria-label="mockspec 편집 패널">
         <div class="panel__head">
@@ -404,7 +496,11 @@ export function App({ projectId }: { projectId: string }) {
           {!scene && <div class="muted">장면을 선택하면 어노테이션을 달 수 있습니다.</div>}
           {scene && mode !== "edit" && <div class="muted">편집 모드에서 요소를 클릭해 어노테이션을 답니다.</div>}
           {scene && mode === "edit" && anns.length === 0 && (
-            <div class={`hint${needScene ? " hint--warn" : ""}`}>요소를 클릭하면 어노테이션이 생성됩니다.</div>
+            <div class={`hint${needScene ? " hint--warn" : ""}`}>
+              요소를 클릭하면 어노테이션이 생성됩니다.
+              이미 마커가 있는 요소는 클릭하면 선택되고, 하나 더 달려면 Shift+클릭.
+              마커는 드래그로 옮길 수 있습니다.
+            </div>
           )}
           {needScene && <div class="hint hint--warn">먼저 장면을 등록해주세요.</div>}
           {anns.map((a) => (
@@ -412,7 +508,8 @@ export function App({ projectId }: { projectId: string }) {
               <div class="row">
                 <span class="ann__num">{a.number}</span>
                 <input
-                  class="ann__title" data-ann-title={a.id} placeholder="제목"
+                  class="ann__title" data-ann-title={a.id}
+                  placeholder="제목 (비워두면 선택 해제 시 자동 삭제)"
                   value={a.title}
                   onInput={(e) => setDoc(updateAnnotation(doc, a.id, { title: (e.target as HTMLInputElement).value }))}
                 />

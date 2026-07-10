@@ -36,6 +36,7 @@ function anno(over: Partial<Annotation> = {}): Annotation {
     id: "ann_a", sceneId: "scn_a", number: 1, title: "설명",
     description: "본문 **마크다운**",
     anchor: { selector: "#root > button:nth-of-type(1)", text: "저장", attrs: { role: "button" }, rect: { x: 0.1, y: 0.2, w: 0.3, h: 0.05 } },
+    markerOffset: { dx: -12, dy: 30 }, // 마커 드래그 오프셋도 왕복 무손실이어야 한다 (4차 개정)
     ...over,
   };
 }
