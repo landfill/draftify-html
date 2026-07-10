@@ -99,7 +99,10 @@ export interface SpecProject {
   updatedAt: string;
   mockupSource:                  // [S2] discriminated union으로 확장 (킥오프 s2 §1)
     | { type: "upload"; originalFilename: string; uploadedAt: string }
-    | { type: "proxy"; originUrl: string; registeredAt: string };
+    | { type: "proxy"; originUrl: string; registeredAt: string }
+    // [S2.5] 경로 D — 서버가 fetch할 originUrl 없음 (pathD 킥오프 §5).
+    // 토큰은 spec.json에 넣지 않는다(별도 메타 파일에 해시) — PUT 전체 교체와 격리
+    | { type: "snippet"; registeredAt: string; lastSeenOrigin?: string };
   sceneCodeSeq: number;          // 다음 SCR-### 번호. 단조 증가 — 삭제된 장면 번호 재사용 방지
   scenes: Scene[];
   annotations: Annotation[];
@@ -276,6 +279,11 @@ resolve(anchor):
 
 베이스: 콘솔은 루트 도메인 `/api`, SDK는 목업 서브도메인 `/__mockspec/api/*` (서버가 동일 라우터로 연결). **same-origin이므로 CORS 불필요** (ID-03). 인증 없음 (사내망 전제 + 비추측성 nanoid).
 
+[S2.5] 예외 — 경로 D(`type: "snippet"`) 프로젝트의 저장 계열(PUT·assets·export)은
+**`Authorization: Bearer {토큰}` 필수**(불일치·부재 401): SDK가 서비스 도메인 밖 임의
+오리진에서 돌기 때문에 same-origin 신뢰가 없다. 저장은 확장 background 경유라 **CORS는
+여전히 불필요** (pathD 킥오프 §4).
+
 | 메서드/경로 | 역할 | 비고 |
 |---|---|---|
 | `POST /projects` | multipart(zip, name) → 프로젝트 생성 | 응답: SpecProject + 목업 URL. [S2] JSON body(`{ name, originUrl }`)도 수용 — §7.2 검증 + 오리진 `GET /` 도달성 확인 후 생성 |
@@ -286,6 +294,7 @@ resolve(anchor):
 | `POST /projects/:id/assets` | 동결 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재동결·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
 | `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12) |
+| `POST /projects/:id/token` | [S2.5] 경로 D 토큰 재발급·폐기 | 경로 D 프로젝트 한정. 재발급 시 구 토큰 즉시 무효 (pathD 킥오프 §6) |
 
 에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작. [S2] 프록시(경로 B)가 `BAD_GATEWAY`(502) 추가 — 오리진 도달 실패·오리진 밖 리다이렉트.
 
@@ -328,6 +337,16 @@ resolve(anchor):
 | 프로토콜 | `http:`·`https:`만. 포트는 URL에 명시된 것만 |
 | 인증 쿠키 | `Set-Cookie`의 `Domain` 속성 제거(host-only로 프록시 서브도메인에 재바인딩), 프록시가 http일 땐 `Secure`도 제거. `Path` 유지. **여기까지만** — SSO 콜백 등으로 안 풀리는 인증은 프록시로 뚫지 않고 미지원 안내 (경로 D가 열리면 우회 안내로 전환) |
 | 실데이터 반출 | 내보내기 전 마스킹 편집 (detailed-spec §3.12) — 프록시 목업은 스테이징 실데이터를 담을 수 있음 |
+
+### 7.3 S2.5 (경로 D — 클라이언트 주입, pathD 킥오프 §4)
+
+| 항목 | 사양 |
+|------|------|
+| SSRF | **표면 없음** — 서버가 목업을 fetch하지 않는다. §7.2의 allowlist·IP 고정은 경로 D에 불필요 |
+| 저장 인증 (신규 표면) | 경로 D 프로젝트의 저장 계열(PUT·assets·export)은 프로젝트 토큰(`Authorization: Bearer`) 필수 — 임의 페이지에서 도는 SDK가 남의 프로젝트에 쓰지 못하게 하는 유일한 경계. 서버는 해시만 보관(평문 미저장), spec.json 밖 별도 메타 파일 |
+| CORS | 저장이 확장 background(`host_permissions`) 경유라 **미구현** — 표면을 넓히지 않는다. 후속에 스니펫(옵션 S)을 도입하면 그때 토큰 게이트 CORS 추가 |
+| 페이지 CSP | content script 주입이라 대상 페이지 `script-src`와 무관. sdk.js는 확장 번들에 포함(서비스에서 로드하지 않음) |
+| 실데이터 반출 | S2 마스킹 그대로 적용 — 경로 D 스냅샷도 실데이터를 담을 수 있음. SDK 전송 범위는 S1·S2 그대로(NFR-04) |
 
 ---
 
@@ -409,6 +428,18 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 | T16 | 마스킹 (detailed-spec §3.12) | 규칙 추가→[전체 장면에 적용]→export 산출물에서 원문 0회·치환문 존재 |
 | T17 | E2E: S2 DoD (§9.3) | 프록시 시나리오 추가 통과, S1 시나리오 회귀 없음 |
 | T18 | CI 파이프라인 | GitHub Actions 워크플로우 1본(typecheck→build→test→e2e). 전제: 원격 저장소 개설(사용자 결정) |
+
+[S2.5] 경로 D WBS (pathD 킥오프 §7 — T18에 이어 번호):
+
+| # | 작업 | AC 요약 |
+|---|------|---------|
+| T19 | 데이터 모델 + 토큰 발급/검증 | `snippet` 변형 왕복 무손실, 토큰 발급·해시검증·폐기 유닛 |
+| T20 | 저장 경로 토큰 인증 | 경로 D 프로젝트 저장이 토큰 없으면 401, 타 프로젝트 토큰 거부 |
+| T21 | 콘솔 온보딩 3번째 선택지 | 경로 D 프로젝트 생성 → 토큰·설치 안내 노출 |
+| T22 | 확장 스캐폴드 + content script SDK 주입 | unpacked 로드 → 페이지에 FAB·패널 동작 |
+| T23 | 확장 팝업(바인딩) + background 저장 | 임의 사이트에서 편집·동결·저장 성공 |
+| T24 | E2E: 로그인 뒤 화면 시나리오 | pathD 킥오프 §7 DoD |
+| T25 | docs/ 최종 동기화 + 실사용 판정 기록 | 판정 기록으로 S2.5 종료 |
 
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
 
