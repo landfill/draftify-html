@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S2 구현 중 (2026-07-11) — T11~T17 완료. 다음: T18 CI 파이프라인. 새 세션은 여기서 시작.**
+**S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green. 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -20,7 +20,7 @@
 - [x] T15 콘솔 온보딩 폼 (URL 등록)
 - [x] T16 마스킹 (규칙 CRUD + 마스킹본 생성 + export 연동)
 - [x] T17 E2E: S2 DoD 시나리오
-- [ ] T18 CI 파이프라인 (전제: 원격 저장소 개설 — 사용자 결정)
+- [x] T18 CI 파이프라인 — 원격 개설(github.com/landfill/draftify-html, public)·GitHub Actions 워크플로우 커밋·첫 실행 green(58s, typecheck→build→test 113→e2e 2 passed)
 
 ## WBS 체크리스트
 
@@ -38,6 +38,15 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T18 CI 파이프라인 완료 + 원격 저장소 개설 (S2 WBS 종료)
+- 브랜치: `chore/ci-github-actions-t18` (main 미병합, 병합 동의 대기). CI 워크플로우 커밋 1건.
+- 원격 개설: 사용자가 `https://github.com/landfill/draftify-html`(public) 제공. `origin` 추가 후 `main` 초기 push(민감 파일 없음 확인 — `data/`·`.env`·`node_modules` gitignore, 추적 파일에 secret 패턴 0). `package-lock.json` 커밋돼 있어 `npm ci` 가능.
+- 완료: `.github/workflows/ci.yml` — 킥오프 s2 §7대로 `npm ci` → typecheck → build → test → **Playwright Chromium 설치** → test:e2e. push(전 브랜치)·PR 트리거. `concurrency`로 같은 ref 진행 실행 취소, 실패 시 playwright-report 아티팩트 업로드. 명령 자체는 러너 중립(원격 이식 대비).
+- 검증: **로컬** — typecheck·build·test 113 passed·test:e2e 2 passed(S1+S2) 전부 통과. **원격 첫 실행 green**(run 29108846721, verify job 58s, 전 단계 ✓). 스펙 T18 DoD("원격 개설 후 첫 실행 green") 충족.
+- 참고: CI 로그에 `actions/checkout@v4`·`setup-node@v4`가 내부 Node 20 런타임 deprecated 경고 — 액션 자체 런타임 문제(Node 24로 자동 강제 실행), 우리 프로젝트 무관·무해. 후속 액션 메이저 갱신 시 자연 해소.
+- 다음 할 일: **S2 WBS 종료.** 이 브랜치 main 병합(동의 대기) → 병합 후 push. 이후는 S2 실사용 판정(프록시 온보딩·마스킹) 또는 S3 계획 입력.
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T17 E2E: S2 DoD 시나리오 완료
 - 브랜치: `feat/s2-e2e-t17` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.
