@@ -15,6 +15,7 @@ import {
   readAsset,
 } from "../store/projectStore.js";
 import { mockupDir } from "../store/paths.js";
+import { verifyToken } from "../store/tokenStore.js";
 import { sendError } from "../errors.js";
 import { exportProjectHtml } from "./export.js";
 
@@ -34,6 +35,32 @@ const uploadAsset = multer({
 
 function isMulterLimit(err: unknown): boolean {
   return err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE";
+}
+
+/**
+ * [S2.5] 경로 D 저장 토큰 게이트 (pathD 킥오프 §4.1, technical-spec §6).
+ * `snippet` 프로젝트의 저장 계열(PUT·assets·export)만 `Authorization: Bearer` 필수 —
+ * 경로 D의 SDK는 서비스 도메인 밖 임의 오리진에서 돌아 same-origin 신뢰가 없다.
+ * upload·proxy 프로젝트는 기존 무인증 그대로 (사내망 + same-origin 전제, ID-03).
+ */
+async function requireSnippetToken(
+  req: express.Request<{ id: string }>,
+  res: express.Response,
+  next: express.NextFunction
+): Promise<void> {
+  try {
+    const spec = await readSpec(req.params.id);
+    if (!spec) return sendError(res, "NOT_FOUND", `프로젝트 ${req.params.id}를 찾을 수 없습니다.`);
+    if (spec.mockupSource.type !== "snippet") return next();
+
+    const m = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "");
+    if (!m || !(await verifyToken(spec.id, m[1]!))) {
+      return sendError(res, "UNAUTHORIZED", "유효한 프로젝트 토큰이 필요합니다 (Authorization: Bearer).");
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 export function projectsRouter(): Router {
@@ -76,7 +103,7 @@ export function projectsRouter(): Router {
     }
   });
 
-  router.put("/projects/:id", json, async (req, res, next) => {
+  router.put("/projects/:id", requireSnippetToken, json, async (req, res, next) => {
     try {
       const { id } = req.params;
       const prev = await readSpec(id);
@@ -104,9 +131,9 @@ export function projectsRouter(): Router {
     }
   });
 
-  router.post("/projects/:id/export", exportProjectHtml);
+  router.post("/projects/:id/export", requireSnippetToken, exportProjectHtml);
 
-  router.post("/projects/:id/assets", (req, res, next) => {
+  router.post("/projects/:id/assets", requireSnippetToken, (req, res, next) => {
     uploadAsset.single("snapshot")(req, res, (err: unknown) => {
       if (err) {
         if (isMulterLimit(err)) return sendError(res, "TOO_LARGE", "스냅샷이 50MB 제한을 초과했습니다.");

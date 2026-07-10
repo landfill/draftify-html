@@ -15,7 +15,7 @@
 ## S2.5 WBS 체크리스트 (pathD 킥오프 §7)
 
 - [x] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장) — vitest 120 passed(+7), 평문 미보관·재발급 무효·왕복 무손실 검증
-- [ ] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트)
+- [x] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트) — vitest 126 passed(+6), PUT/assets/export 게이트·타 프로젝트 토큰 거부·기존 경로 무영향 검증
 - [ ] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내)
 - [ ] T22 확장 스캐폴드 + content script SDK 주입
 - [ ] T23 확장 팝업(프로젝트 바인딩) + background 저장
@@ -49,6 +49,15 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T20 저장 경로 토큰 인증 완료
+- 브랜치: `feat/s25-save-auth-t20` (`feat/s25-token-model-t19` 위에 스택, main 미병합 — T19→T20 순 병합 대기).
+- 완료: ① `errors.ts`에 `UNAUTHORIZED(401)` 추가(ID-10 확장 여지대로) ② `routes/projects.ts::requireSnippetToken` 미들웨어 — `snippet` 프로젝트의 **PUT/assets/export**에만 `Authorization: Bearer` 검증(불일치·부재 401), upload·proxy 프로젝트는 기존 무인증 그대로(ID-03 same-origin 전제 유지). GET(초기 로드)·목록·삭제는 게이트 밖(스펙 §6 — 저장 계열만).
+- 보류(의도): `lastSeenOrigin` 스탬프는 T23으로 — 확장 background 경유 저장은 Origin이 `chrome-extension://`이라 페이지 오리진 전달 방식(헤더 등)이 확장 구현에서 정해진 뒤에 넣는 것이 맞음.
+- **T21 넘김 사항**: 콘솔(루트 도메인)의 내보내기 버튼은 토큰이 없어 snippet 프로젝트에서 401이 됨 — 스펙(§6)이 export 토큰 필수를 명시하므로 게이트는 유지, 콘솔 UX(버튼 숨김 또는 "확장에서 내보내기" 안내)는 T21에서 처리.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **126 passed**(+6: PUT 401→Bearer 200 / assets 401→201 / export 401→200 / 타 프로젝트 토큰 401 / GET 무토큰 통과 / upload 프로젝트 무인증 회귀 없음). `npm run test:e2e` 2 passed 회귀 없음.
+- 다음 할 일: **T21 콘솔 온보딩 3번째 선택지** — `[내 화면에서 편집 (확장)]` 폼, `POST /projects`에 `{name, source:"snippet"}` 수용+토큰 발급 응답, 설치·토큰 안내, 목록 뱃지, snippet 내보내기 UX(위 넘김 사항).
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T19 데이터 모델 + 토큰 발급/검증 완료
 - 브랜치: `feat/s25-token-model-t19` (main 미병합, 동의 대기).
