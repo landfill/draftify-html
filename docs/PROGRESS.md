@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — T16 마스킹 기능 완료
-- 브랜치: `feat/s2-masking-t16` (main 미병합, 동의 대기)
+- 브랜치: `feat/s2-masking-t16` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.
 - 완료:
   - **`routes/export.ts`**: `buildExportHtml`을 위한 스냅샷 조립 시, `scene.maskedSnapshotAsset`이 존재할 경우 `scene.snapshotAsset`보다 우선하여 선택하도록 로직 수정.
   - **`routes/console.ts`**: 마스킹 규칙(CRUD) 편집 및 전체 적용을 위한 클라이언트 UI 모달 구현. `DOMParser`를 이용해 원문 텍스트 노드 및 주요 속성(`value`, `placeholder` 등)에 규칙을 적용하고 `maskedSnapshotAsset`으로 서버에 업로드한 뒤 저장하는 로직 작성. `exportProject` 실행 시 마스킹 미적용본이 있을 때의 확인 알림 추가.
