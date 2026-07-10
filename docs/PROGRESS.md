@@ -9,7 +9,8 @@
 
 ## 현재 단계
 
-**S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green. 새 세션은 여기서 시작.**
+**S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
+**다음: 경로 D(클라이언트 주입) 계획 검토 중 — `guide/pathD-kickoff-spec.md` 초안 작성됨. 주입 메커니즘(스니펫 vs 확장) 등 §8 결정 대기. 새 세션은 여기서 시작.**
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
 
@@ -38,6 +39,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — 경로 D(클라이언트 주입) 실수요 발생 + 킥오프 초안 작성
+- 브랜치: `docs/pathD-kickoff-draft` (main 미병합). 초안 문서만 추가 — docs/ 동기화는 §8 확정 후로 보류.
+- 배경(실수요): 경로 B 실사용 중(hana-color.vercel.app 등록·편집·동결까지 실측 성공) 사용자가 **"직접 로그인해 둔 상태의 화면을 쓰고 싶다"**는 요구 제기. 경로 B(서버 프록시)는 익명 fetch라 원리상 불가(외부 IdP 리다이렉트 502). 이는 **PRD 리스크 R5가 예고한 "안 풀리는 인증은 경로 D로 우회"** 지점 — S2 종료 후 실수요 판단 시점 도달(PRD §265).
+- 완료: `guide/pathD-kickoff-spec.md` **초안** — S2 킥오프와 동일 형식. 핵심: ① 아키텍처 차이(서버 프록시 vs 클라이언트 주입) ② **주입 메커니즘 갈림길**(옵션 S 스니펫=가볍지만 CSP 못 뚫음 / 옵션 E 확장=content script로 CSP·CORS 우회, 로그인 실화면 커버, 착수 비용 큼 → **초안 권장 E 주+S 보조**) ③ SSRF는 사라지고 **저장 엔드포인트 토큰 인증+CORS**가 새 표면 ④ 마스킹·편집·동결·뷰어·export는 S1/S2 재사용(설계 원칙 #3) ⑤ 데이터 모델 `mockupSource: snippet` 변형(아키텍처 §4 line 131이 예고) ⑥ WBS T19~T25(T19~T21은 메커니즘 무관 선행 가능) ⑦ DoD=로그인 뒤 보호 화면으로 기획서 완성.
+- 검증: 문서만. 근거 대조 — 아키텍처 §4(경로 D)·§5.2(경로 D 우회)·line 131(snippet), PRD FR-ONB-06·R5·§265, s2-kickoff §2.1·§4.2.
+- 다음 할 일: **§8 결정 대기** — (1) 주입 메커니즘 S/E/단계안 (2) 토큰 저장·수명 (3) 확장 배포 방식 (4) 동결 cross-origin 완화 (5) 로드맵 위치. 사용자가 (1)을 정하면 문서를 확정 승격 → docs/ 동기화 → 구현(T19부터).
+- 막힌 지점: 주입 메커니즘 결정이 경로 D 규모를 좌우 — 사용자 판단 필요.
 
 ### 2026-07-11 — T18 CI 파이프라인 완료 + 원격 저장소 개설 (S2 WBS 종료)
 - 브랜치: `chore/ci-github-actions-t18` → `main` 병합 완료(2026-07-11, fast-forward)·`origin/main` push. 병합 후 브랜치 삭제.
