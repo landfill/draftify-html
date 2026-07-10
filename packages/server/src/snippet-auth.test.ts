@@ -107,3 +107,68 @@ describe("snippet 저장 토큰 게이트 (T20)", () => {
     expect((res.body as SpecProject).name).toBe("무인증 저장");
   });
 });
+
+describe("snippet 등록·토큰 API (T21)", () => {
+  it("POST /projects {source:'snippet'} — 201 + 프로젝트 + 실제로 동작하는 토큰 1회 반환", async () => {
+    const res = await request(app)
+      .post("/api/projects").set("Host", ROOT)
+      .send({ name: "확장 등록", source: "snippet" });
+    expect(res.status).toBe(201);
+    const { project, token } = res.body as { project: SpecProject; token: string };
+    expect(project.mockupSource.type).toBe("snippet");
+    expect(token).toMatch(/^tok_/);
+
+    // 응답 토큰이 저장 게이트를 실제로 통과한다
+    const put = await request(app)
+      .put(`/api/projects/${project.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ...project, name: "저장 확인" });
+    expect(put.status).toBe(200);
+  });
+
+  it("이름 없는 snippet 등록은 400", async () => {
+    const res = await request(app)
+      .post("/api/projects").set("Host", ROOT)
+      .send({ name: "  ", source: "snippet" });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /projects/:id/token — 재발급 시 구 토큰 즉시 무효, 새 토큰 유효", async () => {
+    const { spec, token: oldToken } = await snippetProject();
+    const res = await request(app)
+      .post(`/api/projects/${spec.id}/token`).set("Host", ROOT);
+    expect(res.status).toBe(201);
+    const newToken = (res.body as { token: string }).token;
+    expect(newToken).not.toBe(oldToken);
+
+    const withOld = await request(app)
+      .put(`/api/projects/${spec.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${oldToken}`).send({ ...spec });
+    expect(withOld.status).toBe(401);
+
+    const withNew = await request(app)
+      .put(`/api/projects/${spec.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${newToken}`).send({ ...spec });
+    expect(withNew.status).toBe(200);
+  });
+
+  it("DELETE /projects/:id/token — 폐기 후 기존 토큰 401", async () => {
+    const { spec, token } = await snippetProject();
+    const res = await request(app)
+      .delete(`/api/projects/${spec.id}/token`).set("Host", ROOT);
+    expect(res.status).toBe(204);
+
+    const put = await request(app)
+      .put(`/api/projects/${spec.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${token}`).send({ ...spec });
+    expect(put.status).toBe(401);
+  });
+
+  it("upload 프로젝트에 토큰 API를 쓰면 400", async () => {
+    const spec = await createProject("zip 프로젝트", { type: "upload", originalFilename: "m.zip" });
+    const post = await request(app).post(`/api/projects/${spec.id}/token`).set("Host", ROOT);
+    expect(post.status).toBe(400);
+    const del = await request(app).delete(`/api/projects/${spec.id}/token`).set("Host", ROOT);
+    expect(del.status).toBe(400);
+  });
+});

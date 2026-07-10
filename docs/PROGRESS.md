@@ -16,7 +16,7 @@
 
 - [x] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장) — vitest 120 passed(+7), 평문 미보관·재발급 무효·왕복 무손실 검증
 - [x] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트) — vitest 126 passed(+6), PUT/assets/export 게이트·타 프로젝트 토큰 거부·기존 경로 무영향 검증
-- [ ] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내)
+- [x] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내) — vitest 132 passed(+6), snippet 등록·토큰 재발급/폐기 API·콘솔 3택 검증, 실 Chrome 렌더 확인
 - [ ] T22 확장 스캐폴드 + content script SDK 주입
 - [ ] T23 확장 팝업(프로젝트 바인딩) + background 저장
 - [ ] T24 E2E: 로그인 뒤 화면 시나리오 (DoD)
@@ -49,6 +49,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T21 콘솔 온보딩 3번째 선택지 완료
+- 브랜치: `feat/s25-console-onboarding-t21` (T19→T20 위에 스택, main 미병합 — 순서대로 병합 대기).
+- 완료(서버): ① `POST /projects`의 JSON 분기에 `source:"snippet"` 라우팅 — `handleSnippetRegistration`(이름 검증→생성→토큰 발급→201 `{project, token}`, 오리진 검증·도달성 없음 — fetch하지 않는 경로) ② `POST /projects/:id/token`(재발급, 201 `{token}`, 구 토큰 즉시 무효)·`DELETE /projects/:id/token`(폐기, 204) — 경로 D 한정(그 외 400).
+- 완료(콘솔): ① 3번째 탭 **[내 화면에서 편집 (확장)]** — 이름 입력→생성→**토큰 1회 표시**(복사 버튼, 프로젝트 ID, unpacked 로드·팝업 연결 안내) ② 목록 뱃지 "확장"·`lastSeenOrigin` 메타 ③ snippet 프로젝트 액션: 편집 열기 대신 **[토큰 재발급]**(confirm→새 토큰 prompt 표시) ④ **T20 넘김 사항 해소** — 내보내기·마스킹 적용 시 `snippetAuthHeaders`가 토큰을 물어(sessionStorage 세션 보관) Bearer로 전송, 401이면 보관 토큰 폐기+재입력 유도.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **132 passed**(+6: snippet 등록 201+응답 토큰 실동작 / 이름 없음 400 / 재발급 구토큰 401·신토큰 200 / 폐기 후 401 / upload에 토큰 API 400 / 콘솔 3택 HTML). `npm run test:e2e` 2 passed 회귀 없음. **실 Chrome**: 콘솔 3번째 탭 렌더·폼·안내 확인(제출 흐름은 vitest가 커버).
+- 다음 할 일: **T22 확장 스캐폴드 + content script SDK 주입** — MV3 manifest·기존 sdk.js 번들 재사용·unpacked 로드로 임의 페이지에 FAB·패널 (pathD 킥오프 §2·§7).
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T20 저장 경로 토큰 인증 완료
 - 브랜치: `feat/s25-save-auth-t20` (`feat/s25-token-model-t19` 위에 스택, main 미병합 — T19→T20 순 병합 대기).

@@ -15,7 +15,7 @@ import {
   readAsset,
 } from "../store/projectStore.js";
 import { mockupDir } from "../store/paths.js";
-import { verifyToken } from "../store/tokenStore.js";
+import { verifyToken, issueToken, revokeToken } from "../store/tokenStore.js";
 import { sendError } from "../errors.js";
 import { exportProjectHtml } from "./export.js";
 
@@ -80,7 +80,12 @@ export function projectsRouter(): Router {
     if (contentType.includes("application/json")) {
       express.json({ limit: "32mb" })(req, res, (err) => {
         if (err) return next(err);
-        void handleProxyRegistration(req, res, next);
+        // JSON 등록 분기: 경로 D(snippet) vs 경로 B(proxy)
+        if ((req.body as { source?: unknown } | undefined)?.source === "snippet") {
+          void handleSnippetRegistration(req, res, next);
+        } else {
+          void handleProxyRegistration(req, res, next);
+        }
       });
     } else {
       uploadZip.single("zip")(req, res, (err: unknown) => {
@@ -115,6 +120,36 @@ export function projectsRouter(): Router {
       }
       const saved = await replaceSpec(prev, body as SpecProject);
       res.json(saved);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // [S2.5] 경로 D 토큰 재발급(POST — 구 토큰 즉시 무효)·폐기(DELETE). 경로 D 프로젝트 한정.
+  // 콘솔(루트 도메인) 조작 전제 — 삭제와 동일하게 확인 책임은 콘솔 UI에 있다.
+  router.post("/projects/:id/token", async (req, res, next) => {
+    try {
+      const spec = await readSpec(req.params.id);
+      if (!spec) return sendError(res, "NOT_FOUND", `프로젝트 ${req.params.id}를 찾을 수 없습니다.`);
+      if (spec.mockupSource.type !== "snippet") {
+        return sendError(res, "INVALID_REQUEST", "확장(경로 D) 프로젝트만 토큰을 사용합니다.");
+      }
+      const token = await issueToken(spec.id);
+      res.status(201).json({ token });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete("/projects/:id/token", async (req, res, next) => {
+    try {
+      const spec = await readSpec(req.params.id);
+      if (!spec) return sendError(res, "NOT_FOUND", `프로젝트 ${req.params.id}를 찾을 수 없습니다.`);
+      if (spec.mockupSource.type !== "snippet") {
+        return sendError(res, "INVALID_REQUEST", "확장(경로 D) 프로젝트만 토큰을 사용합니다.");
+      }
+      await revokeToken(spec.id);
+      res.status(204).end();
     } catch (err) {
       next(err);
     }
@@ -211,6 +246,29 @@ async function handleAssetUpload(
     if (!req.file) return sendError(res, "INVALID_REQUEST", "스냅샷 파일(field: snapshot)이 필요합니다.");
     const assetKey = await saveAsset(req.params.id, req.file.buffer);
     res.status(201).json({ assetKey });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * [S2.5] 경로 D 프로젝트 등록 (pathD 킥오프 §3·§6).
+ * 오리진 검증·도달성 확인이 없다 — 서버가 아무것도 fetch하지 않는 경로.
+ * 토큰 평문은 이 응답 1회뿐 (서버는 해시만 보관).
+ */
+async function handleSnippetRegistration(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+): Promise<void> {
+  try {
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    if (!name) {
+      return sendError(res, "INVALID_REQUEST", "프로젝트 이름이 필요합니다.");
+    }
+    const project = await createProject(name, { type: "snippet" });
+    const token = await issueToken(project.id);
+    res.status(201).json({ project, token });
   } catch (err) {
     next(err);
   }

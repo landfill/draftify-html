@@ -36,6 +36,13 @@ describe("콘솔 페이지 서빙 (T9)", () => {
     expect(res.text).toContain('id="project-list"');
   });
 
+  it("온보딩 폼이 3택이다 — zip·URL·확장(경로 D, T21)", async () => {
+    const res = await request(app).get("/").set("Host", "localhost:4000");
+    expect(res.text).toContain('id="url-form"');
+    expect(res.text).toContain('id="snippet-form"');
+    expect(res.text).toContain("내 화면에서 편집 (확장)");
+  });
+
   it("콘솔 HTML은 외부 참조 없이 상대 /api 경로만 호출한다 (ID-01)", () => {
     // 오리진 하드코딩 금지 — http(s) 절대 URL이 없어야 한다 (SPA base 안내 문구 제외)
     expect(CONSOLE_HTML).not.toMatch(/(?:src|href)="https?:\/\//);

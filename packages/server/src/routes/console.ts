@@ -51,6 +51,9 @@ button, input { font: inherit; }
 .c-tabpanel { display: none; }
 .c-tabpanel[aria-hidden="false"] { display: block; }
 .c-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a73e8; vertical-align: top; margin-left: 6px; }
+.c-snippet-result { margin-top: 14px; padding: 12px; border: 1px solid #dfe3e7; border-radius: 8px; background: #f8f9fa; }
+.c-token-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.c-token-row code { flex: 1; padding: 8px 10px; background: #fff; border: 1px solid #dfe3e7; border-radius: 6px; font-size: 13px; word-break: break-all; user-select: all; }
 .c-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; place-items: center; z-index: 100; }
 .c-modal-overlay.is-open { display: grid; }
 .c-modal { background: #fff; width: 600px; max-width: 90vw; max-height: 90vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
@@ -152,6 +155,34 @@ function contentDispositionFilename(header, fallback) {
   return fallback;
 }
 
+function isSnippet(project) {
+  return project.mockupSource && project.mockupSource.type === "snippet";
+}
+
+// 확장(경로 D) 프로젝트의 저장 계열은 Bearer 토큰 필수 — 콘솔은 토큰을 보관하지 않으므로
+// (서버도 해시만 가짐) 필요 시 사용자에게 물어 세션에만 둔다. 401이면 지우고 재입력 유도.
+function snippetAuthHeaders(project) {
+  if (!isSnippet(project)) return {};
+  var key = "mockspec:tok:" + project.id;
+  var token = sessionStorage.getItem(key);
+  if (!token) {
+    token = window.prompt("확장 프로젝트 토큰을 붙여넣으세요 (내보내기·마스킹 저장에 필요):");
+    if (!token || !token.trim()) return null;
+    token = token.trim();
+    sessionStorage.setItem(key, token);
+  }
+  return { "Authorization": "Bearer " + token };
+}
+
+function clearSnippetToken(project) {
+  sessionStorage.removeItem("mockspec:tok:" + project.id);
+}
+
+function handleUnauthorized(project, statusTarget) {
+  clearSnippetToken(project);
+  setStatus(statusTarget, "토큰이 유효하지 않습니다 — 다시 시도하면 재입력할 수 있습니다. (분실 시 [토큰 재발급])", "error");
+}
+
 async function exportProject(project, statusTarget) {
   var missing = scenesWithoutSnapshot(project);
   if (missing > 0) {
@@ -170,8 +201,17 @@ async function exportProject(project, statusTarget) {
     var goMask = window.confirm("마스킹 규칙이 설정되었으나 적용되지 않은 장면이 " + unmaskedScenes + "개 있습니다. 원본 스냅샷이 유출될 수 있습니다. 계속 내보낼까요?");
     if (!goMask) return;
   }
+  var authHeaders = snippetAuthHeaders(project);
+  if (authHeaders === null) {
+    setStatus(statusTarget, "토큰이 없어 내보내기를 취소했습니다.", "error");
+    return;
+  }
   setStatus(statusTarget, "내보내는 중…");
-  var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/export", { method: "POST" });
+  var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/export", { method: "POST", headers: authHeaders });
+  if (res.status === 401 && isSnippet(project)) {
+    handleUnauthorized(project, statusTarget);
+    return;
+  }
   if (!res.ok) {
     var body = null;
     try { body = await res.json(); } catch (e) { /* 비JSON */ }
@@ -194,6 +234,20 @@ async function exportProject(project, statusTarget) {
   setStatus(statusTarget, note, "ok");
 }
 
+async function reissueToken(project) {
+  var go = window.confirm("토큰을 재발급하면 기존 토큰이 즉시 무효화됩니다. 확장도 새 토큰으로 다시 연결해야 합니다. 계속할까요?");
+  if (!go) return;
+  var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/token", { method: "POST" });
+  if (!res.ok) {
+    setStatus(listStatusEl, "토큰 재발급에 실패했습니다.", "error");
+    return;
+  }
+  var data = await res.json();
+  sessionStorage.setItem("mockspec:tok:" + project.id, data.token);
+  window.prompt("새 토큰 (한 번만 표시 — 복사해 확장 팝업에 다시 연결하세요):", data.token);
+  setStatus(listStatusEl, "토큰이 재발급되었습니다. 이 브라우저 세션의 콘솔 작업에는 자동 적용됩니다.", "ok");
+}
+
 async function deleteProject(project) {
   var go = window.confirm("프로젝트와 모든 장면·어노테이션이 삭제됩니다. 되돌릴 수 없습니다.");
   if (!go) return;
@@ -209,21 +263,33 @@ function renderProject(project) {
   var card = el("div", "c-project");
   var head = el("div", "c-project-head");
   var title = el("span", "c-project-name", project.name);
-  var isProxy = project.mockupSource && project.mockupSource.type === "proxy";
-  title.appendChild(el("span", "c-badge", isProxy ? "URL 프록시" : "ZIP 업로드"));
+  var srcType = project.mockupSource ? project.mockupSource.type : "upload";
+  var badgeLabel = srcType === "proxy" ? "URL 프록시" : srcType === "snippet" ? "확장" : "ZIP 업로드";
+  title.appendChild(el("span", "c-badge", badgeLabel));
   head.appendChild(title);
   var metaText = "장면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
     " · " + formatDate(project.updatedAt) + " 수정";
-  if (isProxy) metaText += " · " + project.mockupSource.originUrl;
+  if (srcType === "proxy") metaText += " · " + project.mockupSource.originUrl;
+  if (srcType === "snippet" && project.mockupSource.lastSeenOrigin) {
+    metaText += " · " + project.mockupSource.lastSeenOrigin;
+  }
   head.appendChild(el("span", "c-project-meta", metaText));
   card.appendChild(head);
 
   var actions = el("div", "c-project-actions");
-  var openLink = el("a", "c-btn c-btn-ghost", "편집 열기");
-  openLink.href = mockupHref(project.id);
-  openLink.target = "_blank";
-  openLink.rel = "noopener";
-  actions.appendChild(openLink);
+  if (srcType !== "snippet") {
+    // 확장 프로젝트는 서비스가 서빙하는 목업 URL이 없다 — 편집은 대상 화면에서 확장으로.
+    var openLink = el("a", "c-btn c-btn-ghost", "편집 열기");
+    openLink.href = mockupHref(project.id);
+    openLink.target = "_blank";
+    openLink.rel = "noopener";
+    actions.appendChild(openLink);
+  } else {
+    var reissueBtn = el("button", "c-btn c-btn-ghost", "토큰 재발급");
+    reissueBtn.type = "button";
+    reissueBtn.addEventListener("click", function () { void reissueToken(project); });
+    actions.appendChild(reissueBtn);
+  }
 
   var exportBtn = el("button", "c-btn c-btn-ghost", "내보내기");
   exportBtn.type = "button";
@@ -249,7 +315,7 @@ async function renderList() {
     var projects = await loadProjects();
     listEl.textContent = "";
     if (projects.length === 0) {
-      listEl.appendChild(el("div", "c-empty", "아직 프로젝트가 없습니다. 위에서 빌드 zip을 업로드해 시작하세요."));
+      listEl.appendChild(el("div", "c-empty", "아직 프로젝트가 없습니다. 위에서 zip 업로드·URL 등록·확장 중 하나로 시작하세요."));
       return;
     }
     for (var i = 0; i < projects.length; i += 1) listEl.appendChild(renderProject(projects[i]));
@@ -310,6 +376,62 @@ formEl.addEventListener("submit", function (event) {
       setStatus(uploadStatusEl, err && err.message ? err.message : "업로드에 실패했습니다.", "error");
     })
     .finally(function () { submitEl.disabled = false; });
+});
+
+var snippetFormEl = document.getElementById("snippet-form");
+var snippetNameEl = document.getElementById("snippet-project-name");
+var snippetSubmitEl = document.getElementById("snippet-submit");
+var snippetStatusEl = document.getElementById("snippet-status");
+var snippetResultEl = document.getElementById("snippet-result");
+var snippetTokenEl = document.getElementById("snippet-token");
+var snippetProjectIdEl = document.getElementById("snippet-project-id");
+var snippetCopyEl = document.getElementById("snippet-copy");
+
+snippetFormEl.addEventListener("submit", function (event) {
+  event.preventDefault();
+  var name = snippetNameEl.value.trim();
+  if (!name) {
+    setStatus(snippetStatusEl, "프로젝트 이름을 입력해주세요.", "error");
+    return;
+  }
+  snippetSubmitEl.disabled = true;
+  snippetResultEl.hidden = true;
+  setStatus(snippetStatusEl, "프로젝트 생성 중…");
+  fetch("/api/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name, source: "snippet" })
+  })
+    .then(async function (res) {
+      if (!res.ok) {
+        var body = null;
+        try { body = await res.json(); } catch (e) { /* 비JSON */ }
+        throw new Error(apiErrorMessage(body, "생성에 실패했습니다."));
+      }
+      return res.json();
+    })
+    .then(function (result) {
+      snippetFormEl.reset();
+      snippetTokenEl.textContent = result.token;
+      snippetProjectIdEl.textContent = result.project.id;
+      snippetResultEl.hidden = false;
+      setStatus(snippetStatusEl, "생성 완료: " + result.project.name + " — 아래 토큰을 확장에 연결하세요.", "ok");
+      return renderList();
+    })
+    .catch(function (err) {
+      setStatus(snippetStatusEl, err && err.message ? err.message : "생성에 실패했습니다.", "error");
+    })
+    .finally(function () { snippetSubmitEl.disabled = false; });
+});
+
+snippetCopyEl.addEventListener("click", function () {
+  var token = snippetTokenEl.textContent || "";
+  if (!token) return;
+  navigator.clipboard.writeText(token).then(function () {
+    setStatus(snippetStatusEl, "토큰을 복사했습니다.", "ok");
+  }, function () {
+    setStatus(snippetStatusEl, "복사에 실패했습니다 — 토큰을 드래그해 직접 복사하세요.", "error");
+  });
 });
 
 urlFormEl.addEventListener("submit", function (event) {
@@ -447,6 +569,11 @@ maskingApplyBtn.addEventListener("click", async function() {
     }
   }
   
+  var maskAuthHeaders = snippetAuthHeaders(currentMaskingProject);
+  if (maskAuthHeaders === null) {
+    setStatus(maskingStatusEl, "토큰이 없어 적용을 취소했습니다.", "error");
+    return;
+  }
   maskingApplyBtn.disabled = true;
   setStatus(maskingStatusEl, "스냅샷에 마스킹을 적용하는 중…");
   try {
@@ -470,7 +597,8 @@ maskingApplyBtn.addEventListener("click", async function() {
         var fd = new FormData();
         fd.append("snapshot", blob);
         
-        var uploadRes = await fetch("/api/projects/" + updatedProject.id + "/assets", { method: "POST", body: fd });
+        var uploadRes = await fetch("/api/projects/" + updatedProject.id + "/assets", { method: "POST", headers: maskAuthHeaders, body: fd });
+        if (uploadRes.status === 401) { handleUnauthorized(updatedProject, maskingStatusEl); return; }
         if (!uploadRes.ok) throw new Error("마스킹된 스냅샷 저장 실패");
         var uploadData = await uploadRes.json();
         scene.maskedSnapshotAsset = uploadData.assetKey;
@@ -483,9 +611,10 @@ maskingApplyBtn.addEventListener("click", async function() {
     
     var putRes = await fetch("/api/projects/" + updatedProject.id, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: Object.assign({ "Content-Type": "application/json" }, maskAuthHeaders),
       body: JSON.stringify(updatedProject)
     });
+    if (putRes.status === 401) { handleUnauthorized(updatedProject, maskingStatusEl); return; }
     if (!putRes.ok) throw new Error("프로젝트 정보 갱신 실패");
     
     closeMaskingModal();
@@ -517,6 +646,7 @@ export const CONSOLE_HTML = `<!doctype html>
       <div class="c-tabs" role="tablist">
         <button type="button" class="c-tab" role="tab" aria-selected="true">ZIP 업로드</button>
         <button type="button" class="c-tab" role="tab" aria-selected="false">URL 등록</button>
+        <button type="button" class="c-tab" role="tab" aria-selected="false">내 화면에서 편집 (확장)</button>
       </div>
 
       <div class="c-tabpanel" role="tabpanel" aria-hidden="false">
@@ -555,6 +685,35 @@ export const CONSOLE_HTML = `<!doctype html>
           </p>
           <button id="url-submit" class="c-btn" type="submit">URL 등록하고 시작</button>
           <p id="url-status" class="c-status"></p>
+        </form>
+      </div>
+
+      <div class="c-tabpanel" role="tabpanel" aria-hidden="true">
+        <form id="snippet-form">
+          <div class="c-row">
+            <label for="snippet-project-name">프로젝트 이름</label>
+            <input id="snippet-project-name" type="text" placeholder="예: 주문 어드민 (로그인 뒤 화면)" required>
+          </div>
+          <p class="c-hint">
+            로그인해야 보이는 화면(SSO 포함)이나 로컬에서만 도는 목업용입니다.
+            브라우저 확장이 지금 보고 있는 화면 위에 편집기를 띄우고, 저장은 프로젝트 토큰으로 인증합니다.<br>
+            ⓘ 등록하면 프로젝트 토큰이 <b>한 번만</b> 표시됩니다 — 확장 팝업에 붙여넣어 연결하세요.
+          </p>
+          <button id="snippet-submit" class="c-btn" type="submit">프로젝트 만들고 토큰 받기</button>
+          <p id="snippet-status" class="c-status"></p>
+          <div id="snippet-result" class="c-snippet-result" hidden>
+            <p><b>프로젝트 토큰</b> (이 화면을 벗어나면 다시 볼 수 없습니다 — 분실 시 재발급):</p>
+            <div class="c-token-row">
+              <code id="snippet-token"></code>
+              <button type="button" id="snippet-copy" class="c-btn c-btn-ghost">복사</button>
+            </div>
+            <p class="c-hint">
+              연결 방법: ① Chrome/Edge에서 <code>chrome://extensions</code> → 개발자 모드 →
+              [압축해제된 확장 프로그램 로드]로 mockspec 확장을 설치 ② 대상 화면을 열고
+              확장 팝업에 프로젝트 ID <code id="snippet-project-id"></code>와 위 토큰을 붙여넣기
+              ③ 화면에 편집 버튼(FAB)이 나타납니다.
+            </p>
+          </div>
         </form>
       </div>
     </section>
