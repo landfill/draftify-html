@@ -40,7 +40,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-11 — T15 콘솔 온보딩 폼 완료
-- 브랜치: `feat/s2-console-onboarding-t15` (main 미병합, 동의 대기)
+- 브랜치: `feat/s2-console-onboarding-t15` → `main` 병합 완료(2026-07-11, fast-forward). 병합 후 브랜치 삭제.
 - 완료:
   - **`store/projectStore.ts`**: `createProject` 서명을 개선하여 `mockupSource`를 `upload` 또는 `proxy` 형태로 분기.
   - **`routes/projects.ts`**: `POST /projects`에 URL 등록 처리(`handleProxyRegistration`) 구현. 오리진 검증 및 `fetch`를 이용한 도달성 체크 포함.
