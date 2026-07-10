@@ -9,7 +9,7 @@
 
 ## 현재 단계
 
-**S1 WBS 전 항목(T1~T10) 완료 + 실사용 피드백 반영 중(`fix/panel-scroll`→`feat/editor-export` 스택, 병합 동의 대기). 남은 것: 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.**
+**S1 WBS 전 항목(T1~T10) 완료 + 실사용 피드백 반영(패널 스크롤·편집 내보내기 포함, main 병합 완료). 남은 것: 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.**
 
 ## WBS 체크리스트
 
@@ -29,18 +29,18 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-10 — 편집 화면 내보내기 버튼 (실사용 3회 피드백 ②, 킥오프 §11 6차 개정)
-- 브랜치: `feat/editor-export` (`fix/panel-scroll` 위에 스택, main 미병합, 동의 대기).
+- 브랜치: `feat/editor-export` (`fix/panel-scroll` 위에 스택) → `main` 병합 완료(2026-07-10, fix→feat 순 fast-forward). 병합 후 두 브랜치 삭제.
 - 배경: 내보내기가 콘솔에만 있어 편집 후 목록 화면으로 빠져나가야 다운로드 가능 — 편집→확인 루프를 끊는 동선. export 엔드포인트는 이미 same-origin 프록시로 서브도메인에 열려 있어 **서버 변경 없음**.
 - 완료: 패널 하단 고정 푸터에 **[내보내기 (HTML 다운로드)]** 버튼 — 콘솔과 동일 규칙(스냅샷 없는 장면 N개 확인 다이얼로그, 50MB 경고는 버튼 아래 힌트), `api.ts::exportProjectHtml`(+`filenameFromDisposition` — filename* 한글 우선, ASCII fallback), blob 다운로드. 프로젝트 로드 전·진행 중 비활성. detailed-spec §3.9 신설(기존 3.9~3.11 → 3.10~3.12 밀림, technical-spec 교차 참조 1건 갱신 — 기존 §3.10 오참조도 함께 수정).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **81 passed**(+2: 내보내기 버튼 → confirm 경유 → export POST → filename* 파일명으로 다운로드 트리거 / confirm 취소 시 미호출), `npm run test:e2e` 1 passed(4.1s).
-- 다음 할 일: fix/panel-scroll → feat/editor-export 순 main 병합 여부 사용자 확인 → 실사용 재검증 → 판정 기록(킥오프 §11) → S2 계획.
+- 다음 할 일: 실사용 재검증(패널 스크롤·편집 내보내기·미작성 핀·마커 드래그) → 판정 기록(킥오프 §11) → S2 계획.
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — 패널 스크롤 결함 픽스 (실사용 3회 피드백 ①)
-- 브랜치: `fix/panel-scroll` (main 미병합, 동의 대기).
+- 브랜치: `fix/panel-scroll` → `main` 병합 완료(2026-07-10, feat/editor-export와 함께 fast-forward).
 - 완료: `.panel`(fixed, flex column)에 스크롤 영역이 없어 어노테이션이 늘어나면 아래 내용이 화면 밖으로 밀려나 접근 불가하던 결함 수정 — head·모드 토글 아래를 `.panel__body`(flex:1, min-height:0, overflow-y:auto)로 감싸 해당 영역만 스크롤.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 79 passed. CSS 레이아웃이라 자동 검증 한계 — 실 Chrome 확인은 사용자 재검증에 포함.
-- 다음 할 일: `feat/editor-export`(편집 패널 내보내기 버튼, 이 브랜치 위에 스택) → 두 브랜치 병합 여부 사용자 확인.
+- 다음 할 일: 없음 (feat/editor-export에서 이어짐).
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — 실사용 2회 피드백: 빈 어노테이션 자동 삭제 철회 → 미작성 핀 (킥오프 §11 5차 개정)
