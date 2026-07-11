@@ -50,6 +50,14 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-11 — 실사용 2차 피드백: 연결 코드 1개로 통합 (팝업 소실 문제 해결)
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경(실사용): 사용자 — "프로젝트 ID·토큰 **둘을 각각 복사·붙여넣기**하는데, 확장 팝업이 포커스를 잃으면 닫혀서 유지가 안 돼 **사용 불가**." (Chrome 확장 팝업은 blur 시 닫힘 — 값 복사하러 콘솔 가면 팝업 소멸 → 무한 반복)
+- 완료: **연결 코드 1개 = 한 번 복사 → 한 번 붙여넣기.** ① `shared/connection.ts` — `encodeConnection`/`decodeConnection`(`mockspec:`+base64url(JSON{p,t,s}), prj_·tok_ 검증) ② 콘솔: 생성 시 토큰을 sessionStorage 보관 + **연결 코드** 표시, 카드 [연결 코드 복사], 재발급 시 새 연결 코드 자동 클립보드(인라인 encodeConnection은 shared와 바이트 동일 — ASCII) ③ 확장 팝업 재설계: **[연결 코드 붙여넣기]** 단일 textarea + [연결](decode→writeBinding)이 주 경로, "직접 입력"은 details fallback.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **142 passed**(+4: 코덱 왕복·공백 허용·오류 null·콘솔/shared 형식 일치). `npm run test:e2e` 3본 통과. **실 Chrome**: 콘솔에서 snippet 생성→표시된 연결 코드를 shared 디코더가 `{projectId,token,serverUrl}`로 정확히 복원 확인, 팝업 DOM 배선·스크립트 오류 0(실 Chromium).
+- 다음 할 일: 사용자가 [연결 코드 복사] → 팝업 붙여넣기 → 편집·저장 재검증 → T25 실사용 판정 → S2.5 종료.
+- 막힌 지점: 없음. (진짜 원클릭 연결은 externally_connectable+고정 확장 key가 필요 — 현재 한 번 붙여넣기로 충분, 후속 판단)
+
 ### 2026-07-11 — 실사용 1차 피드백: 확장 프로젝트 ID 가시성 + 콘솔 JS 파싱 가드
 - 브랜치: `fix/console-snippet-id-visibility` (T22~T24 스택 위, main 미병합).
 - 배경(실사용): 사용자가 확장을 **실제 Chrome에 unpacked 로드**해 써봄. 팝업 "프로젝트 ID"에 프로젝트 **이름**(`dasfs`)을 넣어 "불러오기 실패(프로젝트 dasfs를 찾을 수 없습니다)" 발생. 원인: **콘솔이 snippet 프로젝트의 ID(`prj_…`)를 목록에서 안 보여줘** 이름과 혼동. (사용자 선택: 카드에 ID 표시 + 원클릭 연결)

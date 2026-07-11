@@ -43,11 +43,11 @@ describe("콘솔 페이지 서빙 (T9)", () => {
     expect(res.text).toContain("내 화면에서 편집 (확장)");
   });
 
-  it("확장 프로젝트 카드에 ID 표시·연결 정보 복사가 있다 (실사용: 이름/ID 혼동 방지)", () => {
-    // 클라이언트 렌더(CONSOLE_JS)에 snippet 전용 ID 행·복사 핸들러가 포함됐는지 문자열로 확인
+  it("확장 프로젝트 카드에 ID 표시·연결 코드 복사가 있다 (실사용: 이름/ID 혼동·팝업 소실 방지)", () => {
+    // 클라이언트 렌더(CONSOLE_JS)에 snippet 전용 ID 행·연결 코드 인코더·복사 핸들러 포함 확인
     expect(CONSOLE_HTML).toContain("c-project-id");
-    expect(CONSOLE_HTML).toContain("연결 정보 복사");
-    expect(CONSOLE_HTML).toContain("copyConnectionInfo");
+    expect(CONSOLE_HTML).toContain("연결 코드 복사");
+    expect(CONSOLE_HTML).toContain("encodeConnection");
   });
 
   it("인라인 콘솔 JS가 문법 오류 없이 파싱된다 (템플릿 리터럴 내 raw 개행 등 회귀 방지)", () => {

@@ -21,3 +21,5 @@ export {
   BRIDGE_REQUEST_TYPE,
   BRIDGE_RESPONSE_TYPE,
 } from "./constants.js";
+
+export { encodeConnection, decodeConnection, type ConnectionInfo } from "./connection.js";

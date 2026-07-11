@@ -237,18 +237,27 @@ async function exportProject(project, statusTarget) {
   setStatus(statusTarget, note, "ok");
 }
 
+// 연결 코드 = "mockspec:" + base64url(JSON{p,t,s}). 확장(shared/connection.ts)과 형식 동일.
+// prj_/tok_/http(s) 모두 ASCII라 btoa로 충분(유니코드 처리 불필요).
+function encodeConnection(projectId, token, serverUrl) {
+  var json = JSON.stringify({ p: projectId, t: token, s: serverUrl });
+  return "mockspec:" + btoa(json).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
+}
+
 async function copyConnectionInfo(project) {
-  // 팝업 3칸(프로젝트 ID·토큰·서버 주소)에 그대로 옮길 수 있는 라벨 블록.
-  // 토큰은 서버가 해시만 보관하므로 이 세션에서 발급·재발급·입력한 값이 있을 때만 채운다.
+  // 팝업은 포커스를 잃으면 닫히므로 값을 하나로 합쳐 "한 번 복사 → 한 번 붙여넣기".
+  // 토큰은 서버가 해시만 보관 — 이 세션에서 발급·재발급·입력한 값이 있을 때만 코드를 만든다.
   var token = sessionStorage.getItem("mockspec:tok:" + project.id);
-  var info = "프로젝트 ID: " + project.id + "\\n서버 주소: " + location.origin + "\\n토큰: " +
-    (token || "(콘솔에서 [토큰 재발급]으로 새로 발급)");
+  if (!token) {
+    setStatus(listStatusEl, "토큰이 이 세션에 없습니다 — [토큰 재발급]을 먼저 누르면 연결 코드가 만들어집니다.", "error");
+    return;
+  }
+  var code = encodeConnection(project.id, token, location.origin);
   try {
-    await navigator.clipboard.writeText(info);
-    setStatus(listStatusEl, "연결 정보를 복사했습니다 — 확장 팝업에 붙여넣으세요." +
-      (token ? "" : " (토큰은 재발급 후 다시 복사하세요.)"), "ok");
+    await navigator.clipboard.writeText(code);
+    setStatus(listStatusEl, "연결 코드를 복사했습니다 — 확장 팝업의 [연결 코드 붙여넣기]에 붙여넣고 [연결]을 누르세요.", "ok");
   } catch (e) {
-    setStatus(listStatusEl, "복사 실패 — 프로젝트 ID: " + project.id, "error");
+    setStatus(listStatusEl, "복사 실패 — 연결 코드: " + code, "error");
   }
 }
 
@@ -262,8 +271,15 @@ async function reissueToken(project) {
   }
   var data = await res.json();
   sessionStorage.setItem("mockspec:tok:" + project.id, data.token);
-  window.prompt("새 토큰 (한 번만 표시 — 복사해 확장 팝업에 다시 연결하세요):", data.token);
-  setStatus(listStatusEl, "토큰이 재발급되었습니다. 이 브라우저 세션의 콘솔 작업에는 자동 적용됩니다.", "ok");
+  // 새 토큰으로 연결 코드를 즉시 복사 — 확장에 붙여넣어 재연결.
+  var code = encodeConnection(project.id, data.token, location.origin);
+  try {
+    await navigator.clipboard.writeText(code);
+    setStatus(listStatusEl, "토큰 재발급 + 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결].", "ok");
+  } catch (e) {
+    window.prompt("새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):", code);
+    setStatus(listStatusEl, "토큰이 재발급되었습니다.", "ok");
+  }
 }
 
 async function deleteProject(project) {
@@ -311,7 +327,7 @@ function renderProject(project) {
     openLink.rel = "noopener";
     actions.appendChild(openLink);
   } else {
-    var copyBtn = el("button", "c-btn c-btn-ghost", "연결 정보 복사");
+    var copyBtn = el("button", "c-btn c-btn-ghost", "연결 코드 복사");
     copyBtn.type = "button";
     copyBtn.addEventListener("click", function () { void copyConnectionInfo(project); });
     actions.appendChild(copyBtn);
@@ -443,10 +459,12 @@ snippetFormEl.addEventListener("submit", function (event) {
     })
     .then(function (result) {
       snippetFormEl.reset();
-      snippetTokenEl.textContent = result.token;
+      // 세션에 토큰 보관 — 목록 [연결 코드 복사]·내보내기·마스킹이 재사용
+      sessionStorage.setItem("mockspec:tok:" + result.project.id, result.token);
+      snippetTokenEl.textContent = encodeConnection(result.project.id, result.token, location.origin);
       snippetProjectIdEl.textContent = result.project.id;
       snippetResultEl.hidden = false;
-      setStatus(snippetStatusEl, "생성 완료: " + result.project.name + " — 아래 토큰을 확장에 연결하세요.", "ok");
+      setStatus(snippetStatusEl, "생성 완료: " + result.project.name + " — 아래 [연결 코드 복사] 후 확장 팝업에 붙여넣으세요.", "ok");
       return renderList();
     })
     .catch(function (err) {
@@ -456,12 +474,12 @@ snippetFormEl.addEventListener("submit", function (event) {
 });
 
 snippetCopyEl.addEventListener("click", function () {
-  var token = snippetTokenEl.textContent || "";
-  if (!token) return;
-  navigator.clipboard.writeText(token).then(function () {
-    setStatus(snippetStatusEl, "토큰을 복사했습니다.", "ok");
+  var code = snippetTokenEl.textContent || "";
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(function () {
+    setStatus(snippetStatusEl, "연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결].", "ok");
   }, function () {
-    setStatus(snippetStatusEl, "복사에 실패했습니다 — 토큰을 드래그해 직접 복사하세요.", "error");
+    setStatus(snippetStatusEl, "복사에 실패했습니다 — 연결 코드를 드래그해 직접 복사하세요.", "error");
   });
 });
 
@@ -728,21 +746,21 @@ export const CONSOLE_HTML = `<!doctype html>
           <p class="c-hint">
             로그인해야 보이는 화면(SSO 포함)이나 로컬에서만 도는 목업용입니다.
             브라우저 확장이 지금 보고 있는 화면 위에 편집기를 띄우고, 저장은 프로젝트 토큰으로 인증합니다.<br>
-            ⓘ 등록하면 프로젝트 토큰이 <b>한 번만</b> 표시됩니다 — 확장 팝업에 붙여넣어 연결하세요.
+            ⓘ 등록하면 <b>연결 코드</b>(ID·토큰·서버 주소를 합친 값)가 <b>한 번만</b> 표시됩니다 — 복사해 확장 팝업에 붙여넣으세요.
           </p>
-          <button id="snippet-submit" class="c-btn" type="submit">프로젝트 만들고 토큰 받기</button>
+          <button id="snippet-submit" class="c-btn" type="submit">프로젝트 만들고 연결 코드 받기</button>
           <p id="snippet-status" class="c-status"></p>
           <div id="snippet-result" class="c-snippet-result" hidden>
-            <p><b>프로젝트 토큰</b> (이 화면을 벗어나면 다시 볼 수 없습니다 — 분실 시 재발급):</p>
+            <p><b>연결 코드</b> (이 화면을 벗어나면 다시 볼 수 없습니다 — 분실 시 [토큰 재발급]):</p>
             <div class="c-token-row">
               <code id="snippet-token"></code>
               <button type="button" id="snippet-copy" class="c-btn c-btn-ghost">복사</button>
             </div>
             <p class="c-hint">
               연결 방법: ① Chrome/Edge에서 <code>chrome://extensions</code> → 개발자 모드 →
-              [압축해제된 확장 프로그램 로드]로 mockspec 확장을 설치 ② 대상 화면을 열고
-              확장 팝업에 프로젝트 ID <code id="snippet-project-id"></code>와 위 토큰을 붙여넣기
-              ③ 화면에 편집 버튼(FAB)이 나타납니다.
+              [압축해제된 확장 프로그램 로드]로 mockspec 확장을 설치(<code>packages/extension/dist</code>)
+              ② 대상 화면을 열고 확장 팝업의 <b>[연결 코드 붙여넣기]</b>에 위 코드를 붙여넣고 [연결]
+              ③ 새로고침하면 화면에 편집 버튼(FAB)이 나타납니다. (프로젝트 ID: <code id="snippet-project-id"></code>)
             </p>
           </div>
         </form>
