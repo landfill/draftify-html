@@ -224,18 +224,19 @@ describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
     expect(rows()[1]!.classList.contains("ann--sel")).toBe(true);  // 마지막이 선택
     expect(rows()[0]!.classList.contains("ann--sel")).toBe(false);
 
-    // 첫 번째(1번) 제목 칸에 포커스 → 선택이 1번으로 이동해야 한다
+    // 첫 번째(1번) 제목 칸을 클릭(mousedown) → 선택이 1번으로 이동해야 한다
+    // (focus는 focusShield가 페이지로 못 새게 막으므로 선택 추종은 mousedown으로 처리)
     await act(async () => {
       document.querySelectorAll<HTMLInputElement>("input.ann__title")[0]!
-        .dispatchEvent(new FocusEvent("focus", { bubbles: false }));
+        .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     });
     expect(rows()[0]!.classList.contains("ann--sel")).toBe(true);   // 선택이 1번을 따라감
     expect(rows()[1]!.classList.contains("ann--sel")).toBe(false);
 
-    // 1번 설명 칸에 입력해도 선택이 1번에 유지된다 (마지막으로 튀지 않음)
+    // 1번 설명 칸을 클릭하고 입력해도 선택이 1번에 유지된다 (마지막으로 튀지 않음)
     await act(async () => {
       const desc = document.querySelectorAll<HTMLTextAreaElement>("textarea.ann__desc")[0]!;
-      desc.dispatchEvent(new FocusEvent("focus", { bubbles: false }));
+      desc.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
       desc.value = "첫 번째 설명";
       desc.dispatchEvent(new Event("input", { bubbles: true }));
     });

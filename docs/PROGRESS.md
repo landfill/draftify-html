@@ -50,7 +50,16 @@
 
 ## 세션 로그 (최신이 위)
 
-### 2026-07-11 — 실사용 6차 피드백(진짜 원인): Nexacro 포커스 트랩 → focusShield
+### 2026-07-11 — 실사용 7차: focusShield를 window 캡처로 (Nexacro는 캡처 단계)
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경: 6차의 호스트 버블 차단이 실사이트에서 안 통함(현상 동일, `id.split` 에러 여전). Nexacro가 **document 캡처 단계**로 포커스를 관리하기 때문 — 버블 차단은 캡처 핸들러를 못 막는다(캡처가 먼저 발동). 캡처형 트랩 재현으로 확인.
+- 완료: `focusShield.ts`를 **window 캡처 리스너**로 재작성 — 우리 호스트로 향하는(composedPath에 호스트 포함) focus/blur/focusin/focusout을 stopImmediatePropagation. 캡처 전파 순서가 window→document이라 페이지(document) 캡처 핸들러보다 **먼저** 끊는다. 부수: 우리 패널의 focus 리스너도 안 타므로 **선택 추종을 onFocus→onMouseDown으로 이동**(App.tsx). 입력 자체·키입력은 무영향.
+- **재현·확증**: 캡처형 트랩 페이지에서 버블-shield는 실패(타이핑 전부 페이지로 샘 — 실사용 증상 재현), **window 캡처 shield는 앞 칸·설명창 정상**. git 대조로 확정.
+- 검증: `npm test` **148 passed**(focusShield 테스트를 캡처 대조로 갱신, App 선택추종을 mousedown으로), `npm run test:e2e` 3본 통과.
+- 다음 할 일: 사용자 HANATOUR 재검증 → 되면 편집·저장·export → T25 판정.
+- 막힌 지점: 없음. (혹시 window 캡처로도 안 되면 Nexacro가 activeElement 폴링/다른 기법일 수 있음 — 그땐 iframe 격리 검토)
+
+### 2026-07-11 — 실사용 6차 피드백(진짜 원인 후보): Nexacro 포커스 트랩 → focusShield(호스트 버블)
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경(실사용 로그가 결정타): HANATOUR = **Nexacro**(TOBESOFT, `Platform_HTML5.js`·`nexacro.__setViewportScale`) 앱. 콘솔에 `Platform.js: id.split is not a function` 폭주 — Nexacro의 **document 레벨 전역 focusin 핸들러**가 우리 패널 입력(자기 컴포넌트 아님)에 포커스가 가면 자기 요소로 되돌린다 → 앞 칸·설명창 포커스 불가, 타이핑이 페이지로 샘. (5차의 selectedAnn 추종만으론 부족 — 페이지가 focusin으로 포커스를 뺏는 게 근본 원인)
 - 완료: **`focusShield.ts`** — SDK 호스트(Shadow 경계)에서 `focusin`/`focusout`을 `stopImmediatePropagation`. Shadow 경계에서 이 이벤트들은 호스트로 리타깃되어 버블하므로, 호스트에서 끊으면 document의 페이지(프레임워크) 핸들러까지 전파 안 됨. main.tsx가 부트 시 적용. 내부 포커스 처리는 shadow 안이라 무영향.
