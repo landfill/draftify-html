@@ -552,7 +552,7 @@ export function App({ projectId }: { projectId: string }) {
                   class="ann__title" data-ann-title={a.id}
                   placeholder="제목"
                   value={a.title}
-                  onMouseDown={() => setSelectedAnn(a.id)}
+                  onClick={() => setSelectedAnn(a.id)}
                   onInput={(e) => setDoc(updateAnnotation(doc, a.id, { title: (e.target as HTMLInputElement).value }))}
                 />
                 <button class="ann__del" title="삭제" onClick={() => setDoc(deleteAnnotation(doc, a.id))}>×</button>
@@ -560,7 +560,7 @@ export function App({ projectId }: { projectId: string }) {
               <textarea
                 class="ann__desc" placeholder="설명 (마크다운)"
                 value={a.description}
-                onMouseDown={() => setSelectedAnn(a.id)}
+                onClick={() => setSelectedAnn(a.id)}
                 onInput={(e) => setDoc(updateAnnotation(doc, a.id, { description: (e.target as HTMLTextAreaElement).value }))}
               />
             </div>

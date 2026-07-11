@@ -51,4 +51,25 @@ describe("shieldFocusEvents (window 캡처)", () => {
 
     document.removeEventListener("focusin", pageHandler, true);
   });
+
+  it("입력칸의 mousedown은 차단(클릭 포커스 복원)하지만 비입력(마커 등)은 통과(드래그 보존)", () => {
+    const host = document.createElement("div");
+    host.setAttribute("data-mockspec-root", "");
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: "open" });
+    const input = document.createElement("input");
+    const marker = document.createElement("button"); // 마커류
+    shadow.append(input, marker);
+    shieldFocusEvents(host);
+
+    const seen: string[] = [];
+    const pageHandler = (e: Event): void => { seen.push((e.composedPath()[0] as HTMLElement).tagName); };
+    document.addEventListener("mousedown", pageHandler, true); // 프레임워크의 preventDefault 흉내
+
+    input.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }));
+    marker.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }));
+
+    expect(seen).toEqual(["BUTTON"]); // 입력칸은 페이지에 안 감(차단), 마커(BUTTON)는 통과
+    document.removeEventListener("mousedown", pageHandler, true);
+  });
 });

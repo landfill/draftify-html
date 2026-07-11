@@ -50,6 +50,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — 실사용 8차(근본 해결): Nexacro는 mousedown/pointerdown preventDefault
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경: 7차(window 캡처 focus shield)도 실사이트에서 안 통함. **진짜 메커니즘 재현**: Nexacro는 document 캡처 단계에서 **`mousedown`·`pointerdown`을 `preventDefault()`** — mousedown/pointerdown의 기본 동작이 "포커스"라 우리 입력칸 클릭이 포커스를 못 얻는다. 유일하게 프로그램적으로 포커스되는 마지막 항목만 입력됨(실사용 증상과 정확히 일치 — repro로 `titles:["","","첫제목둘째설명"]` 재현).
+- 완료: `focusShield.ts` 확장 — window 캡처에서 ① focus/blur/focusin/focusout은 패널 안이면 전부 차단(포커스 되돌리기 방어) ② **mousedown·pointerdown은 실제 타겟이 INPUT/TEXTAREA일 때만** 차단(클릭 포커스 복원). 마커의 pointerdown(드래그)은 타겟이 button이라 차단 안 함 → **드래그 보존**. 선택 추종은 onMouseDown→**onClick**으로 이동(mousedown이 shield로 안 타므로).
+- **재현·확증(실 Chromium)**: mousedown+pointerdown preventDefault 트랩에서 — shield 전 `titles:["","","..."]`(증상 재현), shield 후 `titles:["첫제목",...]` `descs:[_,"둘째설명",_]` 정상. focus 트랩도 통과. **마커 드래그 트랩 하 보존 확인**(29px 이동).
+- 검증: `npm test` **149 passed**(focusShield 입력칸/비입력 케이스 +1, App 선택추종 onClick), `npm run test:e2e` 3본 통과.
+- 다음 할 일: 사용자 HANATOUR 재검증(이번이 근본 원인) → 되면 편집·저장·export → T25 판정 → S2.5 종료.
+- 막힌 지점: 없음.
+
 ### 2026-07-11 — 실사용 7차: focusShield를 window 캡처로 (Nexacro는 캡처 단계)
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경: 6차의 호스트 버블 차단이 실사이트에서 안 통함(현상 동일, `id.split` 에러 여전). Nexacro가 **document 캡처 단계**로 포커스를 관리하기 때문 — 버블 차단은 캡처 핸들러를 못 막는다(캡처가 먼저 발동). 캡처형 트랩 재현으로 확인.
