@@ -19,7 +19,7 @@
 - [x] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내) — vitest 132 passed(+6), snippet 등록·토큰 재발급/폐기 API·콘솔 3택 검증, 실 Chrome 렌더 확인
 - [x] T22 확장 스캐폴드 + content script SDK 주입 (+팝업 바인딩 선행) — 실 Chromium unpacked 로드로 FAB·패널·미바인딩 미주입 검증
 - [x] T23 background 저장 릴레이 (팝업 바인딩은 T22 선행) — 실 Chromium에서 장면 등록→동결→업로드→PUT 저장 전 과정 + lastSeenOrigin 스탬프 검증
-- [ ] T24 E2E: 로그인 뒤 화면 시나리오 (DoD)
+- [x] T24 E2E: 로그인 뒤 화면 시나리오 (DoD) — `e2e/pathD-dod.spec.ts`, 확장 로드+로그인+편집+마스킹+export+오프라인 검증, 3본(S1·S2·경로 D) 통과
 - [ ] T25 docs/ 최종 동기화 + 실사용 판정 기록
 
 ## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
@@ -49,6 +49,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T24 경로 D E2E (로그인 뒤 화면 DoD) 완료
+- 브랜치: `feat/s25-ext-e2e-t24` (T22→T23 위에 스택, main 미병합 — 순서대로 병합 대기).
+- 완료: **`e2e/pathD-dod.spec.ts`** (pathD 킥오프 §7 DoD) — ① 로그인 fixture를 테스트 내장 http 서버로 서빙(빌드 배선 없음): `/`(폼)·`POST /login`(host-only 쿠키)·`/protected`(쿠키 없으면 302) ② 확장 unpacked 로드(`launchPersistentContext` + `--load-extension`, `channel:"chromium"` 신 headless) + 팝업 storage로 오리진↔프로젝트(토큰) 바인딩 ③ **직접 로그인**(폼 제출→쿠키)→보호 화면→확장 SDK 주입→장면 등록·어노테이션 2개·**동결·저장(토큰 릴레이)** ④ 콘솔에서 마스킹 규칙(`홍길동`→`고객`, 토큰은 sessionStorage 선주입으로 prompt 회피) 적용→export ⑤ 새 컨텍스트 file:// 오픈→**마스킹 원문 0회**·치환문 존재·마커 2개 위치 오차 ≤2px·설명 일치·**네트워크 0건** ⑥ 보안 회귀: 토큰 없는 PUT 401.
+- 실버그(테스트가 잡음): pathD spec이 알파벳 순 **먼저** 실행되어 남긴 snippet 프로젝트가 콘솔 목록에 잔류 → S1/S2(단일 프로젝트 목록 가정, strict-mode 버튼 매칭)가 깨짐. **pathD가 끝에서 자기 프로젝트를 DELETE**해 공유 서버 잔재 제거(S1/S2 DoD 미변경).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 136 passed, `npx playwright test` **3본 통과**(S1·S2·경로 D). 확장 dist는 `npm run build`가 자동 조립.
+- 다음 할 일: **T25** — docs/ 최종 동기화(구현 결과 반영)·실사용 판정 기록으로 S2.5 종료.
+- 막힌 지점: 없음. (CI에서 `channel:"chromium"` 확장 로드는 push 후 확인)
 
 ### 2026-07-11 — T23 background 저장 릴레이 완료 (경로 D 저장 경로 관통)
 - 브랜치: `feat/s25-ext-save-relay-t23` (T22 위에 스택, main 미병합 — T22→T23 순 병합 대기).
