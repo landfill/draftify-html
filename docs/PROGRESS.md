@@ -50,6 +50,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — 실사용 9차: 뷰어(산출물) 넓은 데스크톱 캡처 잘림
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋). (8차 포커스 수정으로 저장 성공 확인됨.)
+- 배경: export 산출물 뷰어(3단: 장면/스냅샷/어노테이션)에서 HANATOUR 같은 **넓은 데스크톱 캡처(~1920px)가 좁은 중앙(1fr)에 눌려 오른쪽이 잘림**(마커 2도 화면 밖). 원인: iframe `width:100%`+ `.ms-stage-wrap{overflow:hidden}`이라 가로 스크롤 불가.
+- 완료: ① `viewer/main.ts::renderMarkers`가 **iframe·마커 레이어를 콘텐츠 자연 너비(docWidth)로** 지정 ② `export.ts` CSS — `.ms-stage-wrap{width:max-content}`(넓은 iframe을 감싸도록)로 `.ms-main`이 **양방향 스크롤** ③ 사이드/패널 폭 축소(220→200, 320→300)로 중앙 확대. 마커는 콘텐츠와 같은 좌표계라 스크롤해도 정확히 정렬.
+- 검증: `npm test` 149 passed·`npm run test:e2e` 3본 통과(좁은 fixture 마커 ≤2px 회귀 없음). **실 Chromium(넓은 1920px 산출물)**: `.ms-main` scrollWidth 1954>client 780(가로 스크롤 생김), iframe 1920px, 우측 끝 요소 마커 left=1875(자연좌표 정렬) 확인.
+- **주의: 이 수정은 뷰어/export 코드라 기존에 내보낸 HTML엔 반영 안 됨 — 다시 export해야 적용됨.**
+- 다음 할 일: 사용자가 재-export해 넓은 화면이 가로 스크롤로 보이는지 확인 → S2.5 실사용 판정.
+- 막힌 지점: 없음. (더 넓은 화면 대응으로 사이드 패널 접기 토글은 후속 판단 — 지금은 스크롤로 해결)
+
 ### 2026-07-12 — 실사용 8차(근본 해결): Nexacro는 mousedown/pointerdown preventDefault
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경: 7차(window 캡처 focus shield)도 실사이트에서 안 통함. **진짜 메커니즘 재현**: Nexacro는 document 캡처 단계에서 **`mousedown`·`pointerdown`을 `preventDefault()`** — mousedown/pointerdown의 기본 동작이 "포커스"라 우리 입력칸 클릭이 포커스를 못 얻는다. 유일하게 프로그램적으로 포커스되는 마지막 항목만 입력됨(실사용 증상과 정확히 일치 — repro로 `titles:["","","첫제목둘째설명"]` 재현).

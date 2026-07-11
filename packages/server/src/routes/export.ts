@@ -23,7 +23,7 @@ button, input, textarea { font: inherit; }
 }
 .ms-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 700; }
 .ms-meta { color: #5f6368; font-size: 13px; white-space: nowrap; }
-.ms-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr) 320px; min-height: 0; }
+.ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; min-height: 0; }
 .ms-sidebar, .ms-panel {
   background: #fff; border-right: 1px solid #dfe3e7; overflow: auto; min-width: 0;
 }
@@ -38,12 +38,13 @@ button, input, textarea { font: inherit; }
 .ms-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #1a73e8; font-size: 12px; font-weight: 700; }
 .ms-scene-title { display: block; margin-top: 2px; overflow-wrap: anywhere; }
 .ms-main { min-width: 0; overflow: auto; padding: 16px; }
+/* 넓은 캡처는 .ms-main이 양방향 스크롤 — 스테이지는 콘텐츠 너비로 커진다 (JS가 iframe 너비 지정) */
 .ms-stage-header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
 .ms-stage-title { margin: 0; font-size: 16px; line-height: 1.4; }
 .ms-note { margin: 6px 0 0; color: #5f6368; font-size: 13px; }
 .ms-stage-wrap {
   position: relative; min-height: 480px; background: #fff; border: 1px solid #dfe3e7;
-  border-radius: 8px; overflow: hidden;
+  border-radius: 8px; overflow: hidden; width: max-content; max-width: none;
 }
 .ms-frame { display: block; width: 100%; min-height: 480px; border: 0; background: #fff; }
 .ms-marker-layer { position: absolute; inset: 0; pointer-events: none; }

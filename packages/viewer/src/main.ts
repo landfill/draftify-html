@@ -276,7 +276,12 @@ function renderMarkers(
   const docBody = doc.body;
   const docWidth = Math.max(docRoot.scrollWidth, docRoot.clientWidth, docBody?.scrollWidth ?? 0, iframe.clientWidth, 1);
   const docHeight = Math.max(docRoot.scrollHeight, docRoot.clientHeight, docBody?.scrollHeight ?? 0, 480);
+  // 넓은 데스크톱 캡처(예: 사내 시스템 ~1920px)가 좁은 중앙에 눌려 잘리지 않도록,
+  // iframe·마커 레이어를 콘텐츠 자연 너비로 잡는다 → 중앙(.ms-main)이 양방향 스크롤되고
+  // 마커는 콘텐츠와 같은 좌표계에 있어 스크롤해도 정확히 정렬된다.
+  iframe.style.width = `${docWidth}px`;
   iframe.style.height = `${docHeight}px`;
+  layer.style.width = `${docWidth}px`;
   layer.style.height = `${docHeight}px`;
   layer.innerHTML = "";
 
