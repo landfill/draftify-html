@@ -11,6 +11,8 @@ interface ResolveResult {
 interface ViewerState {
   activeAnnotationId: string | null;
   selectedSceneId: string | null;
+  /** 왼쪽 장면 네비 접힘 — 넓은 캡처에서 중앙을 넓혀 가로 스크롤을 줄인다 */
+  sidebarCollapsed: boolean;
 }
 
 /** 장면의 어노테이션을 번호 순으로 정렬해 반환 — 뷰어/편집기 공통 표시 순서. */
@@ -376,12 +378,33 @@ function renderAnnotationPanel(
 function renderSidebar(
   scenes: Scene[],
   selectedSceneId: string | null,
+  collapsed: boolean,
   onSelect: (sceneId: string) => void,
+  onToggle: () => void,
 ): HTMLElement {
+  if (collapsed) {
+    // 접힘: 얇은 레일 + 펼치기 버튼만 (중앙을 최대한 넓힌다)
+    const rail = child("aside", "ms-sidebar ms-sidebar--collapsed");
+    const expand = child("button", "ms-collapse-btn");
+    expand.type = "button";
+    expand.title = "장면 목록 펼치기";
+    setText(expand, "»");
+    expand.addEventListener("click", onToggle);
+    rail.append(expand);
+    return rail;
+  }
+
   const aside = child("aside", "ms-sidebar");
+  const head = child("div", "ms-sidebar-head");
   const heading = child("div", "ms-section-title");
   setText(heading, "장면");
-  aside.append(heading);
+  const collapse = child("button", "ms-collapse-btn");
+  collapse.type = "button";
+  collapse.title = "장면 목록 접기";
+  setText(collapse, "«");
+  collapse.addEventListener("click", onToggle);
+  head.append(heading, collapse);
+  aside.append(head);
 
   for (const scene of scenes) {
     const button = child("button", `ms-scene-button${scene.id === selectedSceneId ? " is-active" : ""}`);
@@ -473,6 +496,7 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
   const scenes = orderedScenes(project);
   const state: ViewerState = {
     activeAnnotationId: null,
+    sidebarCollapsed: false,
     selectedSceneId: scenes[0]?.id ?? null,
   };
   const generatedAt = document.querySelector<HTMLMetaElement>('meta[name="mockspec-generated-at"]')?.content ?? null;
@@ -500,13 +524,24 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
       state.activeAnnotationId = null;
     }
 
-    const layout = child("div", "ms-layout");
+    // 접힘 시 왼쪽 컬럼을 얇은 레일로 → 중앙 확대 (가로 스크롤 감소). 클래스로 처리해
+    // 모바일 미디어쿼리(1단 스택)가 정상 우선하도록 한다 (인라인 스타일 회피).
+    const layout = child("div", `ms-layout${state.sidebarCollapsed ? " ms-layout--collapsed" : ""}`);
     layout.append(
-      renderSidebar(scenes, selectedScene.id, (sceneId) => {
-        state.selectedSceneId = sceneId;
-        state.activeAnnotationId = null;
-        render();
-      }),
+      renderSidebar(
+        scenes,
+        selectedScene.id,
+        state.sidebarCollapsed,
+        (sceneId) => {
+          state.selectedSceneId = sceneId;
+          state.activeAnnotationId = null;
+          render();
+        },
+        () => {
+          state.sidebarCollapsed = !state.sidebarCollapsed;
+          render();
+        },
+      ),
       renderStage(selectedScene, project, snapshots, state, root, markerRefresh),
       renderAnnotationPanel(selectedScene, project.annotations, state, root),
     );

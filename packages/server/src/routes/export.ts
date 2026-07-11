@@ -24,9 +24,18 @@ button, input, textarea { font: inherit; }
 .ms-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 700; }
 .ms-meta { color: #5f6368; font-size: 13px; white-space: nowrap; }
 .ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; min-height: 0; }
+.ms-layout--collapsed { grid-template-columns: 40px minmax(0, 1fr) 300px; }
 .ms-sidebar, .ms-panel {
   background: #fff; border-right: 1px solid #dfe3e7; overflow: auto; min-width: 0;
 }
+.ms-sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-right: 8px; }
+.ms-sidebar-head .ms-section-title { padding-bottom: 0; }
+.ms-sidebar--collapsed { display: flex; justify-content: center; padding-top: 10px; overflow: hidden; }
+.ms-collapse-btn {
+  border: 1px solid #dfe3e7; background: #fff; border-radius: 6px; cursor: pointer;
+  color: #5f6368; font-size: 14px; line-height: 1; padding: 4px 8px;
+}
+.ms-collapse-btn:hover { background: #f1f3f4; color: #202124; }
 .ms-panel { border-right: 0; border-left: 1px solid #dfe3e7; }
 .ms-section-title { padding: 12px 14px 8px; font-size: 12px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .04em; }
 .ms-scene-button {
