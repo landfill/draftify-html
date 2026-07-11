@@ -1,19 +1,19 @@
-import { PENDING_QUEUE_KEY_PREFIX, RESERVED_PATH_PREFIX, type SpecProject } from "@mockspec/shared";
+import { PENDING_QUEUE_KEY_PREFIX, type SpecProject } from "@mockspec/shared";
+import { request, type TransportResponse } from "./transport.js";
 
 /**
  * Spec API 클라이언트.
- * SDK는 목업 서브도메인의 same-origin API를 상대 경로로만 호출한다 (ID-01/03, CORS 없음).
+ * 경로 A·B: 목업 서브도메인의 same-origin API를 상대 경로로 호출 (ID-01/03, CORS 없음).
+ * 경로 D: transport가 확장 브리지로 교체된다 (transport.ts) — 호출부는 동일.
  */
-
-const apiBase = `${RESERVED_PATH_PREFIX}/api`;
 
 interface ApiErrorBody {
   error?: { code?: string; message?: string };
 }
 
-async function errorMessage(res: Response, fallback: string): Promise<string> {
+function errorMessage(res: TransportResponse, fallback: string): string {
   try {
-    const body = (await res.json()) as ApiErrorBody;
+    const body = JSON.parse(res.bodyText) as ApiErrorBody;
     if (body.error?.message) return body.error.message;
   } catch {
     /* 본문이 JSON이 아니면 fallback */
@@ -47,11 +47,11 @@ export function clearPendingProject(projectId: string): void {
 }
 
 export async function fetchProject(projectId: string): Promise<SpecProject> {
-  const res = await fetch(`${apiBase}/projects/${projectId}`);
+  const res = await request({ path: `/projects/${projectId}`, method: "GET" });
   if (!res.ok) {
-    throw new Error(await errorMessage(res, "프로젝트 불러오기 실패"));
+    throw new Error(errorMessage(res, "프로젝트 불러오기 실패"));
   }
-  return (await res.json()) as SpecProject;
+  return JSON.parse(res.bodyText) as SpecProject;
 }
 
 /** Content-Disposition에서 파일명 추출 — 한글은 filename*(RFC 5987) 우선, ASCII fallback. */
@@ -74,27 +74,28 @@ export interface ExportResult {
 
 /** 산출물 HTML 다운로드 — 편집 패널 [내보내기] 버튼 (킥오프 §11 6차 개정). */
 export async function exportProjectHtml(projectId: string): Promise<ExportResult> {
-  const res = await fetch(`${apiBase}/projects/${projectId}/export`, { method: "POST" });
+  const res = await request({ path: `/projects/${projectId}/export`, method: "POST" });
   if (!res.ok) {
-    throw new Error(await errorMessage(res, "내보내기 실패"));
+    throw new Error(errorMessage(res, "내보내기 실패"));
   }
   return {
-    blob: await res.blob(),
-    filename: filenameFromDisposition(res.headers.get("content-disposition")) ?? `${projectId}.html`,
-    warning: res.headers.get("x-mockspec-warning"),
+    blob: new Blob([res.bodyText], { type: "text/html" }),
+    filename: filenameFromDisposition(res.headers["content-disposition"] ?? null) ?? `${projectId}.html`,
+    warning: res.headers["x-mockspec-warning"] ?? null,
   };
 }
 
 export async function putProject(project: SpecProject): Promise<SpecProject> {
-  const res = await fetch(`${apiBase}/projects/${project.id}`, {
+  const res = await request({
+    path: `/projects/${project.id}`,
     method: "PUT",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(project),
+    bodyType: "json",
   });
   if (!res.ok) {
-    throw new Error(await errorMessage(res, "프로젝트 저장 실패"));
+    throw new Error(errorMessage(res, "프로젝트 저장 실패"));
   }
-  return (await res.json()) as SpecProject;
+  return JSON.parse(res.bodyText) as SpecProject;
 }
 
 /**
@@ -129,16 +130,15 @@ export async function flushPendingProject(projectId: string): Promise<SpecProjec
  * (POST /__mockspec/api/projects/:id/assets, field: snapshot — technical-spec §6)
  */
 export async function uploadSnapshot(projectId: string, html: string): Promise<string> {
-  const form = new FormData();
-  form.append("snapshot", new Blob([html], { type: "text/html" }), `${projectId}.html`);
-
-  const res = await fetch(`${apiBase}/projects/${projectId}/assets`, {
+  const res = await request({
+    path: `/projects/${projectId}/assets`,
     method: "POST",
-    body: form,
+    body: html,
+    bodyType: "snapshot",
   });
   if (!res.ok) {
-    throw new Error(await errorMessage(res, "스냅샷 업로드 실패"));
+    throw new Error(errorMessage(res, "스냅샷 업로드 실패"));
   }
-  const body = (await res.json()) as { assetKey: string };
+  const body = JSON.parse(res.bodyText) as { assetKey: string };
   return body.assetKey;
 }

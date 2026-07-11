@@ -91,6 +91,36 @@ describe("snippet 저장 토큰 게이트 (T20)", () => {
     expect(res.status).toBe(401);
   });
 
+  it("PUT 시 X-Mockspec-Page-Origin이 lastSeenOrigin으로 스탬프되고, 클라이언트의 mockupSource 조작은 무시된다", async () => {
+    const { spec, token } = await snippetProject();
+
+    const tampered = {
+      ...spec,
+      name: "저장",
+      mockupSource: { type: "upload", originalFilename: "fake.zip", uploadedAt: spec.createdAt },
+    };
+    const res = await request(app)
+      .put(`/api/projects/${spec.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${token}`)
+      .set("X-Mockspec-Page-Origin", "https://admin.internal.example")
+      .send(tampered);
+    expect(res.status).toBe(200);
+    const saved = res.body as SpecProject;
+    // 조작된 upload 소스는 무시되고 snippet 유지 + 페이지 오리진 스탬프
+    expect(saved.mockupSource).toEqual({
+      type: "snippet",
+      registeredAt: (spec.mockupSource as { registeredAt: string }).registeredAt,
+      lastSeenOrigin: "https://admin.internal.example",
+    });
+
+    // 헤더 없이 저장하면 기존 lastSeenOrigin 유지
+    const res2 = await request(app)
+      .put(`/api/projects/${spec.id}`).set("Host", ROOT)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ...saved, name: "다시 저장" });
+    expect((res2.body as SpecProject).mockupSource).toEqual(saved.mockupSource);
+  });
+
   it("GET(초기 로드)은 토큰 없이 가능 — 저장 계열만 게이트", async () => {
     const { spec } = await snippetProject();
     const res = await request(app).get(`/api/projects/${spec.id}`).set("Host", ROOT);

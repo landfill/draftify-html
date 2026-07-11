@@ -18,7 +18,7 @@
 - [x] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트) — vitest 126 passed(+6), PUT/assets/export 게이트·타 프로젝트 토큰 거부·기존 경로 무영향 검증
 - [x] T21 콘솔 온보딩 3번째 선택지 (토큰·설치 안내) — vitest 132 passed(+6), snippet 등록·토큰 재발급/폐기 API·콘솔 3택 검증, 실 Chrome 렌더 확인
 - [x] T22 확장 스캐폴드 + content script SDK 주입 (+팝업 바인딩 선행) — 실 Chromium unpacked 로드로 FAB·패널·미바인딩 미주입 검증
-- [ ] T23 확장 팝업(프로젝트 바인딩) + background 저장
+- [x] T23 background 저장 릴레이 (팝업 바인딩은 T22 선행) — 실 Chromium에서 장면 등록→동결→업로드→PUT 저장 전 과정 + lastSeenOrigin 스탬프 검증
 - [ ] T24 E2E: 로그인 뒤 화면 시나리오 (DoD)
 - [ ] T25 docs/ 최종 동기화 + 실사용 판정 기록
 
@@ -49,6 +49,16 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-11 — T23 background 저장 릴레이 완료 (경로 D 저장 경로 관통)
+- 브랜치: `feat/s25-ext-save-relay-t23` (T22 위에 스택, main 미병합 — T22→T23 순 병합 대기).
+- 완료(SDK): **transport 추상화** `sdk/src/transport.ts` — ① `fetchTransport`(기본, 경로 A·B same-origin fetch 그대로) ② `createBridgeTransport`(경로 D — window.postMessage 요청/응답 상관, 30s 타임아웃으로 실패 시 오프라인 큐가 받게) ③ `api.ts`를 transport 경유로 리팩터링(호출부 4개: GET/PUT/assets/export — 본문·응답을 문자열로 정규화, chrome 메시지가 JSON만 지원·스냅샷/export가 본질 텍스트라 무손실) ④ `main.tsx`가 주입 태그 `data-transport="extension"`(shared 상수 신설)을 보고 브리지로 교체.
+- 완료(확장): ① `content.ts` — 브리지 릴레이(페이지 postMessage ↔ chrome.runtime.sendMessage), 주입 태그에 transport 속성 ② `background.ts` — **fetch 릴레이**: sender.origin의 바인딩만 사용(위조 불가), **자기 프로젝트 API 경로만 허용**(경로 가드), Bearer 토큰은 background에서만 부착(페이지에 토큰 미노출), 스냅샷은 FormData 재조립, `X-Mockspec-Page-Origin` 부착. host_permissions(localhost) 기반이라 CORS 불필요(서버 CORS 미구현 유지).
+- 완료(서버): PUT에서 snippet 프로젝트의 **mockupSource를 서버 소유로 보호**(클라이언트 조작 무시) + `X-Mockspec-Page-Origin`을 `lastSeenOrigin`으로 스탬프(헤더 없으면 기존 유지).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **136 passed**(+4: 브리지 상관·동시 2건 교차 없음 / 오류 reject / 타임아웃→큐 인계 / 서버 lastSeenOrigin 스탬프+mockupSource 조작 무시). `npm run test:e2e` 2 passed 회귀 없음. **실 Chromium 스크래치(전 과정)**: 실서버 기동→snippet 등록→확장 바인딩→fixture 페이지에서 **프로젝트 로드(GET 브리지)→장면 등록→동결→스냅샷 업로드→PUT 저장** 성공, 서버 spec에 장면 1·snapshotAsset·`lastSeenOrigin=페이지 오리진` 확인.
+- 참고(테스트 인프라): vitest happy-dom은 window가 프록시라 postMessage의 `ev.source === window` 가드와 불일치 — 테스트는 `source` 없는 MessageEvent 직접 dispatch로 우회(가드는 유지, 실브라우저는 스크래치가 커버). App.test의 fetch 스텁은 "init 없음=GET" 가정이었어서 메서드 기준으로 수정.
+- 다음 할 일: **T24 E2E 로그인 시나리오** — 로그인 fixture(폼+보호 화면) 작성, Playwright `launchPersistentContext`+`--load-extension`으로 pathD 킥오프 §7 DoD 자동화(마스킹·export·보안 회귀 포함).
+- 막힌 지점: 없음.
 
 ### 2026-07-11 — T22 확장 스캐폴드 + content script SDK 주입 완료
 - 브랜치: `feat/s25-extension-scaffold-t22` (main 미병합, 동의 대기).

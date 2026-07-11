@@ -118,6 +118,15 @@ export function projectsRouter(): Router {
       if (!body || typeof body !== "object" || body.version !== 1 || body.id !== id) {
         return sendError(res, "INVALID_REQUEST", "version(=1)·id가 경로와 일치해야 합니다.");
       }
+      // [S2.5] snippet 프로젝트의 mockupSource는 서버 소유 메타 — 클라이언트 값 대신
+      // 이전 값을 유지하고, 확장 background가 붙인 페이지 오리진만 표시용으로 스탬프.
+      if (prev.mockupSource.type === "snippet") {
+        const pageOrigin = req.headers["x-mockspec-page-origin"];
+        body.mockupSource = {
+          ...prev.mockupSource,
+          ...(typeof pageOrigin === "string" && pageOrigin ? { lastSeenOrigin: pageOrigin } : {}),
+        };
+      }
       const saved = await replaceSpec(prev, body as SpecProject);
       res.json(saved);
     } catch (err) {

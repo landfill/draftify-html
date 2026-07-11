@@ -67,7 +67,7 @@ afterEach(() => {
 async function mountWithOpenPanel(): Promise<{ getDoc: () => SpecProject }> {
   let lastSaved: SpecProject = project;
   vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
-    if (!init?.method) return jsonResponse(lastSaved);
+    if (!init?.method || init.method === "GET") return jsonResponse(lastSaved);
     lastSaved = JSON.parse(String(init.body)) as SpecProject;
     return jsonResponse({ ...lastSaved, updatedAt: "2026-07-10T00:00:05.000Z" });
   });
@@ -230,7 +230,7 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
           },
         });
       }
-      if (!init?.method) return jsonResponse(project);
+      if (!init?.method || init.method === "GET") return jsonResponse(project);
       return jsonResponse({ ...JSON.parse(String(init.body)), updatedAt: "2026-07-10T00:00:05.000Z" });
     });
     // happy-dom에 없는 다운로드 경로 스텁
@@ -270,7 +270,7 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
   it("확인 다이얼로그에서 취소하면 export를 호출하지 않는다", async () => {
     vi.stubGlobal("confirm", vi.fn(() => false));
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
-      if (!init?.method) return jsonResponse(project);
+      if (!init?.method || init.method === "GET") return jsonResponse(project);
       return jsonResponse({ ...JSON.parse(String(init.body)), updatedAt: "2026-07-10T00:00:05.000Z" });
     });
 
@@ -296,7 +296,7 @@ describe("App 저장·오프라인 큐 (T7)", () => {
     const savedBodies: SpecProject[] = [];
     let putCount = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
-      if (!init?.method) return jsonResponse(project);
+      if (!init?.method || init.method === "GET") return jsonResponse(project);
       const body = JSON.parse(String(init.body)) as SpecProject;
       savedBodies.push(body);
       putCount += 1;

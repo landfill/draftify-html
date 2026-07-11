@@ -1,7 +1,8 @@
 import { render } from "preact";
-import { PROJECT_DATA_ATTR } from "@mockspec/shared";
+import { PROJECT_DATA_ATTR, TRANSPORT_DATA_ATTR } from "@mockspec/shared";
 import { App } from "./ui/App.js";
 import { STYLES } from "./styles.js";
+import { setTransport, createBridgeTransport } from "./transport.js";
 
 /**
  * SDK 진입점. 주입 태그(<script src="/__mockspec/sdk.js" data-project defer>)로 로드되어
@@ -9,8 +10,14 @@ import { STYLES } from "./styles.js";
  *
  * defer 스크립트 실행 시점에 document.currentScript가 주입 태그를 가리키므로
  * 여기서 projectId를 즉시 읽는다.
+ *
+ * [S2.5] 확장(경로 D)이 주입한 태그는 data-transport="extension"을 함께 단다 —
+ * 이때 API는 same-origin fetch 대신 확장 브리지로 나간다 (transport.ts).
  */
 const projectId = document.currentScript?.getAttribute(PROJECT_DATA_ATTR) ?? null;
+if (document.currentScript?.getAttribute(TRANSPORT_DATA_ATTR) === "extension") {
+  setTransport(createBridgeTransport());
+}
 
 function boot(): void {
   if (!projectId) {

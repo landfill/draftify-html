@@ -14,3 +14,13 @@ export const PENDING_QUEUE_KEY_PREFIX = "mockspec:pending:" as const;
 
 /** 주입 스크립트 태그가 프로젝트 식별에 쓰는 data 속성명. (ID-03) */
 export const PROJECT_DATA_ATTR = "data-project" as const;
+
+/**
+ * [S2.5] 주입 스크립트 태그의 transport 지정 속성명. 값 "extension"이면 SDK가
+ * same-origin fetch 대신 확장 postMessage 브리지로 API를 호출한다 (pathD 킥오프 §4.2).
+ */
+export const TRANSPORT_DATA_ATTR = "data-transport" as const;
+
+/** [S2.5] 페이지(SDK) ↔ content script 브리지의 postMessage type 값. */
+export const BRIDGE_REQUEST_TYPE = "mockspec:bridge-request" as const;
+export const BRIDGE_RESPONSE_TYPE = "mockspec:bridge-response" as const;
