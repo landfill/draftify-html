@@ -22,8 +22,8 @@
   <h1>mockspec — 내 화면에서 편집</h1>
   <div class="origin" id="origin">현재 탭 확인 중…</div>
 
-  <label for="project-id">프로젝트 ID</label>
-  <input id="project-id" type="text" placeholder="prj_…" autocomplete="off">
+  <label for="project-id">프로젝트 ID (이름이 아니라 prj_로 시작하는 값)</label>
+  <input id="project-id" type="text" placeholder="prj_…" autocomplete="off" pattern="prj_.*">
 
   <label for="token">프로젝트 토큰</label>
   <input id="token" type="password" placeholder="tok_…" autocomplete="off">

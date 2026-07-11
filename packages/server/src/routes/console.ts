@@ -43,6 +43,9 @@ button, input { font: inherit; }
 .c-project-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .c-project-name { font-weight: 700; overflow-wrap: anywhere; }
 .c-project-meta { color: #5f6368; font-size: 12.5px; white-space: nowrap; }
+.c-project-id { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.c-project-id .c-id-label { font-size: 11px; font-weight: 700; color: #5f6368; }
+.c-project-id code { padding: 3px 8px; background: #f1f3f4; border-radius: 5px; font-size: 12.5px; user-select: all; }
 .c-project-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .c-empty { color: #5f6368; padding: 18px; text-align: center; border: 1px dashed #c7cdd3; border-radius: 8px; }
 .c-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #dfe3e7; }
@@ -234,6 +237,21 @@ async function exportProject(project, statusTarget) {
   setStatus(statusTarget, note, "ok");
 }
 
+async function copyConnectionInfo(project) {
+  // 팝업 3칸(프로젝트 ID·토큰·서버 주소)에 그대로 옮길 수 있는 라벨 블록.
+  // 토큰은 서버가 해시만 보관하므로 이 세션에서 발급·재발급·입력한 값이 있을 때만 채운다.
+  var token = sessionStorage.getItem("mockspec:tok:" + project.id);
+  var info = "프로젝트 ID: " + project.id + "\\n서버 주소: " + location.origin + "\\n토큰: " +
+    (token || "(콘솔에서 [토큰 재발급]으로 새로 발급)");
+  try {
+    await navigator.clipboard.writeText(info);
+    setStatus(listStatusEl, "연결 정보를 복사했습니다 — 확장 팝업에 붙여넣으세요." +
+      (token ? "" : " (토큰은 재발급 후 다시 복사하세요.)"), "ok");
+  } catch (e) {
+    setStatus(listStatusEl, "복사 실패 — 프로젝트 ID: " + project.id, "error");
+  }
+}
+
 async function reissueToken(project) {
   var go = window.confirm("토큰을 재발급하면 기존 토큰이 즉시 무효화됩니다. 확장도 새 토큰으로 다시 연결해야 합니다. 계속할까요?");
   if (!go) return;
@@ -276,6 +294,14 @@ function renderProject(project) {
   head.appendChild(el("span", "c-project-meta", metaText));
   card.appendChild(head);
 
+  // 확장 프로젝트는 팝업에 프로젝트 ID를 넣어야 연결된다 — ID를 항상 보이게(이름과 혼동 방지).
+  if (srcType === "snippet") {
+    var idRow = el("div", "c-project-id");
+    idRow.appendChild(el("span", "c-id-label", "프로젝트 ID"));
+    idRow.appendChild(el("code", null, project.id));
+    card.appendChild(idRow);
+  }
+
   var actions = el("div", "c-project-actions");
   if (srcType !== "snippet") {
     // 확장 프로젝트는 서비스가 서빙하는 목업 URL이 없다 — 편집은 대상 화면에서 확장으로.
@@ -285,6 +311,11 @@ function renderProject(project) {
     openLink.rel = "noopener";
     actions.appendChild(openLink);
   } else {
+    var copyBtn = el("button", "c-btn c-btn-ghost", "연결 정보 복사");
+    copyBtn.type = "button";
+    copyBtn.addEventListener("click", function () { void copyConnectionInfo(project); });
+    actions.appendChild(copyBtn);
+
     var reissueBtn = el("button", "c-btn c-btn-ghost", "토큰 재발급");
     reissueBtn.type = "button";
     reissueBtn.addEventListener("click", function () { void reissueToken(project); });

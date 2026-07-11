@@ -59,6 +59,14 @@ void (async () => {
         setStatus("프로젝트 ID·토큰·서버 주소를 모두 입력해주세요.", "error");
         return;
       }
+      if (!projectId.startsWith("prj_")) {
+        setStatus("프로젝트 이름이 아니라 ID(prj_…)를 넣어주세요 — 콘솔 카드의 [연결 정보 복사].", "error");
+        return;
+      }
+      if (!token.startsWith("tok_")) {
+        setStatus("토큰(tok_…)이 올바르지 않습니다 — 콘솔에서 발급/재발급한 값을 넣어주세요.", "error");
+        return;
+      }
       await writeBinding(origin, { projectId, token, serverUrl });
       setStatus("저장됨 — 페이지를 새로고침하면 편집 버튼이 나타납니다.", "ok");
     })();

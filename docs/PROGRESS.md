@@ -50,6 +50,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-11 — 실사용 1차 피드백: 확장 프로젝트 ID 가시성 + 콘솔 JS 파싱 가드
+- 브랜치: `fix/console-snippet-id-visibility` (T22~T24 스택 위, main 미병합).
+- 배경(실사용): 사용자가 확장을 **실제 Chrome에 unpacked 로드**해 써봄. 팝업 "프로젝트 ID"에 프로젝트 **이름**(`dasfs`)을 넣어 "불러오기 실패(프로젝트 dasfs를 찾을 수 없습니다)" 발생. 원인: **콘솔이 snippet 프로젝트의 ID(`prj_…`)를 목록에서 안 보여줘** 이름과 혼동. (사용자 선택: 카드에 ID 표시 + 원클릭 연결)
+- 완료: ① 콘솔 snippet 카드에 **프로젝트 ID를 항상 표시**(선택 가능한 code) ② **[연결 정보 복사]** 버튼(프로젝트 ID·서버 주소·토큰(세션 보유 시) 라벨 블록) ③ 팝업 입력 가드 — ID가 `prj_`, 토큰이 `tok_`로 시작하지 않으면 명확한 에러(이름/ID 혼동 안내), 라벨도 "이름이 아니라 prj_로 시작하는 값".
+- **실버그(사용자 실사용이 잡음)**: 새 `copyConnectionInfo`에서 `"\n"`을 썼는데 `CONSOLE_JS`가 TS 템플릿 리터럴이라 빌드 시 **실제 개행**이 되어 인라인 콘솔 JS 전체가 문법 오류 → **프로젝트 목록이 아예 렌더 안 됨**. `\\n`으로 수정. 유닛 테스트는 문자열 존재만 봐서 놓쳤음(런타임 파싱 미검증).
+- 완료(회귀 방지): `console.test.ts`에 **인라인 JS 파싱 가드** — `new Function(스크립트)`로 문법만 검증(실행 안 함). raw 개행류를 SyntaxError로 잡음(역검증 완료).
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **138 passed**(+2: 카드 ID·복사 존재 / 인라인 JS 파싱). `npm run test:e2e` 3본 통과. **실 Chrome**: 목록 정상 렌더, `dasfs` 카드에 `프로젝트 ID prj_mix3iprwke` 표시·[연결 정보 복사] 확인.
+- 다음 할 일: 사용자가 실제 ID(`prj_…`)로 재연결해 편집 흐름 재검증 → T25 실사용 판정 기록 → S2.5 종료.
+- 막힌 지점: 없음.
+
 ### 2026-07-11 — T24 경로 D E2E (로그인 뒤 화면 DoD) 완료
 - 브랜치: `feat/s25-ext-e2e-t24` (T22→T23 위에 스택, main 미병합 — 순서대로 병합 대기).
 - 완료: **`e2e/pathD-dod.spec.ts`** (pathD 킥오프 §7 DoD) — ① 로그인 fixture를 테스트 내장 http 서버로 서빙(빌드 배선 없음): `/`(폼)·`POST /login`(host-only 쿠키)·`/protected`(쿠키 없으면 302) ② 확장 unpacked 로드(`launchPersistentContext` + `--load-extension`, `channel:"chromium"` 신 headless) + 팝업 storage로 오리진↔프로젝트(토큰) 바인딩 ③ **직접 로그인**(폼 제출→쿠키)→보호 화면→확장 SDK 주입→장면 등록·어노테이션 2개·**동결·저장(토큰 릴레이)** ④ 콘솔에서 마스킹 규칙(`홍길동`→`고객`, 토큰은 sessionStorage 선주입으로 prompt 회피) 적용→export ⑤ 새 컨텍스트 file:// 오픈→**마스킹 원문 0회**·치환문 존재·마커 2개 위치 오차 ≤2px·설명 일치·**네트워크 0건** ⑥ 보안 회귀: 토큰 없는 PUT 401.
