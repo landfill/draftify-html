@@ -50,6 +50,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-11 — 실사용 6차 피드백(진짜 원인): Nexacro 포커스 트랩 → focusShield
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경(실사용 로그가 결정타): HANATOUR = **Nexacro**(TOBESOFT, `Platform_HTML5.js`·`nexacro.__setViewportScale`) 앱. 콘솔에 `Platform.js: id.split is not a function` 폭주 — Nexacro의 **document 레벨 전역 focusin 핸들러**가 우리 패널 입력(자기 컴포넌트 아님)에 포커스가 가면 자기 요소로 되돌린다 → 앞 칸·설명창 포커스 불가, 타이핑이 페이지로 샘. (5차의 selectedAnn 추종만으론 부족 — 페이지가 focusin으로 포커스를 뺏는 게 근본 원인)
+- 완료: **`focusShield.ts`** — SDK 호스트(Shadow 경계)에서 `focusin`/`focusout`을 `stopImmediatePropagation`. Shadow 경계에서 이 이벤트들은 호스트로 리타깃되어 버블하므로, 호스트에서 끊으면 document의 페이지(프레임워크) 핸들러까지 전파 안 됨. main.tsx가 부트 시 적용. 내부 포커스 처리는 shadow 안이라 무영향.
+- **재현·확증(드디어)**: 포커스 트랩(app 밖 focusin → 페이지 필드로 refocus) 페이지로, **shield 없으면** 타이핑이 전부 페이지 필드로 새고 우리 입력 전부 빈칸(사용자 증상 정확히 일치), **shield 있으면** 앞 칸·설명창 정상. git stash로 shield 유무 대조 검증.
+- 검증: `npm test` **148 passed**(+2: 호스트 내부 focusin이 document 미도달 / 대조군은 도달). `npm run test:e2e` 3본 통과. 5차 수정(자동 포커스 생성 한정+선택 추종)도 유지 — 둘 다 필요.
+- 다음 할 일: 사용자가 HANATOUR에서 앞 칸·설명창 입력 재검증 → 되면 편집·저장·export → T25 실사용 판정 → S2.5 종료.
+- 막힌 지점: 없음. (참고: Nexacro의 `id.split` 에러는 자체 에러라 무해 추정 — 우리 shield로 focusin 유입이 줄어 빈도도 감소할 수 있음)
+
 ### 2026-07-11 — 실사용 5차 피드백: 어노테이션 포커스가 마지막 칸으로 튐
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경(실사용): 어노테이션 여러 개일 때 **앞 번호 칸을 클릭·타이핑해도 글자가 마지막 칸에 들어감**(한글·영문 무관). 원인: title 자동 포커스 effect가 `selectedAnn`(마지막 생성 항목)을 향하는데, 앞 칸을 편집해도 선택이 따라가지 않아 재렌더 시 포커스가 마지막으로 돌아감. (확장·단순 페이지로는 미재현 — 실사이트 라이브 JS의 잦은 재렌더가 트리거로 추정)

@@ -3,6 +3,7 @@ import { PROJECT_DATA_ATTR, TRANSPORT_DATA_ATTR } from "@mockspec/shared";
 import { App } from "./ui/App.js";
 import { STYLES } from "./styles.js";
 import { setTransport, createBridgeTransport } from "./transport.js";
+import { shieldFocusEvents } from "./focusShield.js";
 
 /**
  * SDK 진입점. 주입 태그(<script src="/__mockspec/sdk.js" data-project defer>)로 로드되어
@@ -29,6 +30,8 @@ function boot(): void {
   const host = document.createElement("div");
   host.setAttribute("data-mockspec-root", ""); // 동결 대상 제외 마킹 (T6)
   document.body.appendChild(host);
+
+  shieldFocusEvents(host); // 페이지 프레임워크(Nexacro 등)의 포커스 가로채기 차단 (focusShield.ts)
 
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
