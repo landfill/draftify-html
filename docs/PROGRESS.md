@@ -50,6 +50,14 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-11 — 실사용 3차 피드백: 동결 실패(single-file 정규식) 폴백
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경(실사용): 실제 HANATOUR 로그인 화면(확장 연결 성공)에서 장면 등록 시 **동결 실패 — "Invalid regular expression: /^local(/: Unterminated group"**. single-file-core가 실사이트의 복잡한 CSS(@font-face `local()` 소스가 얽힌 조건 파싱)를 처리하다 내부에서 정규식 오류로 throw. 원인 경로: `removeAlternativeFonts` 액션 내부의 media/supports 조건 파싱(css-media-query-parser `new RegExp(filter)`). 로그인 게이트라 정확한 CSS 재현은 불가.
+- 완료: **`freeze.ts` 2단 폴백** — 1차(전체 최적화) 실패 시 **CSS 최소화를 끈 안전 옵션**(`removeUnusedFonts`·`removeAlternativeFonts`·`removeUnusedStyles`·`removeAlternativeMedias`·`groupDuplicateImages`·`compressHTML` = false)으로 **1회 자동 재시도**. 핵심 무해화(`blockScripts` + `<script>` 0개 검증)는 폴백에서도 유지. 우리 규칙 위반(FreezeError)은 재시도 무의미하므로 전파. 스냅샷이 다소 커질 뿐 시각 완전성·네트워크 0건 유지.
+- 검증: `npm test` **145 passed**(+3: 1차 성공 무폴백 / 내부 오류 시 CSS-off 옵션으로 재시도·blockScripts 유지 / FreezeError는 재시도 안 함 — getPageData 목킹). `npm run test:e2e` 3본 통과(정상 경로=1차 성공, 폴백 미발동 회귀 없음). **재현 시도**: 합성 `local()` 폰트로는 미재현(실사이트 특정 CSS) — 폴백은 원인 액션(removeAlternativeFonts)을 직접 끄므로 겨냥 정확.
+- 다음 할 일: 사용자가 실제 HANATOUR 화면에서 동결 재시도 → 폴백으로 통과하는지 확인(제가 로그인 게이트라 직접 검증 불가). 통과 시 편집·저장·export까지 → T25 실사용 판정 → S2.5 종료.
+- 막힌 지점: 폴백이 그 사이트의 정확한 CSS를 커버하는지는 **사용자 재검증 필요**(재현 불가). 폴백으로도 실패하면 실패 CSS 조각을 받아 원인 정밀 대응.
+
 ### 2026-07-11 — 실사용 2차 피드백: 연결 코드 1개로 통합 (팝업 소실 문제 해결)
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경(실사용): 사용자 — "프로젝트 ID·토큰 **둘을 각각 복사·붙여넣기**하는데, 확장 팝업이 포커스를 잃으면 닫혀서 유지가 안 돼 **사용 불가**." (Chrome 확장 팝업은 blur 시 닫힘 — 값 복사하러 콘솔 가면 팝업 소멸 → 무한 반복)

@@ -45,9 +45,39 @@ const FREEZE_OPTIONS: Record<string, unknown> = {
 };
 
 /**
+ * CSS 최소화를 끈 안전 폴백 옵션.
+ * single-file-core는 실 사이트의 복잡한 CSS(예: `@font-face`의 `local()` 소스, 벤더 해킹)를
+ * 파싱하다 내부에서 정규식 오류로 throw하는 경우가 있다(경로 D 실사용에서 확인 —
+ * "Invalid regular expression: /^local(/"). 이 오류들은 **미사용 폰트·스타일 제거**와
+ * CSS 압축 경로에 몰려 있으므로, 그 최적화들을 꺼서 재시도한다. 스냅샷이 다소 커지지만
+ * 시각적 완전성과 네트워크 0건 원칙은 유지된다(핵심 무해화 blockScripts는 그대로).
+ */
+const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
+  ...FREEZE_OPTIONS,
+  removeUnusedFonts: false,
+  removeAlternativeFonts: false,
+  removeUnusedStyles: false,
+  removeAlternativeMedias: false,
+  groupDuplicateImages: false,
+  compressHTML: false,
+};
+
+async function runFreeze(options: Record<string, unknown>): Promise<string> {
+  const { content } = await getPageData({ ...options }, {});
+  const scripts = countScripts(content);
+  if (scripts > 0) {
+    throw new FreezeError(`동결 결과에 <script> ${scripts}개가 남아 폐기했습니다.`);
+  }
+  return content;
+}
+
+/**
  * 현재 문서를 동결해 단독 HTML 문자열을 반환한다.
  * 패널 도킹으로 <html>에 걸린 margin-right는 스냅샷에서 제거(원본 레이아웃 보존).
  * <script>가 하나라도 남으면 FreezeError → 호출부가 배지+재시도로 처리.
+ *
+ * 1차(전체 최적화)가 single-file 내부 오류로 실패하면 CSS 최소화를 끈 폴백으로 자동 재시도한다.
+ * FreezeError(우리 검증 실패)는 폴백으로도 못 고치므로 그대로 전파한다.
  */
 export async function freezeDocument(): Promise<string> {
   const html = document.documentElement;
@@ -56,12 +86,14 @@ export async function freezeDocument(): Promise<string> {
   html.style.transition = "none";
   html.style.marginRight = "";
   try {
-    const { content } = await getPageData({ ...FREEZE_OPTIONS }, {});
-    const scripts = countScripts(content);
-    if (scripts > 0) {
-      throw new FreezeError(`동결 결과에 <script> ${scripts}개가 남아 폐기했습니다.`);
+    try {
+      return await runFreeze(FREEZE_OPTIONS);
+    } catch (err) {
+      if (err instanceof FreezeError) throw err; // <script> 잔존 등 우리 규칙 위반은 재시도 무의미
+      // single-file 내부 오류(정규식 등) → CSS 최소화 끈 폴백으로 1회 재시도
+      console.warn("[mockspec] 동결 1차 실패, 안전 옵션으로 재시도:", err);
+      return await runFreeze(SAFE_FALLBACK_OPTIONS);
     }
-    return content;
   } finally {
     html.style.marginRight = prevMargin;
     html.style.transition = prevTransition;
