@@ -50,6 +50,14 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-11 — 실사용 4차 피드백: 폴백 스냅샷 50MB 초과 → blockFonts로 재설계
+- 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
+- 배경(실사용): 3차 폴백으로 `^local(` 크래시는 넘겼으나, 폴백이 `removeUnusedFonts:false`라 **모든 웹폰트(HANATOUR 한글 폰트 — 웨이트당 수 MB)를 base64 임베드** → 스냅샷 **50MB 초과**로 asset 업로드 거부(413).
+- 완료: 폴백에 **`blockFonts: true` 추가** — single-file이 폰트 리소스를 아예 안 가져온다(core line 205 게이트). 스냅샷은 시스템 폰트로 렌더(기획서 용도 무방), 크기 정상화·네트워크 0건 유지. 크래시 진원 액션(`removeAlternativeFonts` 등)은 계속 off. blockScripts+<script> 0개 검증은 유지.
+- 검증: `npm test` 145 passed(폴백 유닛 assertion을 blockFonts로 갱신), `npm run test:e2e` 3본 통과. `blockFonts`는 single-file 정식 옵션(source 확인).
+- 다음 할 일: 사용자가 HANATOUR 화면에서 재시도 → 폴백(폰트 없이 동결)으로 통과·저장되는지 확인. 통과 시 편집·export → T25 판정.
+- 막힌 지점: 폴백으로도 크기/렌더가 문제면 재확인 필요(로그인 게이트로 직접 재현 불가). 정상 경로에서도 CJK 폰트 사용 페이지가 50MB에 근접할 수 있음 — 실수요 보고 asset 상한/폰트 정책 후속 판단.
+
 ### 2026-07-11 — 실사용 3차 피드백: 동결 실패(single-file 정규식) 폴백
 - 브랜치: `fix/console-snippet-id-visibility` (같은 fix 브랜치에 이어 커밋).
 - 배경(실사용): 실제 HANATOUR 로그인 화면(확장 연결 성공)에서 장면 등록 시 **동결 실패 — "Invalid regular expression: /^local(/: Unterminated group"**. single-file-core가 실사이트의 복잡한 CSS(@font-face `local()` 소스가 얽힌 조건 파싱)를 처리하다 내부에서 정규식 오류로 throw. 원인 경로: `removeAlternativeFonts` 액션 내부의 media/supports 조건 파싱(css-media-query-parser `new RegExp(filter)`). 로그인 게이트라 정확한 CSS 재현은 불가.

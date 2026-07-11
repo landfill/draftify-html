@@ -33,8 +33,8 @@ describe("freezeDocument 폴백 (경로 D 실사용 — single-file 내부 오�
     expect(await freezeDocument()).toBe(SNAPSHOT);
     expect(getPageData).toHaveBeenCalledTimes(2);
     const secondOpts = getPageData.mock.calls[1]![0] as Record<string, unknown>;
-    expect(secondOpts.removeAlternativeFonts).toBe(false);
-    expect(secondOpts.removeUnusedFonts).toBe(false);
+    expect(secondOpts.removeAlternativeFonts).toBe(false); // 크래시 액션 off
+    expect(secondOpts.blockFonts).toBe(true); // 웹폰트 임베드 안 함 — 50MB 초과 방지
     expect(secondOpts.blockScripts).toBe(true); // 무해화는 폴백에서도 유지
   });
 

@@ -45,17 +45,24 @@ const FREEZE_OPTIONS: Record<string, unknown> = {
 };
 
 /**
- * CSS 최소화를 끈 안전 폴백 옵션.
- * single-file-core는 실 사이트의 복잡한 CSS(예: `@font-face`의 `local()` 소스, 벤더 해킹)를
- * 파싱하다 내부에서 정규식 오류로 throw하는 경우가 있다(경로 D 실사용에서 확인 —
- * "Invalid regular expression: /^local(/"). 이 오류들은 **미사용 폰트·스타일 제거**와
- * CSS 압축 경로에 몰려 있으므로, 그 최적화들을 꺼서 재시도한다. 스냅샷이 다소 커지지만
- * 시각적 완전성과 네트워크 0건 원칙은 유지된다(핵심 무해화 blockScripts는 그대로).
+ * 폰트를 임베드하지 않고 CSS 최소화를 끈 안전 폴백 옵션.
+ *
+ * single-file-core는 실 사이트의 복잡한 CSS(예: `@font-face`의 `local()` 소스가 얽힌
+ * 조건 파싱)를 처리하다 내부에서 정규식 오류로 throw한다(경로 D 실사용 —
+ * "Invalid regular expression: /^local(/"). 그 오류는 폰트 대체·미사용 제거 경로에 있으므로
+ * 그 최적화를 끈다.
+ *
+ * 단, 그 경로를 끄면 폰트가 전부 임베드되어 스냅샷이 폭증한다(특히 한글/CJK 웹폰트는
+ * 웨이트당 수 MB → 50MB 상한 초과, 경로 D 실사용에서 확인). 그래서 폴백에서는
+ * **`blockFonts: true`로 웹폰트 임베드를 건너뛴다** — 스냅샷은 시스템 폰트로 렌더되지만
+ * (기획서 용도엔 무방), 동결이 성립하고 네트워크 0건·크기 정상이 유지된다.
+ * 핵심 무해화(blockScripts + <script> 0개 검증)는 폴백에서도 그대로다.
  */
 const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
   ...FREEZE_OPTIONS,
+  blockFonts: true, // 웹폰트 임베드 안 함 — CJK 폰트로 인한 50MB 초과 방지 + 폰트 처리 크래시 회피
   removeUnusedFonts: false,
-  removeAlternativeFonts: false,
+  removeAlternativeFonts: false, // 정규식 크래시의 진원 액션
   removeUnusedStyles: false,
   removeAlternativeMedias: false,
   groupDuplicateImages: false,
