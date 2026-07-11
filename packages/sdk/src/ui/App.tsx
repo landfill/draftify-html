@@ -71,6 +71,9 @@ export function App({ projectId }: { projectId: string }) {
   const modeRef = useRef(mode); modeRef.current = mode;
   const dragRef = useRef(drag); dragRef.current = drag;
   const suppressClickRef = useRef(false);
+  // 방금 생성한 어노테이션 id — title 자동 포커스는 "생성 시 1회"에만 한다.
+  // (실사용: 앞 번호 칸을 편집 중인데 재렌더로 포커스가 마지막 칸으로 튀는 버그 방지)
+  const newAnnRef = useRef<string | null>(null);
   const lastSyncedRef = useRef<string | null>(null);
   const flushingRef = useRef(false);
   const getDoc = useRef(() => docRef.current).current;
@@ -274,6 +277,7 @@ export function App({ projectId }: { projectId: string }) {
       const anchor = generateAnchor(target);            // ID-06
       const { doc: nd, annotation } = addAnnotation(docRef.current, scene, anchor);
       setDoc(nd);
+      newAnnRef.current = annotation.id;                 // 이 항목만 title 자동 포커스 대상
       setSelectedAnn(annotation.id);                    // 패널 항목 열고 포커스
     };
     const onMove = (e: MouseEvent) => {
@@ -358,11 +362,13 @@ export function App({ projectId }: { projectId: string }) {
     return base;
   };
 
-  // 새 어노테이션 title 자동 포커스.
-  // 의존성은 selectedAnn만: doc을 넣으면 편집 키스트로크(=doc 변경)마다 effect가
-  // 재실행되어 description 등 다른 입력의 포커스를 title이 강탈한다 (2026-07-09 실버그).
+  // 새 어노테이션 title 자동 포커스 — **방금 생성한 항목에만** (newAnnRef).
+  // 의존성은 selectedAnn만: doc을 넣으면 편집 키스트로크마다 재실행되어 포커스를 강탈한다
+  // (2026-07-09 실버그). 또한 생성 외의 선택 변경(마커 클릭·앞 칸 편집)에는 포커스를
+  // 옮기지 않는다 — 앞 번호 칸을 편집 중 포커스가 마지막 칸으로 튀는 버그 방지 (실사용).
   useEffect(() => {
-    if (!selectedAnn) return;
+    if (!selectedAnn || newAnnRef.current !== selectedAnn) return;
+    newAnnRef.current = null;
     const el = document.querySelector("[data-mockspec-root]")?.shadowRoot
       ?.querySelector<HTMLInputElement>(`[data-ann-title="${selectedAnn}"]`);
     el?.focus();
@@ -546,6 +552,7 @@ export function App({ projectId }: { projectId: string }) {
                   class="ann__title" data-ann-title={a.id}
                   placeholder="제목"
                   value={a.title}
+                  onFocus={() => setSelectedAnn(a.id)}
                   onInput={(e) => setDoc(updateAnnotation(doc, a.id, { title: (e.target as HTMLInputElement).value }))}
                 />
                 <button class="ann__del" title="삭제" onClick={() => setDoc(deleteAnnotation(doc, a.id))}>×</button>
@@ -553,6 +560,7 @@ export function App({ projectId }: { projectId: string }) {
               <textarea
                 class="ann__desc" placeholder="설명 (마크다운)"
                 value={a.description}
+                onFocus={() => setSelectedAnn(a.id)}
                 onInput={(e) => setDoc(updateAnnotation(doc, a.id, { description: (e.target as HTMLTextAreaElement).value }))}
               />
             </div>

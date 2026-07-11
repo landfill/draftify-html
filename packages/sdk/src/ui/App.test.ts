@@ -211,6 +211,37 @@ describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
     await saveTick();
     expect(getDoc().annotations[0]?.markerOffset).toEqual({ dx: 30, dy: -20 });
   });
+
+  it("앞 번호 칸을 클릭(포커스)하면 선택이 그 칸을 따라간다 — 포커스가 마지막으로 튀지 않음 (실사용)", async () => {
+    await mountWithOpenPanel();
+
+    // 요소 2개 찍어 어노테이션 1·2 생성 → 마지막(2번)이 선택 상태
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); });
+
+    const rows = () => [...document.querySelectorAll<HTMLElement>(".ann")];
+    expect(rows()).toHaveLength(2);
+    expect(rows()[1]!.classList.contains("ann--sel")).toBe(true);  // 마지막이 선택
+    expect(rows()[0]!.classList.contains("ann--sel")).toBe(false);
+
+    // 첫 번째(1번) 제목 칸에 포커스 → 선택이 1번으로 이동해야 한다
+    await act(async () => {
+      document.querySelectorAll<HTMLInputElement>("input.ann__title")[0]!
+        .dispatchEvent(new FocusEvent("focus", { bubbles: false }));
+    });
+    expect(rows()[0]!.classList.contains("ann--sel")).toBe(true);   // 선택이 1번을 따라감
+    expect(rows()[1]!.classList.contains("ann--sel")).toBe(false);
+
+    // 1번 설명 칸에 입력해도 선택이 1번에 유지된다 (마지막으로 튀지 않음)
+    await act(async () => {
+      const desc = document.querySelectorAll<HTMLTextAreaElement>("textarea.ann__desc")[0]!;
+      desc.dispatchEvent(new FocusEvent("focus", { bubbles: false }));
+      desc.value = "첫 번째 설명";
+      desc.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await saveTick();
+    expect(rows()[0]!.classList.contains("ann--sel")).toBe(true);
+  });
 });
 
 describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
