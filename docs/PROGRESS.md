@@ -50,8 +50,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — S2.5 스택 전체 main 병합 (T22~T25 + 실사용 fix 10건)
+- `feat/s25-extension-scaffold-t22` → `t23` → `t24` → `fix/console-snippet-id-visibility` 스택(13커밋) → `main` 병합 완료(2026-07-12, fast-forward)·push. 병합 후 네 브랜치(로컬·원격) 삭제.
+- 포함: T22(확장 스캐폴드)·T23(저장 릴레이)·T24(E2E DoD)·T25(실사용 판정) + 실사용 fix 10건(연결 코드·동결 폴백·blockFonts·포커스 5~8차·뷰어 스크롤·네비 접기). **S2.5 종료.**
+- 다음 할 일: 후속 판단(다중 장면 전이·흐름도·스크린샷 fallback·작성자 라벨) 또는 S3(자동화). 사용자 우선순위 입력 대기.
+
 ### 2026-07-12 — 실사용 10차: 뷰어 왼쪽 장면 네비 접기 토글
-- 브랜치: `fix/console-snippet-id-visibility`. (9차 가로 스크롤은 확인됨 — 다만 넓은 캡처에서 스크롤이 너무 길어 중앙 확대 필요.)
+- 브랜치: `fix/console-snippet-id-visibility` → main 병합(위 참조).
 - 완료: 뷰어에 **왼쪽 장면 네비 접기/펼치기** — `ViewerState.sidebarCollapsed`, 헤더에 «(접기), 접힘 시 40px 레일 + »(펼치기). `.ms-layout--collapsed`로 그리드 컬럼을 `40px 1fr 300px`로(클래스라 모바일 미디어쿼리 정상 우선). 접으면 중앙이 넓어져 가로 스크롤 감소.
 - 검증: `npm test` 149 passed·`npm run test:e2e` 3본 통과. **실 Chromium**: 1280px 뷰포트에서 접기 시 중앙 780→940px(+160), `.ms-layout--collapsed` 적용·레일 펼치기 버튼·재펼침 복원(장면 버튼 2개)·다중 장면 유지 확인.
 - **주의: 뷰어/CSS 변경 — 재-export + 서버 재기동 필요.**
