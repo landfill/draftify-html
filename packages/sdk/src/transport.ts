@@ -24,6 +24,12 @@ export interface TransportRequest {
   /** 문자열 본문. bodyType이 결정: json=그대로, snapshot=서버에서 multipart 재조립 */
   body?: string;
   bodyType?: "json" | "snapshot";
+  /**
+   * 응답이 파일(다운로드)인 요청 표시 — export 전용. 브리지(경로 D)는 이 요청을 본문 릴레이
+   * 대신 chrome.downloads로 넘긴다: 확장 메시지는 64MiB 하드 리밋이 있어 큰 산출물이
+   * 브리지를 건널 수 없다 (실사용 13차). fetch transport는 무시(기존 blob 흐름).
+   */
+  download?: boolean;
 }
 
 export interface TransportResponse {

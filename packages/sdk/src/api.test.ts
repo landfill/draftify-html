@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpecProject } from "@mockspec/shared";
 import {
   clearPendingProject,
+  exportProjectHtml,
   flushPendingProject,
+  NATIVE_DOWNLOAD_HEADER,
   readPendingProject,
   saveProjectWithQueue,
   writePendingProject,
 } from "./api.js";
+import { fetchTransport, setTransport, type TransportRequest } from "./transport.js";
 
 const baseProject: SpecProject = {
   version: 1,
@@ -100,5 +103,41 @@ describe("Spec API 저장 큐 (T7)", () => {
 
     expect(readPendingProject(baseProject.id)).toBeNull();
     expect(readPendingProject("prj_other999")).not.toBeNull();
+  });
+});
+
+describe("내보내기 transport (실사용 13차 — 경로 D 확장 메시지 64MiB 리밋)", () => {
+  afterEach(() => setTransport(fetchTransport));
+
+  it("export 요청에 download 표시가 실리고, 브리지 native-download 마커면 본문 없이 완료로 처리한다", async () => {
+    let seen: TransportRequest | null = null;
+    setTransport(async (req) => {
+      seen = req;
+      // background가 chrome.downloads로 직접 저장했음을 알리는 합성 응답 — 본문은 작다
+      return { ok: true, status: 200, headers: { [NATIVE_DOWNLOAD_HEADER]: "1" }, bodyText: '{"downloadId":7}' };
+    });
+
+    const result = await exportProjectHtml(baseProject.id);
+
+    expect(seen!.download).toBe(true);
+    expect(seen!.path).toBe(`/projects/${baseProject.id}/export`);
+    expect(result.nativeDownload).toBe(true);
+  });
+
+  it("마커가 없으면(경로 A·B) 기존 blob 다운로드 흐름 그대로다", async () => {
+    setTransport(async () => ({
+      ok: true,
+      status: 200,
+      headers: { "content-disposition": 'attachment; filename="plan.html"' },
+      bodyText: "<!doctype html><title>산출물</title>",
+    }));
+
+    const result = await exportProjectHtml(baseProject.id);
+
+    expect(result.nativeDownload).toBe(false);
+    if (!result.nativeDownload) {
+      expect(result.filename).toBe("plan.html");
+      expect(await result.blob.text()).toContain("산출물");
+    }
   });
 });

@@ -16,6 +16,7 @@ interface RelayRequest {
   method?: unknown;
   body?: unknown;
   bodyType?: unknown;
+  download?: unknown;
 }
 
 interface RelayResponse {
@@ -48,6 +49,29 @@ async function relay(senderOrigin: string, raw: RelayRequest): Promise<RelayResp
   const prefix = `/projects/${binding.projectId}`;
   if (path !== prefix && !path.startsWith(`${prefix}/`)) {
     return errorResponse("바인딩된 프로젝트의 API만 호출할 수 있습니다.");
+  }
+
+  // 다운로드 요청(export): 본문을 메시지로 되돌리지 않고 chrome.downloads로 직접 저장 —
+  // 확장 메시지는 64MiB 하드 리밋이 있어 큰 산출물이 브리지를 건널 수 없다 (실사용 13차).
+  // 파일명은 서버의 Content-Disposition을 브라우저가 그대로 쓴다.
+  if (raw.download === true) {
+    if (path !== `${prefix}/export` || method !== "POST") {
+      return errorResponse("다운로드는 내보내기 경로만 허용됩니다.");
+    }
+    const downloadId = await chrome.downloads.download({
+      url: `${binding.serverUrl}/api${path}`,
+      method: "POST",
+      headers: [
+        { name: "Authorization", value: `Bearer ${binding.token}` },
+        { name: "X-Mockspec-Page-Origin", value: senderOrigin },
+      ],
+    });
+    return {
+      ok: true,
+      status: 200,
+      headers: { "x-mockspec-native-download": "1" },
+      bodyText: JSON.stringify({ downloadId }),
+    };
   }
 
   const headers: Record<string, string> = {
