@@ -13,6 +13,8 @@ interface ViewerState {
   selectedSceneId: string | null;
   /** 왼쪽 장면 네비 접힘 — 넓은 캡처에서 중앙을 넓혀 가로 스크롤을 줄인다 */
   sidebarCollapsed: boolean;
+  /** 프로세스 흐름도 섹션 접힘 (output-standard §2 섹션 2) */
+  flowCollapsed: boolean;
 }
 
 /** 장면의 어노테이션을 번호 순으로 정렬해 반환 — 뷰어/편집기 공통 표시 순서. */
@@ -227,6 +229,260 @@ function setText(el: Element, text: string): void {
   el.textContent = text;
 }
 
+// ---------------------------------------------------------------------------
+// 프로세스 흐름도 (output-standard §2 섹션 2 — FR-EXP-06)
+// scenes + transitions 방향 그래프를 자체 경량 SVG로 렌더한다.
+// Mermaid를 쓰지 않는 이유: 산출물은 단독 HTML·네트워크 0건이라 번들 내장이 필요한데
+// ~3MB로 산출물이 상시 비대해진다 (s1-kickoff §11 7차 개정). 사람이 입력한 전이만 그린다.
+// ---------------------------------------------------------------------------
+
+export interface FlowEdge {
+  from: string;
+  to: string;
+  /** 같은 (from,to) 병렬 전이의 condition을 " / "로 합친 간선 라벨. 조건이 없으면 "" */
+  label: string;
+}
+
+export interface FlowNode {
+  sceneId: string;
+  label: string;
+  /** 왼→오 계층 (진입 간선 없는 노드가 0) */
+  layer: number;
+  /** 계층 내 세로 순서 (장면 order 순) */
+  row: number;
+}
+
+/**
+ * 어노테이션의 transition을 간선 목록으로 정리한다.
+ * 양끝 장면이 실재하는 전이만 — 자기 자신으로의 전이(비정상 데이터)와 dangling은 그리지 않는다.
+ * 같은 (from,to)의 병렬 전이는 간선 1개로 합치고 condition들을 " / "로 잇는다.
+ */
+export function buildFlowEdges(project: SpecProject): FlowEdge[] {
+  const sceneIds = new Set(project.scenes.map((s) => s.id));
+  const merged = new Map<string, { from: string; to: string; conditions: string[] }>();
+  for (const a of project.annotations) {
+    const t = a.transition;
+    if (!t || t.toSceneId === a.sceneId) continue;
+    if (!sceneIds.has(a.sceneId) || !sceneIds.has(t.toSceneId)) continue;
+    const key = `${a.sceneId} ${t.toSceneId}`;
+    const entry = merged.get(key) ?? { from: a.sceneId, to: t.toSceneId, conditions: [] };
+    const condition = t.condition?.trim();
+    if (condition) entry.conditions.push(condition);
+    merged.set(key, entry);
+  }
+  return [...merged.values()].map((e) => ({ from: e.from, to: e.to, label: e.conditions.join(" / ") }));
+}
+
+/**
+ * 계층 배치: DFS(장면 order 순 진입)로 순환을 이루는 back 간선을 제외한 뒤,
+ * 위상 순서로 longest-path 계층을 매긴다. 순환은 배치에서만 무시되고 간선은 그려진다.
+ */
+export function buildFlowNodes(project: SpecProject, edges: FlowEdge[]): FlowNode[] {
+  const scenes = orderedScenes(project);
+  const out = new Map<string, string[]>();
+  for (const s of scenes) out.set(s.id, []);
+  for (const e of edges) out.get(e.from)?.push(e.to);
+
+  // DFS로 back 간선 판정 + 위상 순서(후위 역순) 수집
+  const state = new Map<string, 0 | 1 | 2>(); // 0=미방문 1=스택 위 2=완료
+  const acyclic = new Map<string, string[]>();
+  const topo: string[] = [];
+  const visit = (id: string): void => {
+    state.set(id, 1);
+    const forward: string[] = [];
+    for (const next of out.get(id) ?? []) {
+      if (state.get(next) === 1) continue; // back 간선 — 계층 계산에서 제외
+      forward.push(next);
+      if (!state.get(next)) visit(next);
+    }
+    acyclic.set(id, forward);
+    state.set(id, 2);
+    topo.push(id);
+  };
+  for (const s of scenes) if (!state.get(s.id)) visit(s.id);
+  topo.reverse();
+
+  const layer = new Map<string, number>();
+  for (const s of scenes) layer.set(s.id, 0);
+  for (const id of topo) {
+    const base = layer.get(id) ?? 0;
+    for (const next of acyclic.get(id) ?? []) {
+      layer.set(next, Math.max(layer.get(next) ?? 0, base + 1));
+    }
+  }
+
+  const rowCount = new Map<number, number>();
+  return scenes.map((s) => {
+    const l = layer.get(s.id) ?? 0;
+    const row = rowCount.get(l) ?? 0;
+    rowCount.set(l, row + 1);
+    return { sceneId: s.id, label: `${s.code} ${s.title || "(제목 없음)"}`, layer: l, row };
+  });
+}
+
+const FLOW_NODE_H = 34;
+const FLOW_GAP_X = 72;
+const FLOW_GAP_Y = 16;
+const FLOW_PAD = 10;
+const FLOW_LABEL_MAX = 30;
+
+function truncateLabel(label: string): string {
+  return label.length > FLOW_LABEL_MAX ? `${label.slice(0, FLOW_LABEL_MAX - 1)}…` : label;
+}
+
+/** 폭 추정 (12px 폰트 기준) — CJK는 전각, 그 외 반각. 정확할 필요 없이 잘리지만 않으면 된다. */
+function estimateTextWidth(text: string): number {
+  let width = 0;
+  for (const ch of text) width += ch.charCodeAt(0) > 0x2e80 ? 12 : 7;
+  return width;
+}
+
+function svgEl<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] {
+  return document.createElementNS("http://www.w3.org/2000/svg", tag);
+}
+
+/** 흐름도 SVG 렌더. 전이가 하나도 없으면 null — 섹션 자체를 생략한다 (추론으로 채우지 않음). */
+function renderFlowSvg(
+  project: SpecProject,
+  selectedSceneId: string | null,
+  onSelectScene: (sceneId: string) => void,
+): SVGSVGElement | null {
+  const edges = buildFlowEdges(project);
+  if (edges.length === 0) return null;
+  const nodes = buildFlowNodes(project, edges);
+
+  const nodeW = Math.min(
+    300,
+    Math.max(140, ...nodes.map((n) => estimateTextWidth(truncateLabel(n.label)) + 24)),
+  );
+  const pos = new Map<string, { x: number; y: number }>();
+  let maxLayer = 0;
+  let maxRow = 0;
+  for (const n of nodes) {
+    pos.set(n.sceneId, {
+      x: FLOW_PAD + n.layer * (nodeW + FLOW_GAP_X),
+      y: FLOW_PAD + n.row * (FLOW_NODE_H + FLOW_GAP_Y),
+    });
+    maxLayer = Math.max(maxLayer, n.layer);
+    maxRow = Math.max(maxRow, n.row);
+  }
+  const width = FLOW_PAD * 2 + (maxLayer + 1) * nodeW + maxLayer * FLOW_GAP_X;
+  const height = FLOW_PAD * 2 + (maxRow + 1) * FLOW_NODE_H + maxRow * FLOW_GAP_Y;
+
+  const svg = svgEl("svg");
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "프로세스 흐름도");
+
+  const defs = svgEl("defs");
+  const marker = svgEl("marker");
+  marker.setAttribute("id", "ms-flow-arrow");
+  marker.setAttribute("viewBox", "0 0 10 10");
+  marker.setAttribute("refX", "9");
+  marker.setAttribute("refY", "5");
+  marker.setAttribute("markerWidth", "7");
+  marker.setAttribute("markerHeight", "7");
+  marker.setAttribute("orient", "auto-start-reverse");
+  const arrow = svgEl("path");
+  arrow.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+  arrow.setAttribute("fill", "#5f6368");
+  marker.append(arrow);
+  defs.append(marker);
+  svg.append(defs);
+
+  for (const edge of edges) {
+    const from = pos.get(edge.from);
+    const to = pos.get(edge.to);
+    if (!from || !to) continue;
+    const forward = to.x > from.x;
+    // 정방향: 출발 오른쪽 중앙 → 도착 왼쪽 중앙. 역방향(순환)은 아래로 우회.
+    const x1 = forward ? from.x + nodeW : from.x + nodeW / 2;
+    const y1 = forward ? from.y + FLOW_NODE_H / 2 : from.y + FLOW_NODE_H;
+    const x2 = forward ? to.x : to.x + nodeW / 2;
+    const y2 = forward ? to.y + FLOW_NODE_H / 2 : to.y + FLOW_NODE_H;
+    const path = svgEl("path");
+    const bend = forward ? Math.max(28, (x2 - x1) / 2) : 46;
+    const c1x = forward ? x1 + bend : x1 + 20;
+    const c1y = forward ? y1 : y1 + bend;
+    const c2x = forward ? x2 - bend : x2 - 20;
+    const c2y = forward ? y2 : y2 + bend;
+    path.setAttribute("d", `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`);
+    path.setAttribute("class", "ms-flow-edge");
+    path.setAttribute("marker-end", "url(#ms-flow-arrow)");
+    svg.append(path);
+
+    if (edge.label) {
+      // 3차 베지어 t=0.5 지점 = (P0 + 3·C1 + 3·C2 + P3) / 8
+      const mx = (x1 + 3 * c1x + 3 * c2x + x2) / 8;
+      const my = (y1 + 3 * c1y + 3 * c2y + y2) / 8;
+      const label = svgEl("text");
+      label.setAttribute("x", String(mx));
+      label.setAttribute("y", String(my - 5));
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("class", "ms-flow-label");
+      label.textContent = truncateLabel(edge.label);
+      svg.append(label);
+    }
+  }
+
+  for (const node of nodes) {
+    const p = pos.get(node.sceneId)!;
+    const g = svgEl("g");
+    g.setAttribute("class", `ms-flow-node${node.sceneId === selectedSceneId ? " is-active" : ""}`);
+    g.setAttribute("data-scene-id", node.sceneId);
+    const rect = svgEl("rect");
+    rect.setAttribute("x", String(p.x));
+    rect.setAttribute("y", String(p.y));
+    rect.setAttribute("width", String(nodeW));
+    rect.setAttribute("height", String(FLOW_NODE_H));
+    rect.setAttribute("rx", "8");
+    const text = svgEl("text");
+    text.setAttribute("x", String(p.x + nodeW / 2));
+    text.setAttribute("y", String(p.y + FLOW_NODE_H / 2 + 4));
+    text.setAttribute("text-anchor", "middle");
+    text.textContent = truncateLabel(node.label);
+    const title = svgEl("title");
+    title.textContent = `${node.label} — 클릭하면 이 장면으로 이동`;
+    g.append(title, rect, text);
+    g.addEventListener("click", () => onSelectScene(node.sceneId));
+    svg.append(g);
+  }
+
+  return svg;
+}
+
+/** 흐름도 섹션 (접기 토글 포함). 전이가 없으면 null — 렌더하지 않는다. */
+function renderFlowSection(
+  project: SpecProject,
+  state: ViewerState,
+  onSelectScene: (sceneId: string) => void,
+  onToggle: () => void,
+): HTMLElement | null {
+  const svg = renderFlowSvg(project, state.selectedSceneId, onSelectScene);
+  if (!svg) return null;
+
+  const section = child("section", "ms-flow");
+  const head = child("div", "ms-flow-head");
+  const title = child("div", "ms-section-title");
+  setText(title, "프로세스 흐름도");
+  const toggle = child("button", "ms-collapse-btn");
+  toggle.type = "button";
+  toggle.title = state.flowCollapsed ? "흐름도 펼치기" : "흐름도 접기";
+  setText(toggle, state.flowCollapsed ? "▸" : "▾");
+  toggle.addEventListener("click", onToggle);
+  head.append(title, toggle);
+  section.append(head);
+
+  if (!state.flowCollapsed) {
+    const body = child("div", "ms-flow-body");
+    body.append(svg);
+    section.append(body);
+  }
+  return section;
+}
+
 function child<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
@@ -327,8 +583,10 @@ function renderMarkers(
 function renderAnnotationPanel(
   scene: Scene,
   annotations: Annotation[],
+  scenes: Scene[],
   state: ViewerState,
   root: HTMLElement,
+  onSelectScene: (sceneId: string) => void,
 ): HTMLElement {
   const panel = child("aside", "ms-panel");
   const title = child("div", "ms-section-title");
@@ -367,6 +625,22 @@ function renderAnnotationPanel(
       const badge = child("span", "ms-policy");
       setText(badge, ref);
       item.append(badge);
+    }
+
+    // 전이 링크 — 클릭 시 해당 장면으로 전환 (실행 대신 이동, detailed-spec §4.1).
+    // 대상 장면이 없으면(비정상 데이터) 표시하지 않는다.
+    const transition = annotation.transition;
+    const target = transition ? scenes.find((s) => s.id === transition.toSceneId) : undefined;
+    if (transition && target) {
+      const link = child("button", "ms-transition");
+      link.type = "button";
+      const condition = transition.condition?.trim();
+      setText(link, `${condition ? `${condition} ` : ""}→ ${target.code} ${target.title || "(제목 없음)"} 보기`);
+      link.addEventListener("click", (event) => {
+        event.stopPropagation(); // 카드 클릭(하이라이트)과 분리
+        onSelectScene(target.id);
+      });
+      item.append(link);
     }
 
     list.append(item);
@@ -497,6 +771,7 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
   const state: ViewerState = {
     activeAnnotationId: null,
     sidebarCollapsed: false,
+    flowCollapsed: false,
     selectedSceneId: scenes[0]?.id ?? null,
   };
   const generatedAt = document.querySelector<HTMLMetaElement>('meta[name="mockspec-generated-at"]')?.content ?? null;
@@ -524,6 +799,19 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
       state.activeAnnotationId = null;
     }
 
+    const onSelectScene = (sceneId: string): void => {
+      state.selectedSceneId = sceneId;
+      state.activeAnnotationId = null;
+      render();
+    };
+
+    // 섹션 2: 프로세스 흐름도 — 전이가 있을 때만 (output-standard §2)
+    const flow = renderFlowSection(project, state, onSelectScene, () => {
+      state.flowCollapsed = !state.flowCollapsed;
+      render();
+    });
+    if (flow) shell.append(flow);
+
     // 접힘 시 왼쪽 컬럼을 얇은 레일로 → 중앙 확대 (가로 스크롤 감소). 클래스로 처리해
     // 모바일 미디어쿼리(1단 스택)가 정상 우선하도록 한다 (인라인 스타일 회피).
     const layout = child("div", `ms-layout${state.sidebarCollapsed ? " ms-layout--collapsed" : ""}`);
@@ -532,18 +820,14 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
         scenes,
         selectedScene.id,
         state.sidebarCollapsed,
-        (sceneId) => {
-          state.selectedSceneId = sceneId;
-          state.activeAnnotationId = null;
-          render();
-        },
+        onSelectScene,
         () => {
           state.sidebarCollapsed = !state.sidebarCollapsed;
           render();
         },
       ),
       renderStage(selectedScene, project, snapshots, state, root, markerRefresh),
-      renderAnnotationPanel(selectedScene, project.annotations, state, root),
+      renderAnnotationPanel(selectedScene, project.annotations, scenes, state, root, onSelectScene),
     );
     shell.append(layout);
     root.append(shell);
