@@ -138,6 +138,7 @@ export interface Annotation {
   description: string;           // 마크다운 허용 (뷰어에서 렌더)
   policyRefs?: string[];         // "POL-014" 등. S1은 저장·표시만
   markerOffset?: { dx: number; dy: number }; // 마커 표시 오프셋(px) — 기본 위치(요소 우상단)에서 드래그로 옮긴 상대값 (킥오프 §11 4차 개정)
+  transition?: { toSceneId: string; condition?: string }; // 흐름도 원천 데이터 — "이 요소 조작 시 → 장면 X" (2026-07-12 §2.2 예정 필드에서 승격, FR-EDT-10)
 }
 
 export interface Anchor {
@@ -158,11 +159,9 @@ export interface Anchor {
 ### 2.2 후속 확장 예정 필드 (구현 금지, 방향만 기록)
 
 아래는 S2 범위 밖으로 확정 (2026-07-10, 킥오프 s2 §0) — S2 종료 후 실수요를 보고 판단.
+`Annotation.transition`은 2026-07-12 착수 확정으로 §2 본 모델에 승격 (T26~T28).
 
 ```typescript
-// Annotation에 추가 예정
-transition?: { toSceneId: string; condition?: string };  // 흐름도 원천 데이터
-
 // 신규 엔티티
 Policy { id: "pol_"+nanoid(10), code: "POL-###", title, body } // 정책정의서 (output-standard §3.2)
 Export { id, projectId, createdAt, htmlRef, specVersion }      // 산출물 이력
@@ -440,6 +439,14 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 | T23 | 확장 팝업(바인딩) + background 저장 | 임의 사이트에서 편집·동결·저장 성공 |
 | T24 | E2E: 로그인 뒤 화면 시나리오 | pathD 킥오프 §7 DoD |
 | T25 | docs/ 최종 동기화 + 실사용 판정 기록 | 판정 기록으로 S2.5 종료 |
+
+전이·흐름도 WBS (2026-07-12 착수 확정 — FR-EDT-10·FR-EXP-06, T25에 이어 번호):
+
+| # | 작업 | AC 요약 |
+|---|------|---------|
+| T26 | shared: `Annotation.transition` 승격 | 왕복 무손실, transition 없는 기존 spec.json 하위 호환 |
+| T27 | SDK: 전이 지정 UI | 어노테이션 폼에 장면 드롭다운(다른 장면만)+조건 텍스트, 저장 왕복. 대상 장면 삭제 시 transition 함께 제거 |
+| T28 | 뷰어·산출물: 전이 링크 + 흐름도(자체 SVG) | 전이 링크 클릭 시 장면 전환, 흐름도 노드/간선 라벨 렌더(전이 없으면 섹션 생략), E2E — file://에서 흐름도·링크 동작·네트워크 0건 |
 
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
 
