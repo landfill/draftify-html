@@ -189,7 +189,7 @@ function handleUnauthorized(project, statusTarget) {
 async function exportProject(project, statusTarget) {
   var missing = scenesWithoutSnapshot(project);
   if (missing > 0) {
-    var go = window.confirm(missing + "개 장면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?");
+    var go = window.confirm(missing + "개 화면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?");
     if (!go) return;
   }
   var unmaskedScenes = 0;
@@ -201,7 +201,7 @@ async function exportProject(project, statusTarget) {
     }
   }
   if (unmaskedScenes > 0) {
-    var goMask = window.confirm("마스킹 규칙이 설정되었으나 적용되지 않은 장면이 " + unmaskedScenes + "개 있습니다. 원본 스냅샷이 유출될 수 있습니다. 계속 내보낼까요?");
+    var goMask = window.confirm("마스킹 규칙이 설정되었으나 적용되지 않은 화면이 " + unmaskedScenes + "개 있습니다. 원본 스냅샷이 유출될 수 있습니다. 계속 내보낼까요?");
     if (!goMask) return;
   }
   var authHeaders = snippetAuthHeaders(project);
@@ -283,7 +283,7 @@ async function reissueToken(project) {
 }
 
 async function deleteProject(project) {
-  var go = window.confirm("프로젝트와 모든 장면·어노테이션이 삭제됩니다. 되돌릴 수 없습니다.");
+  var go = window.confirm("프로젝트와 모든 화면·어노테이션이 삭제됩니다. 되돌릴 수 없습니다.");
   if (!go) return;
   var res = await fetch("/api/projects/" + encodeURIComponent(project.id), { method: "DELETE" });
   if (!res.ok && res.status !== 404) {
@@ -301,7 +301,7 @@ function renderProject(project) {
   var badgeLabel = srcType === "proxy" ? "URL 프록시" : srcType === "snippet" ? "확장" : "ZIP 업로드";
   title.appendChild(el("span", "c-badge", badgeLabel));
   head.appendChild(title);
-  var metaText = "장면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
+  var metaText = "화면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
     " · " + formatDate(project.updatedAt) + " 수정";
   if (srcType === "proxy") metaText += " · " + project.mockupSource.originUrl;
   if (srcType === "snippet" && project.mockupSource.lastSeenOrigin) {
@@ -780,14 +780,14 @@ export const CONSOLE_HTML = `<!doctype html>
           <button type="button" id="masking-close" class="c-btn c-btn-ghost">닫기</button>
         </div>
         <div class="c-modal-body">
-          <p class="c-hint">스냅샷에 포함된 실데이터(고객명, 이메일 등)를 부분 일치로 찾아 치환합니다. 규칙은 전체 장면에 일괄 적용됩니다.</p>
+          <p class="c-hint">스냅샷에 포함된 실데이터(고객명, 이메일 등)를 부분 일치로 찾아 치환합니다. 규칙은 전체 화면에 일괄 적용됩니다.</p>
           <div id="masking-rules"></div>
           <button type="button" id="masking-add" class="c-btn c-btn-ghost">+ 규칙 추가</button>
           <p id="masking-status" class="c-status"></p>
         </div>
         <div class="c-modal-footer">
           <button type="button" id="masking-cancel" class="c-btn c-btn-ghost">취소</button>
-          <button type="button" id="masking-apply" class="c-btn">전체 장면에 적용 및 저장</button>
+          <button type="button" id="masking-apply" class="c-btn">전체 화면에 적용 및 저장</button>
         </div>
       </div>
     </div>

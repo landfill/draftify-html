@@ -115,7 +115,7 @@ test("S2 DoD: 프록시 URL 등록 → 장면 2/어노테이션 4 → 마스킹 
   await page.locator(".fab").click(); // SDK 주입 정상 확인
   await expect(page.locator(".panel")).toBeVisible();
 
-  const registerScene = page.getByRole("button", { name: "+ 현재 화면을 장면으로" });
+  const registerScene = page.getByRole("button", { name: "+ 현재 화면 등록" });
   await expect(registerScene).toBeEnabled();
   await registerScene.click();
   await expect(page.locator(".frz--ok")).toHaveCount(1);

@@ -402,7 +402,7 @@ export function App({ projectId }: { projectId: string }) {
   const runExport = async () => {
     const d = docRef.current;
     const missing = d.scenes.filter((s) => !s.snapshotAsset).length;
-    if (missing > 0 && !confirm(`${missing}개 장면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?`)) return;
+    if (missing > 0 && !confirm(`${missing}개 화면에 스냅샷이 없습니다. 산출물에 플레이스홀더로 표시됩니다. 계속할까요?`)) return;
 
     setExporting(true);
     setExportNote(null);
@@ -442,7 +442,7 @@ export function App({ projectId }: { projectId: string }) {
 
   const removeScene = (id: string) => {
     const anns = annotationsOfScene(doc, id).length;
-    if (!confirm(`이 장면과 어노테이션 ${anns}개가 삭제됩니다.`)) return;
+    if (!confirm(`이 화면과 어노테이션 ${anns}개가 삭제됩니다.`)) return;
     setDoc(deleteScene(doc, id));
     if (currentSceneId === id) setCurrentSceneId(null);
   };
@@ -501,21 +501,21 @@ export function App({ projectId }: { projectId: string }) {
 
         <div class="section">
           <div class="row">
-            <h4>장면</h4>
-            <button class="btn" disabled={!project} onClick={registerScene}>+ 현재 화면을 장면으로</button>
+            <h4>화면</h4>
+            <button class="btn" disabled={!project} onClick={registerScene}>+ 현재 화면 등록</button>
           </div>
           {!project && !loadError && <div class="muted">프로젝트를 불러오는 중입니다.</div>}
-          {project && doc.scenes.length === 0 && <div class="muted">아직 장면이 없습니다. 위 버튼으로 현재 화면을 장면으로 등록하세요.</div>}
+          {project && doc.scenes.length === 0 && <div class="muted">아직 등록된 화면이 없습니다. 위 버튼으로 현재 화면을 등록하세요.</div>}
           <ul class="list">
             {doc.scenes.map((s) => (
               <li key={s.id} class={`scene${s.id === currentSceneId ? " scene--cur" : ""}`}>
                 <div class="scene__row">
-                  <button class="scene__pick" title="이 장면 선택" onClick={() => setCurrentSceneId(s.id)}>
+                  <button class="scene__pick" title="이 화면 선택" onClick={() => setCurrentSceneId(s.id)}>
                     <span class="scene__code">{s.code}</span>
                   </button>
                   <input
                     class="scene__title"
-                    placeholder="장면 제목"
+                    placeholder="화면 제목"
                     value={s.title}
                     onClick={() => setCurrentSceneId(s.id)}
                     onInput={(e) => setDoc(updateSceneTitle(doc, s.id, (e.target as HTMLInputElement).value))}
@@ -554,7 +554,7 @@ export function App({ projectId }: { projectId: string }) {
               </button>
             )}
           </div>
-          {!scene && <div class="muted">장면을 선택하면 어노테이션을 달 수 있습니다.</div>}
+          {!scene && <div class="muted">화면을 선택하면 어노테이션을 달 수 있습니다.</div>}
           {scene && mode !== "edit" && <div class="muted">편집 모드에서 요소를 클릭해 어노테이션을 답니다.</div>}
           {scene && mode === "edit" && anns.length === 0 && (
             <div class={`hint${needScene ? " hint--warn" : ""}`}>
@@ -563,7 +563,7 @@ export function App({ projectId }: { projectId: string }) {
               마커는 드래그로 옮길 수 있습니다.
             </div>
           )}
-          {needScene && <div class="hint hint--warn">먼저 장면을 등록해주세요.</div>}
+          {needScene && <div class="hint hint--warn">먼저 화면을 등록해주세요.</div>}
           {anns.map((a) => (
             <div key={a.id} class={`ann${selectedAnn === a.id ? " ann--sel" : ""}${emptyAnnIds.has(a.id) ? " ann--empty" : ""}`}>
               <div class="row">
@@ -589,7 +589,7 @@ export function App({ projectId }: { projectId: string }) {
                 <div class="ann__trans">
                   <select
                     class="ann__trans-scene" data-ann-trans={a.id}
-                    title="이 요소 조작 시 이동할 장면"
+                    title="이 요소 조작 시 이동할 화면"
                     value={a.transition?.toSceneId ?? ""}
                     onClick={() => setSelectedAnn(a.id)}
                     onChange={(e) => {
@@ -601,7 +601,7 @@ export function App({ projectId }: { projectId: string }) {
                       }));
                     }}
                   >
-                    <option value="">전이 없음</option>
+                    <option value="">이동 없음</option>
                     {doc.scenes.filter((s) => s.id !== a.sceneId).map((s) => (
                       <option key={s.id} value={s.id}>→ {s.code} {s.title || "(제목 없음)"}</option>
                     ))}

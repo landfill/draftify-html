@@ -59,7 +59,7 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
   await page.locator(".fab").click(); // Shadow DOM은 Playwright가 관통
   await expect(page.locator(".panel")).toBeVisible();
 
-  const registerScene = page.getByRole("button", { name: "+ 현재 화면을 장면으로" });
+  const registerScene = page.getByRole("button", { name: "+ 현재 화면 등록" });
   await expect(registerScene).toBeEnabled(); // 프로젝트 로드 완료
   await registerScene.click();
   await expect(page.locator(".frz--ok")).toHaveCount(1); // ✓ 동결됨 (등록 즉시 자동 동결)
@@ -82,7 +82,7 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
 
   // ── 3. 콘솔에서 export → 다운로드 ────────────────────────────────
   await page.goto("/");
-  await expect(page.locator(".c-project-meta")).toContainText("장면 2 · 어노테이션 4");
+  await expect(page.locator(".c-project-meta")).toContainText("화면 2 · 어노테이션 4");
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "내보내기" }).click();

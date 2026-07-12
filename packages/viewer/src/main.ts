@@ -444,7 +444,7 @@ function renderFlowSvg(
     text.setAttribute("text-anchor", "middle");
     text.textContent = truncateLabel(node.label);
     const title = svgEl("title");
-    title.textContent = `${node.label} — 클릭하면 이 장면으로 이동`;
+    title.textContent = `${node.label} — 클릭하면 이 화면으로 이동`;
     g.append(title, rect, text);
     g.addEventListener("click", () => onSelectScene(node.sceneId));
     svg.append(g);
@@ -643,7 +643,7 @@ function renderAnnotationPanel(
   const sceneAnnotations = annotationsOf(scene, annotations);
   if (sceneAnnotations.length === 0) {
     const empty = child("div", "ms-empty");
-    setText(empty, "이 장면에는 어노테이션이 없습니다.");
+    setText(empty, "이 화면에는 어노테이션이 없습니다.");
     list.append(empty);
   }
 
@@ -707,7 +707,7 @@ function renderSidebar(
     const rail = child("aside", "ms-sidebar ms-sidebar--collapsed");
     const expand = child("button", "ms-collapse-btn");
     expand.type = "button";
-    expand.title = "장면 목록 펼치기";
+    expand.title = "화면 목록 펼치기";
     setText(expand, "»");
     expand.addEventListener("click", onToggle);
     rail.append(expand);
@@ -717,10 +717,10 @@ function renderSidebar(
   const aside = child("aside", "ms-sidebar");
   const head = child("div", "ms-sidebar-head");
   const heading = child("div", "ms-section-title");
-  setText(heading, "장면");
+  setText(heading, "화면");
   const collapse = child("button", "ms-collapse-btn");
   collapse.type = "button";
-  collapse.title = "장면 목록 접기";
+  collapse.title = "화면 목록 접기";
   setText(collapse, "«");
   collapse.addEventListener("click", onToggle);
   head.append(heading, collapse);
@@ -771,7 +771,7 @@ function renderStage(
   const snapshotHtml = snapshots.get(scene.id);
   if (!snapshotHtml) {
     const placeholder = child("div", "ms-empty");
-    placeholder.innerHTML = `<p class="ms-warning">스냅샷이 없는 장면입니다.</p><p>편집 화면에서 동결 후 다시 내보내세요.</p>`;
+    placeholder.innerHTML = `<p class="ms-warning">스냅샷이 없는 화면입니다.</p><p>편집 화면에서 동결 후 다시 내보내세요.</p>`;
     main.append(placeholder);
     return main;
   }
@@ -813,7 +813,7 @@ function renderHeader(project: SpecProject, generatedAt: string | null): HTMLEle
   const annotationCount = project.annotations.length;
   setText(
     meta,
-    `생성: ${generatedAt ? formatDate(generatedAt) : "-"} · 장면 ${sceneCount} · 어노테이션 ${annotationCount}`,
+    `생성: ${generatedAt ? formatDate(generatedAt) : "-"} · 화면 ${sceneCount} · 어노테이션 ${annotationCount}`,
   );
   header.append(title, meta);
   return header;
@@ -840,7 +840,7 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
 
     if (scenes.length === 0 || !state.selectedSceneId) {
       const empty = child("div", "ms-empty");
-      setText(empty, "등록된 장면이 없습니다.");
+      setText(empty, "등록된 화면이 없습니다.");
       shell.append(empty);
       root.append(shell);
       return;

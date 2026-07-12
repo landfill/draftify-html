@@ -326,7 +326,7 @@ describe("장면 제목 (킥오프 §11 8차 — 기본값 자동 부여 철회)
 
     await act(async () => {
       [...document.querySelectorAll<HTMLButtonElement>("button")]
-        .find((b) => b.textContent?.includes("현재 화면을 장면으로"))!.click();
+        .find((b) => b.textContent?.includes("현재 화면 등록"))!.click();
     });
     await saveTick();
     expect(getDoc().scenes).toHaveLength(2);
@@ -391,7 +391,7 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
 
     // 스냅샷 없는 장면 1개 → 확인 다이얼로그 경유
     expect(confirmSpy).toHaveBeenCalledOnce();
-    expect(confirmSpy.mock.calls[0][0]).toContain("1개 장면에 스냅샷이 없습니다");
+    expect(confirmSpy.mock.calls[0][0]).toContain("1개 화면에 스냅샷이 없습니다");
     expect(exportCalls).toEqual([`/__mockspec/api/projects/${project.id}/export`]);
     // filename*(한글) 우선으로 다운로드 파일명 유지
     expect(clicked).toEqual(["주문 목업.html"]);
