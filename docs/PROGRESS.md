@@ -11,13 +11,13 @@
 
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
-**진행 중 (2026-07-12): 다중 장면 전이 + 흐름도 (FR-EDT-10·FR-EXP-06, T26~T28) — 후속 판단에서 사용자 우선순위 결정으로 착수. 브랜치 `feat/scene-transitions`. 새 세션은 여기서 시작.**
+**다중 장면 전이 + 흐름도 구현 완료 (2026-07-12) — T26~T28 전부 완료 (FR-EDT-10·FR-EXP-06). 브랜치 `feat/scene-transitions` (main 미병합 — 사용자 실사용 검증·병합 동의 대기). 새 세션은 여기서 시작.**
 
 ## 전이·흐름도 WBS 체크리스트 (technical-spec §9.2, 2026-07-12 착수)
 
-- [ ] T26 shared: `Annotation.transition { toSceneId, condition? }` 승격 — 왕복 무손실·하위 호환
-- [ ] T27 SDK: 전이 지정 UI (장면 드롭다운(다른 장면만)+조건 텍스트) + 대상 장면 삭제 시 transition 제거
-- [ ] T28 뷰어·산출물: 전이 링크(클릭 시 장면 전환) + 프로세스 흐름도(자체 SVG, 전이 없으면 생략) + E2E
+- [x] T26 shared: `Annotation.transition { toSceneId, condition? }` 승격 — vitest 왕복 무손실·필드 부재 하위 호환 검증
+- [x] T27 SDK: 전이 지정 UI (장면 드롭다운(다른 장면만)+조건 텍스트) + 대상 장면 삭제 시 transition 제거 — vitest UI 왕복·정리 검증, focusShield SELECT 보호
+- [x] T28 뷰어·산출물: 전이 링크(클릭 시 장면 전환) + 프로세스 흐름도(자체 SVG, 전이 없으면 생략) + E2E — vitest 160·E2E 4본 통과, 실 Chromium 분기+순환 그래프 시각 확인
 
 ## S2.5 WBS 체크리스트 (pathD 킥오프 §7)
 
@@ -56,6 +56,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-12 — 다중 장면 전이 + 흐름도 구현 (T26~T28, FR-EDT-10·FR-EXP-06)
+- 브랜치: `feat/scene-transitions` (main 미병합, 동의 대기). 착수 배경: S2.5 종료 후 "후속 판단" 중 사용자가 전이+흐름도를 1순위로 선택.
+- **결정(사용자, 킥오프 s1 §11 7차 개정)**: 흐름도 렌더러 **Mermaid → 자체 경량 SVG** — 산출물이 단독 HTML·네트워크 0건이라 Mermaid는 ~3MB 번들 내장이 필요(뷰어 런타임 19KB의 150배), 장면 그래프 규모(수십 노드 이하)엔 계층 배치+화살표+간선 라벨의 자체 SVG로 충분. PRD·detailed-spec·output-standard·technical-spec 동기화 완료.
+- 완료(T26 shared): `Annotation.transition { toSceneId, condition? }`을 §2.2 예정 필드에서 본 모델로 승격. 왕복 무손실·필드 부재 하위 호환 테스트.
+- 완료(T27 SDK): 어노테이션 폼에 전이 드롭다운(**다른 장면만** 나열)+조건 텍스트(전이 선택 시에만 노출, 빈 조건은 필드 미저장). `deleteScene`이 삭제 장면을 향한 transition을 함께 제거(dangling 방지). focusShield의 클릭 포커스 차단 대상에 SELECT 추가(Nexacro류 대응).
+- 완료(T28 뷰어·산출물): ① 어노테이션 카드에 **전이 링크** "조건 → SCR-### 제목 보기" — 클릭 시 장면 전환(실행 대신 이동), 대상 장면 없으면 미표시 ② 헤더 아래 **프로세스 흐름도 섹션**(output-standard §2 섹션 2) — 자체 SVG: back-간선 제외 longest-path 계층 배치(순환 무한루프 없음), 병렬 전이 라벨 " / " 병합, 정방향 베지어+역방향 하단 우회, 노드 클릭 시 장면 전환, 접기 토글, 전이 0건이면 섹션 생략 ③ `.ms-shell`을 flex 컬럼으로(흐름도 유무 모두 본문이 잔여 높이 채움), 흐름도는 섹션 내부만 가로 스크롤.
+- 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **160 passed**(+11: shared 왕복 1 / state 전이 지정·장면삭제 정리 2 / App 드롭다운 왕복·단일 장면 미노출 2 / focusShield SELECT / viewer 간선 정리·계층·순환·통합 렌더·생략·접기 6). `npm run test:e2e` **4본 통과**(신규 `e2e/transitions.spec.ts` — snippet API로 전이 spec 구성→export→file://에서 흐름도 노드/라벨·전이 링크 전환·네트워크 0건·프로젝트 정리). **실 Chromium 시각 확인**: 분기+순환(로그인→홈/오류, 오류→로그인) 그래프에서 계층·라벨·순환 우회 곡선·링크 클릭 전환 스크린샷 검증.
+- **주의: 뷰어/export 코드 변경 — 기존 산출물엔 반영 안 됨, 재-export 필요. SDK 변경으로 서버 재기동(빌드 반영)도 필요.**
+- 다음 할 일: 사용자 실사용 검증(전이 지정→export→흐름도 확인) → main 병합 동의 → 병합. 이후 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S) 또는 S3.
+- 막힌 지점: 없음.
 
 ### 2026-07-12 — S2.5 스택 전체 main 병합 (T22~T25 + 실사용 fix 10건)
 - `feat/s25-extension-scaffold-t22` → `t23` → `t24` → `fix/console-snippet-id-visibility` 스택(13커밋) → `main` 병합 완료(2026-07-12, fast-forward)·push. 병합 후 네 브랜치(로컬·원격) 삭제.
