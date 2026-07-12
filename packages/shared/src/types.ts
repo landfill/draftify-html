@@ -91,6 +91,12 @@ export interface Scene {
   snapshotAsset?: string;
   /** ISO 8601 */
   frozenAt?: string;
+  /**
+   * 동결 시점 뷰포트 레이아웃 폭(px, documentElement.clientWidth). 뷰어가 스냅샷 iframe의
+   * 기준 폭으로 사용 — 반응형 페이지가 캡처 당시 레이아웃(데스크톱/모바일)으로 재현되게.
+   * 없으면(구 스냅샷) 뷰어는 중앙 가용 폭으로 폴백.
+   */
+  captureWidth?: number;
   /** [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존 — 규칙 변경 시 원본에서 재생성 */
   maskedSnapshotAsset?: string;
   /** [S2] 마스킹본 생성 시각 (ISO 8601) */

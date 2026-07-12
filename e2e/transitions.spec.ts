@@ -57,7 +57,9 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
     mockupSource: { type: "snippet", registeredAt: project.createdAt },
     sceneCodeSeq: 3,
     scenes: [
-      { id: "scn_login00001", code: "SCR-001", title: "로그인", route: "/", order: 0, annoNumberSeq: 2, snapshotAsset: asset1, frozenAt: now },
+      // captureWidth: 동결 시점 뷰포트 폭 — 뷰어가 이 폭으로 렌더 (반응형 캡처 재현)
+      { id: "scn_login00001", code: "SCR-001", title: "로그인", route: "/", order: 0, annoNumberSeq: 2, snapshotAsset: asset1, frozenAt: now, captureWidth: 1280 },
+      // 구 스냅샷 호환: captureWidth 없음 → 뷰어가 중앙 가용 폭으로 폴백 (300px 붕괴 금지)
       { id: "scn_done000001", code: "SCR-002", title: "완료", route: "/done", order: 1, annoNumberSeq: 2, snapshotAsset: asset2, frozenAt: now },
     ],
     annotations: [
@@ -114,11 +116,21 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
   await expect(link).toHaveCount(1);
   await expect(link).toHaveText("성공 시 → SCR-002 완료 보기");
 
+  // 스냅샷 iframe이 동결 시점 폭(captureWidth)으로 렌더된다 — 반응형 캡처 레이아웃 재현
+  await expect
+    .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientWidth), { message: "장면 1 iframe = captureWidth" })
+    .toBe(1280);
+
   // 링크 클릭 → 장면 2로 전환(실행 대신 이동) + 흐름도 하이라이트 동기화
   await link.click();
   await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-002");
   await expect(viewer.locator(".ms-flow-node.is-active")).toHaveAttribute("data-scene-id", "scn_done000001");
   await expect(viewer.locator(".ms-transition")).toHaveCount(0); // 장면 2엔 전이 없음
+
+  // captureWidth 없는 구 스냅샷은 중앙 가용 폭으로 폴백 — 기본 300px 붕괴(모바일 오인) 금지
+  await expect
+    .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientWidth), { message: "장면 2 iframe 폴백 폭" })
+    .toBeGreaterThan(500);
 
   // 흐름도 노드 클릭 → 장면 1로 복귀
   await viewer.locator('.ms-flow-node[data-scene-id="scn_login00001"]').click();

@@ -125,6 +125,7 @@ export interface Scene {
   annoNumberSeq: number;         // 장면 내 다음 어노테이션 번호. 단조 증가 — 삭제 시 재부여 금지 규칙의 구현
   snapshotAsset?: string;        // asset store 키. 동결 성공 시에만 존재
   frozenAt?: string;
+  captureWidth?: number;         // 동결 시점 뷰포트 레이아웃 폭(px) — 뷰어가 스냅샷 iframe 기준 폭으로 사용, 반응형 캡처 레이아웃 재현 (2026-07-12)
   maskedSnapshotAsset?: string;  // [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존
   maskedAt?: string;             // [S2] 마스킹본 생성 시각 (ISO 8601)
 }

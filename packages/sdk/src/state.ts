@@ -109,17 +109,18 @@ export function addAnnotation(
   };
 }
 
-/** 동결 성공 시 장면에 snapshotAsset·frozenAt 기록 (재동결이면 덮어쓴다). */
+/** 동결 성공 시 장면에 snapshotAsset·frozenAt·captureWidth 기록 (재동결이면 덮어쓴다). */
 export function setSceneSnapshot(
   doc: EditorDoc,
   sceneId: string,
   snapshotAsset: string,
   frozenAt: string,
+  captureWidth?: number,
 ): EditorDoc {
   return {
     ...doc,
     scenes: doc.scenes.map((s) =>
-      s.id === sceneId ? { ...s, snapshotAsset, frozenAt } : s,
+      s.id === sceneId ? { ...s, snapshotAsset, frozenAt, captureWidth } : s,
     ),
   };
 }
