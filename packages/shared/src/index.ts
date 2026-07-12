@@ -10,6 +10,7 @@ export type {
   Anchor,
   Rect,
   MarkerOffset,
+  Transition,
 } from "./types.js";
 
 export {
