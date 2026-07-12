@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Anchor, SpecProject } from "@mockspec/shared";
 import {
   applyDocToProject, createScene, deleteScene, docFromProject,
-  projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot,
+  projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot, updateSceneTitle,
 } from "./state.js";
 
 const project: SpecProject = {
@@ -47,14 +47,24 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     expect(projectContentSignature(saved)).toBe(projectContentSignature(project));
   });
 
-  it("동결 기록에 captureWidth(뷰포트 레이아웃 폭)가 함께 저장된다 — 뷰어의 반응형 재현 기준", () => {
+  it("동결 기록에 캡처 뷰포트 크기가 함께 저장된다 — 뷰어의 반응형(폭)·100vh류(높이) 재현 기준", () => {
     const doc = docFromProject(project);
-    const frozen = setSceneSnapshot(doc, "scn_one", "asset_snap0001", "2026-07-12T00:00:00.000Z", 1440);
+    const frozen = setSceneSnapshot(doc, "scn_one", "asset_snap0001", "2026-07-12T00:00:00.000Z", {
+      width: 1440,
+      height: 900,
+    });
     expect(frozen.scenes[0]).toMatchObject({
       snapshotAsset: "asset_snap0001",
       frozenAt: "2026-07-12T00:00:00.000Z",
       captureWidth: 1440,
+      captureHeight: 900,
     });
+  });
+
+  it("장면 제목은 기본값 없이 인라인 편집으로 지정한다 (킥오프 §11 8차)", () => {
+    let doc = docFromProject(project);
+    doc = updateSceneTitle(doc, "scn_one", "메인 스튜디오");
+    expect(doc.scenes[0]?.title).toBe("메인 스튜디오");
   });
 });
 

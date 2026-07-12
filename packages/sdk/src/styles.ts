@@ -102,11 +102,16 @@ export const STYLES = /* css */ `
 .scene { margin-bottom: 6px; }
 .scene__row { display: flex; align-items: center; gap: 4px; }
 .scene__pick {
-  flex: 1; text-align: left; border: 1px solid #e2e2e2; background: #fafafa;
+  flex: 0 0 auto; text-align: left; border: 1px solid #e2e2e2; background: #fafafa;
   border-radius: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; color: #333;
 }
 .scene--cur .scene__pick { border-color: #2f6feb; background: #eef3ff; }
-.scene__code { font: 600 11px ui-monospace, monospace; color: #2f6feb; margin-right: 4px; }
+.scene__code { font: 600 11px ui-monospace, monospace; color: #2f6feb; }
+.scene__title {
+  flex: 1; min-width: 0; border: 1px solid #ddd; border-radius: 6px;
+  padding: 5px 7px; font-size: 12px;
+}
+.scene--cur .scene__title { border-color: #bcd0f7; }
 .scene__refreeze {
   border: 1px solid #d5d5d5; background: #fafafa; color: #666; cursor: pointer;
   font-size: 13px; line-height: 1; border-radius: 6px; padding: 4px 6px;

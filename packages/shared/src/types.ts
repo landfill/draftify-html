@@ -77,7 +77,7 @@ export interface Scene {
   id: string;
   /** "SCR-001" — 생성 순 표시 코드, 영구 불변 (output-standard §1.2) */
   code: string;
-  /** 사용자 입력, 기본값 document.title */
+  /** 사용자 입력 (패널 인라인 편집. 기본값 document.title은 킥오프 §11 8차에서 철회) */
   title: string;
   /** 등록 시점 location.pathname + search + hash */
   route: string;
@@ -97,6 +97,12 @@ export interface Scene {
    * 없으면(구 스냅샷) 뷰어는 중앙 가용 폭으로 폴백.
    */
   captureWidth?: number;
+  /**
+   * 동결 시점 뷰포트 높이(px, documentElement.clientHeight). 100vh류(뷰포트 고정 높이)
+   * 페이지는 scrollHeight가 항상 뷰포트와 같아 콘텐츠 높이를 측정할 수 없다 — 캡처 당시
+   * 높이로 렌더해야 잘리지 않는다. 없으면 뷰어는 최소 480px 폴백.
+   */
+  captureHeight?: number;
   /** [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존 — 규칙 변경 시 원본에서 재생성 */
   maskedSnapshotAsset?: string;
   /** [S2] 마스킹본 생성 시각 (ISO 8601) */

@@ -4,7 +4,7 @@ import { pickTarget, generateAnchor, resolveAnchor } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
   deleteAnnotation, deleteEmptyAnnotations, isEmptyAnnotation,
-  annotationsOfScene, updateAnchorSelector, setSceneSnapshot,
+  annotationsOfScene, updateAnchorSelector, setSceneSnapshot, updateSceneTitle,
   docFromProject, applyDocToProject, projectContentSignature,
   type EditorDoc,
 } from "../state.js";
@@ -382,10 +382,13 @@ export function App({ projectId }: { projectId: string }) {
     try {
       const html = await freezeDocument();
       const assetKey = await uploadSnapshot(projectId, html);
-      // 캡처 시점 뷰포트 레이아웃 폭 — 뷰어가 이 폭으로 렌더해 반응형 페이지도
+      // 캡처 시점 뷰포트 크기 — 뷰어가 이 크기로 렌더해 반응형(폭)·100vh류(높이) 페이지도
       // 캡처했던 레이아웃 그대로 재현된다 (동결이 도킹 마진을 제거하므로 전체 폭이 기준).
-      const captureWidth = document.documentElement.clientWidth || window.innerWidth;
-      setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString(), captureWidth));
+      const capture = {
+        width: document.documentElement.clientWidth || window.innerWidth,
+        height: document.documentElement.clientHeight || window.innerHeight,
+      };
+      setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString(), capture));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "동결 실패";
       setFreezeErr((e) => ({ ...e, [sceneId]: msg }));
@@ -421,9 +424,10 @@ export function App({ projectId }: { projectId: string }) {
 
   const registerScene = () => {
     if (!projectRef.current) return;
-    const title = document.title || "장면";
+    // 제목 기본값 없음 — SPA는 document.title이 불변이라 모든 장면에 같은 무의미한 제목이
+    // 붙는다(실사용 피드백). 목록의 인라인 입력으로 사용자가 직접 명명한다 (킥오프 §11 8차).
     const route = location.pathname + location.search + location.hash;
-    const { doc: nd, scene } = createScene(doc, { title, route });
+    const { doc: nd, scene } = createScene(doc, { title: "", route });
     setDoc(nd);
     setCurrentSceneId(scene.id);
     setNeedScene(false);
@@ -500,9 +504,16 @@ export function App({ projectId }: { projectId: string }) {
             {doc.scenes.map((s) => (
               <li key={s.id} class={`scene${s.id === currentSceneId ? " scene--cur" : ""}`}>
                 <div class="scene__row">
-                  <button class="scene__pick" onClick={() => setCurrentSceneId(s.id)}>
-                    <span class="scene__code">{s.code}</span> {s.title || "(제목 없음)"}
+                  <button class="scene__pick" title="이 장면 선택" onClick={() => setCurrentSceneId(s.id)}>
+                    <span class="scene__code">{s.code}</span>
                   </button>
+                  <input
+                    class="scene__title"
+                    placeholder="장면 제목"
+                    value={s.title}
+                    onClick={() => setCurrentSceneId(s.id)}
+                    onInput={(e) => setDoc(updateSceneTitle(doc, s.id, (e.target as HTMLInputElement).value))}
+                  />
                   <button
                     class="scene__refreeze" title="다시 동결"
                     disabled={freezing[s.id]}

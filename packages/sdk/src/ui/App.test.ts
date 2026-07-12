@@ -319,6 +319,30 @@ describe("전이 지정 UI (T27, §3.10)", () => {
   });
 });
 
+describe("장면 제목 (킥오프 §11 8차 — 기본값 자동 부여 철회)", () => {
+  it("새 장면은 빈 제목으로 생성되고(document.title 미사용), 목록 인라인 입력으로 명명한다", async () => {
+    document.title = "tmdb-quiz"; // SPA의 불변 <title> — 장면 제목에 자동으로 붙으면 안 된다
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>("button")]
+        .find((b) => b.textContent?.includes("현재 화면을 장면으로"))!.click();
+    });
+    await saveTick();
+    expect(getDoc().scenes).toHaveLength(2);
+    expect(getDoc().scenes[1]?.title).toBe(""); // document.title이 붙지 않는다
+
+    // 목록의 인라인 입력으로 직접 명명 → 저장 반영
+    await act(async () => {
+      const title = document.querySelectorAll<HTMLInputElement>("input.scene__title")[1]!;
+      title.value = "메인 스튜디오";
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().scenes[1]?.title).toBe("메인 스튜디오");
+  });
+});
+
 describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
   it("내보내기 버튼이 export API를 호출하고 파일명대로 다운로드를 트리거한다", async () => {
     const confirmSpy = vi.fn(() => true);

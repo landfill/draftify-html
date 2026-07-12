@@ -539,9 +539,47 @@ function renderMarkers(
   const mainEl = iframe.closest(".ms-main");
   const fallbackWidth = mainEl instanceof HTMLElement ? mainEl.clientWidth - 32 /* 좌우 패딩 */ : 0;
   const baseWidth = Math.max(scene.captureWidth ?? fallbackWidth, 1);
-  iframe.style.width = `${baseWidth}px`; // 기준 폭으로 먼저 리플로우한 뒤 측정한다
+  // 기준 높이 = 동결 시점 뷰포트 높이. 100vh류(뷰포트 고정 높이) 페이지는 scrollHeight가
+  // 항상 iframe 높이와 같아 콘텐츠 높이를 측정할 수 없다 — 최소값(480)으로 잠기면 캡처
+  // 아래쪽이 잘린다(실사용: 메인 메뉴·박스오피스 소실). 캡처 높이로 먼저 리플로우한다.
+  const baseHeight = Math.max(scene.captureHeight ?? 0, 480);
+  iframe.style.width = `${baseWidth}px`; // 기준 크기로 먼저 리플로우한 뒤 측정한다
+  iframe.style.height = `${baseHeight}px`;
   const docWidth = Math.max(docRoot.scrollWidth, docRoot.clientWidth, docBody?.scrollWidth ?? 0, baseWidth);
-  const docHeight = Math.max(docRoot.scrollHeight, docRoot.clientHeight, docBody?.scrollHeight ?? 0, 480);
+  let docHeight = Math.max(docRoot.scrollHeight, docRoot.clientHeight, docBody?.scrollHeight ?? 0, baseHeight);
+  // 구 스냅샷 구제: captureHeight가 없는데 scrollHeight가 뷰포트(iframe 높이)에 잠겨
+  // 있으면(100vh류) 요소들의 실제 최하단까지 확장 — overflow:hidden 안쪽으로 잘린 콘텐츠를
+  // 노출한다. vh 기반 요소는 확장을 따라 다시 커지므로 수렴할 때까지 반복한다(발산 대비 상한).
+  // captureHeight가 있으면 캡처 시점 모습이 기준이므로 확장하지 않는다.
+  // (기준: clientHeight — 폰트 로딩 후 재실행 시 iframe이 이미 확장된 상태에서도 동작)
+  if (scene.captureHeight == null && docHeight <= Math.max(iframe.clientHeight, baseHeight)) {
+    const win = doc.defaultView;
+    const contentBottom = (): number => {
+      let bottom = 0;
+      for (const el of Array.from(doc.querySelectorAll("*"))) {
+        const rect = el.getBoundingClientRect();
+        if (rect.height > 0) bottom = Math.max(bottom, rect.bottom + (win?.scrollY ?? 0));
+      }
+      return Math.ceil(bottom);
+    };
+    // vh 성분이 있으면 확장분의 k배(0<k<1)만큼 콘텐츠도 다시 커진다 — 직전 측정과의
+    // 기울기로 고정점 (b - k·h)/(1 - k)을 외삽해 점프하면 몇 번 안에 수렴한다.
+    const MAX_RESCUE_HEIGHT = 4000;
+    let prev: { h: number; b: number } | null = null;
+    for (let i = 0; i < 6; i += 1) {
+      const bottom = contentBottom();
+      if (bottom <= docHeight || docHeight >= MAX_RESCUE_HEIGHT) break;
+      let next = bottom;
+      if (prev && docHeight > prev.h) {
+        const k = (bottom - prev.b) / (docHeight - prev.h);
+        if (k >= 0.98) next = MAX_RESCUE_HEIGHT; // vh 계수 ≈1 — 유한 높이로 못 담는다
+        else if (k > 0) next = Math.ceil((bottom - k * docHeight) / (1 - k));
+      }
+      prev = { h: docHeight, b: bottom };
+      docHeight = Math.min(Math.max(next, bottom), MAX_RESCUE_HEIGHT);
+      iframe.style.height = `${docHeight}px`; // 재측정 전에 리플로우
+    }
+  }
   // 넓은 고정폭 캡처(예: 사내 시스템 ~1920px)는 기준 폭보다 큰 scrollWidth로 커진다 —
   // iframe·마커 레이어를 콘텐츠 너비로 잡아 중앙(.ms-main)이 양방향 스크롤되고
   // 마커는 콘텐츠와 같은 좌표계에 있어 스크롤해도 정확히 정렬된다.
@@ -745,6 +783,13 @@ function renderStage(
   const layer = child("div", "ms-marker-layer");
   iframe.addEventListener("load", () => {
     renderMarkers(scene, project.annotations, iframe, layer, state, root);
+    // 초기 로드 직후(~150ms)엔 웹폰트 적용·초기 레이아웃 정착 전이라 측정이 낡아
+    // 구제 루프가 수 px 부족하게 수렴한다(실측: 50ms 재실행=696, 150ms 이후=700).
+    // 정착 후 재계산 3중 백스톱 — 더블 rAF·폰트 적용 후·300ms. 재실행은 멱등이라 안전.
+    const settle = () => renderMarkers(scene, project.annotations, iframe, layer, state, root);
+    requestAnimationFrame(() => requestAnimationFrame(settle));
+    window.setTimeout(settle, 300);
+    void frameDocument(iframe)?.fonts?.ready?.then(() => requestAnimationFrame(settle));
   });
   iframe.srcdoc = snapshotHtml;
   wrap.append(iframe, layer);
