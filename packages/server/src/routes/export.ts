@@ -16,7 +16,9 @@ const VIEWER_CSS = `
 * { box-sizing: border-box; }
 body { margin: 0; background: #f7f8f9; }
 button, input, textarea { font: inherit; }
-.ms-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+/* 헤더·(선택)흐름도·본문 3단 — 흐름도 섹션이 없어도 본문이 남은 높이를 채우도록 flex */
+.ms-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.ms-layout { flex: 1; }
 .ms-header {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 14px 18px; background: #fff; border-bottom: 1px solid #dfe3e7;
@@ -85,6 +87,25 @@ button, input, textarea { font: inherit; }
 .ms-description p { margin: 0 0 8px; }
 .ms-description p:last-child { margin-bottom: 0; }
 .ms-policy { display: inline-block; margin: 8px 6px 0 0; padding: 3px 6px; border-radius: 4px; background: #f1f3f4; color: #3c4043; font-size: 12px; }
+.ms-transition {
+  display: block; margin-top: 8px; padding: 5px 8px; border: 1px solid #d2e3fc; border-radius: 6px;
+  background: #e8f0fe; color: #1a73e8; font-size: 12px; font-weight: 600; text-align: left;
+  cursor: pointer; width: 100%; overflow-wrap: anywhere;
+}
+.ms-transition:hover { background: #d2e3fc; }
+/* 프로세스 흐름도 (output-standard §2 섹션 2) — 넓은 그래프는 섹션 안에서만 가로 스크롤 */
+.ms-flow { background: #fff; border-bottom: 1px solid #dfe3e7; }
+.ms-flow-head { display: flex; align-items: center; justify-content: space-between; padding-right: 12px; }
+.ms-flow-head .ms-section-title { padding-bottom: 8px; }
+.ms-flow-body { overflow-x: auto; padding: 0 14px 14px; }
+.ms-flow-body svg { display: block; }
+.ms-flow-edge { fill: none; stroke: #5f6368; stroke-width: 1.5; }
+.ms-flow-label { font: 600 11px/1 Inter, ui-sans-serif, system-ui, sans-serif; fill: #5f6368; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.ms-flow-node { cursor: pointer; }
+.ms-flow-node rect { fill: #e8f0fe; stroke: #9ec1f7; }
+.ms-flow-node text { font: 600 12px/1 Inter, ui-sans-serif, system-ui, sans-serif; fill: #174ea6; }
+.ms-flow-node:hover rect { fill: #d2e3fc; }
+.ms-flow-node.is-active rect { stroke: #1a73e8; stroke-width: 2; fill: #d2e3fc; }
 .ms-warning { color: #b06000; font-weight: 700; }
 @media (max-width: 900px) {
   .ms-header { align-items: flex-start; flex-direction: column; }
