@@ -175,7 +175,9 @@ S1에서는 서버가 서빙하는 정적 HTML 1장. 프레임워크 금지 (Rea
 ```
 1. (미리보기 모드에서) 작성자가 목업을 원하는 상태로 조작 — 메뉴 열고, 모달 띄우고
 2. 패널의 [+ 현재 화면을 장면으로] 클릭
-3. Scene 생성: title = document.title (수정 가능), route = 현재 pathname+search+hash,
+3. Scene 생성: title = 빈 값 — 목록의 인라인 입력으로 사용자가 직접 명명
+   (기본값 document.title은 철회 — SPA는 <title>이 불변이라 모든 장면에 같은 무의미한
+   제목이 붙음. 킥오프 §11 8차), route = 현재 pathname+search+hash,
    표시 코드 = 다음 SCR-### (생성 순, 영구 불변 — output-standard §1.2)
 4. 즉시 동결 시도 (§3.7) → 성공 시 snapshotAsset 저장
 5. 패널이 해당 장면으로 전환. 이후 부착하는 어노테이션은 이 장면 소속

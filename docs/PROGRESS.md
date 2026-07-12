@@ -57,6 +57,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — 실사용 12차: 100vh류 캡처 아래쪽 잘림(captureHeight) + 장면 제목 자동 부여 철회
+- 브랜치: `fix/viewer-capture-width` (11차에 이어 커밋).
+- 배경(실사용, c.html): ① tmdb-quiz(React·Tailwind `h-screen`) 산출물에서 어노테이션 5·7(메인 메뉴·박스오피스)의 **아래쪽 콘텐츠가 안 보임** — 100vh류 페이지는 html/body가 뷰포트 높이라 scrollHeight가 항상 iframe 높이와 같고, 뷰어 최소값 480px에 잠겨 `overflow:hidden` 안쪽 콘텐츠(실측 최하단 590px)가 잘림. 마커는 요소 좌표(504~590)라 흰 영역에 뜸 ② **장면 제목에 목업 페이지의 `document.title`("tmdb-quiz")이 자동으로 붙음** — SPA는 `<title>`이 불변이라 모든 장면이 같은 무의미한 제목. 사용자 판정 "불필요".
+- 완료(①): **`Scene.captureHeight`**(동결 시점 `documentElement.clientHeight`) 기록 — `setSceneSnapshot(…, capture: {width, height})`. 뷰어는 captureHeight를 기준 높이로 먼저 리플로우(캡처 레이아웃 재현). **구 스냅샷 구제**: captureHeight 없고 scrollHeight가 뷰포트에 잠긴 경우 요소 실제 최하단까지 확장 — vh 성분은 확장을 따라 다시 커지므로 **secant 외삽으로 고정점 수렴**(상한 4000px, k≥0.98이면 발산 판정). **정착 레이스**: 로드 직후(~150ms)는 웹폰트 적용·초기 레이아웃 정착 전이라 수 px 부족하게 수렴(실측 50ms=696 vs 150ms+=700) — 더블 rAF·`fonts.ready`·300ms 백스톱 3중 재계산(멱등)으로 해소.
+- 완료(②, 킥오프 §11 8차): 장면 제목 **기본값 document.title 철회** — 빈 값 생성 + 패널 장면 목록에 **제목 인라인 입력**(`updateSceneTitle`, placeholder "장면 제목"). detailed-spec §3.2·technical-spec §2·s1-kickoff 동기화.
+- 검증: `npm run typecheck`·build exit 0, `npm test` 163 passed(+2: setSceneSnapshot 캡처 크기 / 장면 제목 빈 값 생성·인라인 명명), `npm run test:e2e` 4본 통과(transitions에 iframe=captureHeight(800) 검증 추가). **실 c.html 데이터 재조립 검증(구제 경로)**: SCR-004 iframe 480→700 수렴, 박스오피스 "보임", 하단 메뉴 전체 노출, 마커 5·7 콘텐츠 정렬 — 스크린샷 확인.
+- **주의: 서버 재기동 + 재-export 필요. 기존 장면은 재동결해야 captureHeight가 채워짐(구제 로직으로 재동결 없이도 대부분 노출).**
+- 다음 할 일: 사용자 재검증 → 전이·흐름도와 함께 main 병합 동의 대기. 별건: 뷰어 세로 스크롤을 중앙 내부로(3컬럼 고정) 제안은 사용자 답변 대기.
+- 막힌 지점: 없음.
+
 ### 2026-07-12 — 실사용 11차: 반응형 캡처가 산출물에서 모바일 레이아웃으로 보임 → captureWidth 기록
 - 브랜치: `fix/viewer-capture-width` (`feat/scene-transitions` 위에 스택, main 미병합).
 - 배경(실사용): 내보낸 문서에서 캡처했던 화면이 **모바일 레이아웃으로** 보임. 원인: 9차 수정의 `.ms-stage-wrap{width:max-content}` + `.ms-frame{width:100%}` 조합에서 **max-content 부모의 100%는 순환이라 iframe이 기본 300px로 붕괴** → 반응형 스냅샷이 300px에서 첫 레이아웃(모바일로 리플로우) → `renderMarkers`의 scrollWidth 측정도 300으로 오염되어 고정. 고정폭 페이지(HANATOUR 1920)는 scrollWidth가 커서 증상이 안 보였음. 실측 재현: 중앙 940px인데 iframe 300px.
