@@ -26,7 +26,8 @@ export function shieldFocusEvents(host: HTMLElement): void {
   };
   const targetIsEditable = (e: Event): boolean => {
     const t = e.composedPath?.()[0];
-    return t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+    return t instanceof HTMLElement &&
+      (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
   };
   // 포커스 되돌리기(focus 계열) — 패널 안이면 전부 차단
   for (const type of ["focus", "blur", "focusin", "focusout"]) {
