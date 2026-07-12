@@ -382,7 +382,10 @@ export function App({ projectId }: { projectId: string }) {
     try {
       const html = await freezeDocument();
       const assetKey = await uploadSnapshot(projectId, html);
-      setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString()));
+      // 캡처 시점 뷰포트 레이아웃 폭 — 뷰어가 이 폭으로 렌더해 반응형 페이지도
+      // 캡처했던 레이아웃 그대로 재현된다 (동결이 도킹 마진을 제거하므로 전체 폭이 기준).
+      const captureWidth = document.documentElement.clientWidth || window.innerWidth;
+      setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString(), captureWidth));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "동결 실패";
       setFreezeErr((e) => ({ ...e, [sceneId]: msg }));

@@ -57,6 +57,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — 실사용 11차: 반응형 캡처가 산출물에서 모바일 레이아웃으로 보임 → captureWidth 기록
+- 브랜치: `fix/viewer-capture-width` (`feat/scene-transitions` 위에 스택, main 미병합).
+- 배경(실사용): 내보낸 문서에서 캡처했던 화면이 **모바일 레이아웃으로** 보임. 원인: 9차 수정의 `.ms-stage-wrap{width:max-content}` + `.ms-frame{width:100%}` 조합에서 **max-content 부모의 100%는 순환이라 iframe이 기본 300px로 붕괴** → 반응형 스냅샷이 300px에서 첫 레이아웃(모바일로 리플로우) → `renderMarkers`의 scrollWidth 측정도 300으로 오염되어 고정. 고정폭 페이지(HANATOUR 1920)는 scrollWidth가 커서 증상이 안 보였음. 실측 재현: 중앙 940px인데 iframe 300px.
+- 완료: ① **shared** — `Scene.captureWidth?`(동결 시점 `documentElement.clientWidth`) ② **SDK** — `setSceneSnapshot`이 captureWidth 기록(동결·재동결 모두. 동결이 도킹 마진을 제거하므로 전체 뷰포트 폭이 기준) ③ **뷰어** — 기준 폭 = captureWidth, 없으면(구 스냅샷) **중앙 가용 폭 폴백**. 기준 폭으로 먼저 리플로우한 뒤 scrollWidth를 측정해 넓은 고정폭 캡처의 가로 스크롤(9차 동작)은 유지.
+- 검증: `npm test` **161 passed**(+1: setSceneSnapshot captureWidth), `npm run test:e2e` 4본 통과(transitions spec에 장면 1 iframe=1280·구 스냅샷 폴백 >500 검증 추가). **실 Chromium**: 반응형 fixture(700px 미만 모바일 스택)로 — captureWidth=1280 산출물은 3컬럼 데스크톱 재현·모바일 배지 미노출, 폴백 산출물은 908px(300px 붕괴 해소).
+- **주의: 뷰어/export/SDK 변경 — 서버 재기동 + 재-export 필요. 기존 장면은 재동결해야 captureWidth가 채워짐(재동결 없이도 폴백으로 300px 붕괴는 해소).**
+- 다음 할 일: 사용자 재-export로 캡처 레이아웃 재현 확인 → 전이·흐름도와 함께 main 병합 동의 대기.
+- 막힌 지점: 없음.
+
 ### 2026-07-12 — 다중 장면 전이 + 흐름도 구현 (T26~T28, FR-EDT-10·FR-EXP-06)
 - 브랜치: `feat/scene-transitions` (main 미병합, 동의 대기). 착수 배경: S2.5 종료 후 "후속 판단" 중 사용자가 전이+흐름도를 1순위로 선택.
 - **결정(사용자, 킥오프 s1 §11 7차 개정)**: 흐름도 렌더러 **Mermaid → 자체 경량 SVG** — 산출물이 단독 HTML·네트워크 0건이라 Mermaid는 ~3MB 번들 내장이 필요(뷰어 런타임 19KB의 150배), 장면 그래프 규모(수십 노드 이하)엔 계층 배치+화살표+간선 라벨의 자체 SVG로 충분. PRD·detailed-spec·output-standard·technical-spec 동기화 완료.

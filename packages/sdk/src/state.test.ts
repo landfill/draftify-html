@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Anchor, SpecProject } from "@mockspec/shared";
 import {
   applyDocToProject, createScene, deleteScene, docFromProject,
-  projectContentSignature, updateAnnotation, addAnnotation,
+  projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot,
 } from "./state.js";
 
 const project: SpecProject = {
@@ -45,6 +45,16 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     const saved: SpecProject = { ...project, updatedAt: "2026-07-07T00:00:05.000Z" };
 
     expect(projectContentSignature(saved)).toBe(projectContentSignature(project));
+  });
+
+  it("동결 기록에 captureWidth(뷰포트 레이아웃 폭)가 함께 저장된다 — 뷰어의 반응형 재현 기준", () => {
+    const doc = docFromProject(project);
+    const frozen = setSceneSnapshot(doc, "scn_one", "asset_snap0001", "2026-07-12T00:00:00.000Z", 1440);
+    expect(frozen.scenes[0]).toMatchObject({
+      snapshotAsset: "asset_snap0001",
+      frozenAt: "2026-07-12T00:00:00.000Z",
+      captureWidth: 1440,
+    });
   });
 });
 

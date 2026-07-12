@@ -532,10 +532,18 @@ function renderMarkers(
 
   const docRoot = doc.documentElement;
   const docBody = doc.body;
-  const docWidth = Math.max(docRoot.scrollWidth, docRoot.clientWidth, docBody?.scrollWidth ?? 0, iframe.clientWidth, 1);
+  // 기준 폭 = 동결 시점 뷰포트 폭(captureWidth) — 반응형 캡처가 그 폭으로 리플로우되어
+  // 캡처했던 레이아웃(데스크톱/모바일)이 그대로 재현된다. 구 스냅샷(필드 없음)은 중앙
+  // 가용 폭으로 폴백: .ms-stage-wrap(max-content) 안의 iframe(width:100%)은 기본 300px로
+  // 붕괴해 반응형 페이지가 모바일 레이아웃으로 보였다 (첫 레이아웃 폭이 measurement를 오염).
+  const mainEl = iframe.closest(".ms-main");
+  const fallbackWidth = mainEl instanceof HTMLElement ? mainEl.clientWidth - 32 /* 좌우 패딩 */ : 0;
+  const baseWidth = Math.max(scene.captureWidth ?? fallbackWidth, 1);
+  iframe.style.width = `${baseWidth}px`; // 기준 폭으로 먼저 리플로우한 뒤 측정한다
+  const docWidth = Math.max(docRoot.scrollWidth, docRoot.clientWidth, docBody?.scrollWidth ?? 0, baseWidth);
   const docHeight = Math.max(docRoot.scrollHeight, docRoot.clientHeight, docBody?.scrollHeight ?? 0, 480);
-  // 넓은 데스크톱 캡처(예: 사내 시스템 ~1920px)가 좁은 중앙에 눌려 잘리지 않도록,
-  // iframe·마커 레이어를 콘텐츠 자연 너비로 잡는다 → 중앙(.ms-main)이 양방향 스크롤되고
+  // 넓은 고정폭 캡처(예: 사내 시스템 ~1920px)는 기준 폭보다 큰 scrollWidth로 커진다 —
+  // iframe·마커 레이어를 콘텐츠 너비로 잡아 중앙(.ms-main)이 양방향 스크롤되고
   // 마커는 콘텐츠와 같은 좌표계에 있어 스크롤해도 정확히 정렬된다.
   iframe.style.width = `${docWidth}px`;
   iframe.style.height = `${docHeight}px`;
