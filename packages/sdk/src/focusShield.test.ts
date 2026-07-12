@@ -58,8 +58,9 @@ describe("shieldFocusEvents (window 캡처)", () => {
     document.body.appendChild(host);
     const shadow = host.attachShadow({ mode: "open" });
     const input = document.createElement("input");
+    const select = document.createElement("select"); // 전이 드롭다운 (T27)
     const marker = document.createElement("button"); // 마커류
-    shadow.append(input, marker);
+    shadow.append(input, select, marker);
     shieldFocusEvents(host);
 
     const seen: string[] = [];
@@ -67,9 +68,10 @@ describe("shieldFocusEvents (window 캡처)", () => {
     document.addEventListener("mousedown", pageHandler, true); // 프레임워크의 preventDefault 흉내
 
     input.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }));
+    select.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }));
     marker.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }));
 
-    expect(seen).toEqual(["BUTTON"]); // 입력칸은 페이지에 안 감(차단), 마커(BUTTON)는 통과
+    expect(seen).toEqual(["BUTTON"]); // 입력칸·드롭다운은 페이지에 안 감(차단), 마커(BUTTON)는 통과
     document.removeEventListener("mousedown", pageHandler, true);
   });
 });

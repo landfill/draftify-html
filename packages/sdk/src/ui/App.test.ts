@@ -245,6 +245,80 @@ describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
   });
 });
 
+describe("전이 지정 UI (T27, §3.10)", () => {
+  const twoSceneProject: SpecProject = {
+    ...project,
+    sceneCodeSeq: 3,
+    scenes: [
+      ...project.scenes,
+      { id: "scn_done", code: "SCR-002", title: "완료", route: "/done", order: 1, annoNumberSeq: 1 },
+    ],
+  };
+
+  /** 장면 2개 프로젝트로 마운트 + 패널 열기 + 어노테이션 1개 부착까지. */
+  async function mountTwoScenes(): Promise<{ getDoc: () => SpecProject }> {
+    let lastSaved: SpecProject = twoSceneProject;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (!init?.method || init.method === "GET") return jsonResponse(lastSaved);
+      lastSaved = JSON.parse(String(init.body)) as SpecProject;
+      return jsonResponse({ ...lastSaved, updatedAt: "2026-07-12T00:00:05.000Z" });
+    });
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".fab")!.click();
+      await flushPromises();
+    });
+    await act(async () => { clickMockup("target"); });
+    return { getDoc: () => lastSaved };
+  }
+
+  it("드롭다운은 다른 장면만 나열하고, 지정→조건 입력→해제가 저장에 왕복된다", async () => {
+    const { getDoc } = await mountTwoScenes();
+
+    // 자기 장면(scn_home)은 나열하지 않는다: 옵션 = "전이 없음" + SCR-002 완료
+    const select = document.querySelector<HTMLSelectElement>("select.ann__trans-scene")!;
+    const options = [...select.querySelectorAll("option")].map((o) => o.value);
+    expect(options).toEqual(["", "scn_done"]);
+
+    // 전이 지정 → transition 저장 (조건 없음 = 필드 자체 없음)
+    await act(async () => {
+      select.value = "scn_done";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().annotations[0]?.transition).toEqual({ toSceneId: "scn_done" });
+
+    // 조건 입력란이 나타나고 condition이 저장된다
+    await act(async () => {
+      const cond = document.querySelector<HTMLInputElement>("input.ann__trans-cond")!;
+      cond.value = "성공 시";
+      cond.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().annotations[0]?.transition).toEqual({ toSceneId: "scn_done", condition: "성공 시" });
+
+    // "전이 없음"으로 되돌리면 transition이 제거된다
+    await act(async () => {
+      const sel = document.querySelector<HTMLSelectElement>("select.ann__trans-scene")!;
+      sel.value = "";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await saveTick();
+    expect(getDoc().annotations[0]).not.toHaveProperty("transition");
+  });
+
+  it("다른 장면이 없으면(장면 1개) 전이 드롭다운을 노출하지 않는다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+    await act(async () => { clickMockup("target"); });
+    await saveTick();
+    expect(getDoc().annotations).toHaveLength(1);
+    expect(document.querySelector("select.ann__trans-scene")).toBeNull();
+  });
+});
+
 describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
   it("내보내기 버튼이 export API를 호출하고 파일명대로 다운로드를 트리거한다", async () => {
     const confirmSpy = vi.fn(() => true);

@@ -70,12 +70,14 @@ export function createScene(
   };
 }
 
-/** 장면 삭제 + 소속 어노테이션 삭제. */
+/** 장면 삭제 + 소속 어노테이션 삭제 + 그 장면을 향한 전이 제거 (dangling 방지 — §3.10). */
 export function deleteScene(doc: EditorDoc, id: string): EditorDoc {
   return {
     ...doc,
     scenes: doc.scenes.filter((s) => s.id !== id),
-    annotations: doc.annotations.filter((a) => a.sceneId !== id),
+    annotations: doc.annotations
+      .filter((a) => a.sceneId !== id)
+      .map((a) => (a.transition?.toSceneId === id ? { ...a, transition: undefined } : a)),
   };
 }
 

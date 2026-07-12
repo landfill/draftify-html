@@ -563,6 +563,45 @@ export function App({ projectId }: { projectId: string }) {
                 onClick={() => setSelectedAnn(a.id)}
                 onInput={(e) => setDoc(updateAnnotation(doc, a.id, { description: (e.target as HTMLTextAreaElement).value }))}
               />
+              {/* 전이 지정 (§3.10) — 다른 장면이 있을 때만. 전이는 정의상 장면 간 연결이라
+                  자기 장면은 나열하지 않는다. 조건 입력은 전이를 고른 뒤에만 노출 */}
+              {doc.scenes.some((s) => s.id !== a.sceneId) && (
+                <div class="ann__trans">
+                  <select
+                    class="ann__trans-scene" data-ann-trans={a.id}
+                    title="이 요소 조작 시 이동할 장면"
+                    value={a.transition?.toSceneId ?? ""}
+                    onClick={() => setSelectedAnn(a.id)}
+                    onChange={(e) => {
+                      const toSceneId = (e.target as HTMLSelectElement).value;
+                      setDoc(updateAnnotation(doc, a.id, {
+                        transition: toSceneId
+                          ? { toSceneId, condition: a.transition?.condition }
+                          : undefined,
+                      }));
+                    }}
+                  >
+                    <option value="">전이 없음</option>
+                    {doc.scenes.filter((s) => s.id !== a.sceneId).map((s) => (
+                      <option key={s.id} value={s.id}>→ {s.code} {s.title || "(제목 없음)"}</option>
+                    ))}
+                  </select>
+                  {a.transition && (
+                    <input
+                      class="ann__trans-cond" data-ann-trans-cond={a.id}
+                      placeholder="조건 (예: 성공 시)"
+                      value={a.transition.condition ?? ""}
+                      onClick={() => setSelectedAnn(a.id)}
+                      onInput={(e) => {
+                        const condition = (e.target as HTMLInputElement).value;
+                        setDoc(updateAnnotation(doc, a.id, {
+                          transition: { toSceneId: a.transition!.toSceneId, condition: condition || undefined },
+                        }));
+                      }}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

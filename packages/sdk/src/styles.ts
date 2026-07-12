@@ -148,4 +148,10 @@ export const STYLES = /* css */ `
   width: 100%; margin-top: 6px; border: 1px solid #ddd; border-radius: 4px;
   padding: 5px 7px; font-size: 12px; font-family: system-ui, sans-serif; resize: vertical; min-height: 44px;
 }
+.ann__trans { display: flex; gap: 6px; margin-top: 6px; }
+.ann__trans-scene {
+  flex: 1; min-width: 0; border: 1px solid #ddd; border-radius: 4px; padding: 4px 6px;
+  font-size: 12px; background: #fff; color: inherit;
+}
+.ann__trans-cond { flex: 1; min-width: 0; border: 1px solid #ddd; border-radius: 4px; padding: 4px 6px; font-size: 12px; }
 `;
