@@ -114,6 +114,19 @@ export interface Annotation {
    * 절대 좌표가 아니라 상대값이어야 앵커 재해석(요소 추적)과 공존한다. 킥오프 §11 4차 개정.
    */
   markerOffset?: MarkerOffset;
+  /**
+   * 흐름도 원천 데이터 — "이 요소 조작 시 → 장면 X로 이동" (FR-EDT-10, 킥오프 §11 7차).
+   * 사람이 지정한 전이만 존재한다. 대상 장면 삭제 시 함께 제거된다 (dangling 방지).
+   */
+  transition?: Transition;
+}
+
+/** 장면 간 전이 — scenes + transitions가 방향 그래프가 되어 흐름도로 렌더된다. */
+export interface Transition {
+  /** 이동할 장면 id (자기 장면 제외 — 전이는 장면 *간* 연결) */
+  toSceneId: string;
+  /** "성공 시" 등 간선 라벨. 없으면 라벨 없는 화살표 */
+  condition?: string;
 }
 
 export interface MarkerOffset {

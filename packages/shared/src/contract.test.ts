@@ -82,4 +82,53 @@ describe("shared contract", () => {
     expect(Object.keys(project.mockupSource)).not.toContain("token");
     expect(Object.keys(project.mockupSource)).not.toContain("tokenHash");
   });
+
+  it("전이 확장 — Annotation.transition이 계약에 포함되고 왕복 무손실 (version 1 유지)", () => {
+    const now = new Date().toISOString();
+    const anchor = {
+      selector: "body > button:nth-of-type(1)",
+      text: "로그인",
+      rect: { x: 0.1, y: 0.2, w: 0.05, h: 0.03 },
+    };
+    const project: SpecProject = {
+      version: 1,
+      id: "prj_test000004",
+      name: "전이 샘플",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "upload", originalFilename: "mockup.zip", uploadedAt: now },
+      sceneCodeSeq: 3,
+      scenes: [
+        { id: "scn_login00001", code: "SCR-001", title: "로그인", route: "/login", order: 0, annoNumberSeq: 2 },
+        { id: "scn_home000001", code: "SCR-002", title: "홈", route: "/", order: 1, annoNumberSeq: 1 },
+      ],
+      annotations: [
+        {
+          id: "ann_test000001",
+          sceneId: "scn_login00001",
+          number: 1,
+          anchor,
+          title: "로그인 버튼",
+          description: "성공하면 홈으로",
+          transition: { toSceneId: "scn_home000001", condition: "성공 시" },
+        },
+        {
+          // condition 없는 전이 — 라벨 없는 화살표
+          id: "ann_test000002",
+          sceneId: "scn_login00001",
+          number: 2,
+          anchor,
+          title: "취소",
+          description: "",
+          transition: { toSceneId: "scn_home000001" },
+        },
+      ],
+    };
+    // 직렬화 왕복 무손실 — spec.json 저장 형식과 동일
+    expect(JSON.parse(JSON.stringify(project))).toEqual(project);
+    expect(project.annotations[0].transition?.toSceneId).toBe("scn_home000001");
+    // transition 없는 기존(S1~S2.5) 어노테이션은 필드 자체가 없어 하위 호환
+    const legacy: SpecProject = { ...project, annotations: [{ ...project.annotations[0], transition: undefined }] };
+    expect(JSON.parse(JSON.stringify(legacy)).annotations[0]).not.toHaveProperty("transition");
+  });
 });
