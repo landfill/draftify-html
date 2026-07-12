@@ -1,5 +1,6 @@
 import { getPageData } from "single-file-core/single-file.js";
 import { countScripts, FreezeError } from "./verify.js";
+import { optimizeSnapshotImages } from "./optimizeImages.js";
 
 /**
  * 장면 동결 (technical-spec §5, 킥오프 §7).
@@ -71,11 +72,14 @@ const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
 
 async function runFreeze(options: Record<string, unknown>): Promise<string> {
   const { content } = await getPageData({ ...options }, {});
-  const scripts = countScripts(content);
+  // 큰 이미지 WebP 재인코딩 — 고해상도 이미지가 많은 페이지의 수십 MB 스냅샷 방지
+  // (실사용 13차). best-effort: 실패한 이미지는 원본 유지, 동결을 깨지 않는다.
+  const optimized = await optimizeSnapshotImages(content);
+  const scripts = countScripts(optimized);
   if (scripts > 0) {
     throw new FreezeError(`동결 결과에 <script> ${scripts}개가 남아 폐기했습니다.`);
   }
-  return content;
+  return optimized;
 }
 
 /**
