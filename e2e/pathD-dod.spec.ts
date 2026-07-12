@@ -148,7 +148,7 @@ test("경로 D DoD: 로그인 뒤 보호 화면을 확장으로 편집 → 마�
   await expect(page.locator(".save")).not.toContainText("실패");
 
   // ── 4. 장면 등록 + 어노테이션 + 동결·저장(토큰 인증 릴레이) ───────────
-  await page.getByRole("button", { name: "+ 현재 화면을 장면으로" }).click();
+  await page.getByRole("button", { name: "+ 현재 화면 등록" }).click();
   await expect(page.locator(".frz--ok")).toHaveCount(1, { timeout: 30_000 });
 
   const ANNS = [
