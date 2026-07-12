@@ -57,6 +57,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-12 — 실사용 13차: 경로 D 내보내기 64MiB 실패 + 스냅샷 수십 MB 절감 (킥오프 §11 9차)
+- 브랜치: `fix/viewer-capture-width` (12차에 이어 커밋).
+- 배경(실사용): ① 경로 D 편집 패널 [내보내기]가 **"Message exceeded maximum allowed size of 64MiB"** — 산출물 HTML 전체가 background→content script 확장 메시지로 릴레이되는데 Chrome 메시징은 64MiB 하드 리밋 ② 사용자: "페이지 몇 개가 수십 MB — 사용하기 어렵다" — single-file이 고해상도 이미지(영화 포스터 등)를 원본 그대로 base64 임베드.
+- 완료(①): **export를 chrome.downloads 직행으로** — `TransportRequest.download` 표시 → background가 본문 릴레이 대신 `chrome.downloads.download(url, POST, Bearer 헤더)` 호출(manifest `downloads` 권한 추가). 응답은 합성 마커(`x-mockspec-native-download`)만 릴레이, 패널은 "브라우저 다운로드로 저장을 시작했습니다" 표시. 경로 A·B(fetch transport)는 기존 blob 흐름 그대로. 경로 가드: 다운로드는 자기 프로젝트 export 경로만.
+- 완료(②): **동결 후처리 스냅샷 이미지 최적화** (`freeze/optimizeImages.ts`) — 100KB 이상 래스터 data URI를 WebP q0.82 재인코딩 + 긴 변 2048px 다운스케일(업스케일 없음), 중복 URI 1회 인코딩 전부 치환, GIF·SVG·아이콘 제외, 이득 없으면 원본 유지, 이미지 단위 best-effort(동결 불파괴). WebP 인코딩은 ID-02(편집 Chrome/Edge 한정)로 무방.
+- 검증: `npm test` **169 passed**(+6: export download 표시·native 마커 분기 2 / optimizeImages 4 — 치환·중복 1회 인코딩·스킵 규칙·실패 원본 유지), e2e 4본 통과. **실 Chromium(확장 로드)**: ① 패널 내보내기 → 안내 문구 + chrome.downloads `state: complete` ② 노이즈 PNG 21.2MB(최악 케이스) 페이지 동결 → 스냅샷 10.4MB·webp 2회 치환·원본 png 잔존 0·naturalWidth 2048·file:// 렌더 정상. 실제 사진류는 절감 폭 더 큼.
+- **주의: 확장 재로드(chrome://extensions 새로고침) + 서버 재기동 필요. 기존 스냅샷은 재동결해야 이미지 최적화 적용.**
+- 다음 할 일: 사용자 재검증(재동결→내보내기) → main 병합 동의 대기.
+- 막힌 지점: 없음.
+
 ### 2026-07-12 — 실사용 12차: 100vh류 캡처 아래쪽 잘림(captureHeight) + 장면 제목 자동 부여 철회
 - 브랜치: `fix/viewer-capture-width` (11차에 이어 커밋).
 - 배경(실사용, c.html): ① tmdb-quiz(React·Tailwind `h-screen`) 산출물에서 어노테이션 5·7(메인 메뉴·박스오피스)의 **아래쪽 콘텐츠가 안 보임** — 100vh류 페이지는 html/body가 뷰포트 높이라 scrollHeight가 항상 iframe 높이와 같고, 뷰어 최소값 480px에 잠겨 `overflow:hidden` 안쪽 콘텐츠(실측 최하단 590px)가 잘림. 마커는 요소 좌표(504~590)라 흰 영역에 뜸 ② **장면 제목에 목업 페이지의 `document.title`("tmdb-quiz")이 자동으로 붙음** — SPA는 `<title>`이 불변이라 모든 장면이 같은 무의미한 제목. 사용자 판정 "불필요".
