@@ -407,7 +407,13 @@ export function App({ projectId }: { projectId: string }) {
     setExporting(true);
     setExportNote(null);
     try {
-      const { blob, filename, warning } = await exportProjectHtml(projectId);
+      const result = await exportProjectHtml(projectId);
+      if (result.nativeDownload) {
+        // 경로 D: 확장이 chrome.downloads로 직접 저장 — 브라우저 다운로드 바에서 확인
+        setExportNote("브라우저 다운로드로 저장을 시작했습니다.");
+        return;
+      }
+      const { blob, filename, warning } = result;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

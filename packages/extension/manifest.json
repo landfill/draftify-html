@@ -3,7 +3,7 @@
   "name": "mockspec — 내 화면에서 편집",
   "version": "0.1.0",
   "description": "로그인해 둔 화면 위에 mockspec 편집기를 띄웁니다 (경로 D — 서버는 아무것도 fetch하지 않음).",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "downloads"],
   "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
   "content_scripts": [
     {

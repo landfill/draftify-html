@@ -65,20 +65,31 @@ export function filenameFromDisposition(header: string | null): string | null {
   return plain ? plain[1] : null;
 }
 
-export interface ExportResult {
-  blob: Blob;
-  filename: string;
-  /** 50MB 초과 등 서버 경고 헤더 (X-Mockspec-Warning). 없으면 null. */
-  warning: string | null;
-}
+export type ExportResult =
+  /** 경로 D — 확장(background)이 chrome.downloads로 직접 저장. 본문은 브리지를 타지 않는다 */
+  | { nativeDownload: true; warning: null }
+  | {
+      nativeDownload: false;
+      blob: Blob;
+      filename: string;
+      /** 50MB 초과 등 서버 경고 헤더 (X-Mockspec-Warning). 없으면 null. */
+      warning: string | null;
+    };
+
+/** background가 직접 다운로드했음을 알리는 브리지 합성 헤더 (서버 헤더 아님). */
+export const NATIVE_DOWNLOAD_HEADER = "x-mockspec-native-download";
 
 /** 산출물 HTML 다운로드 — 편집 패널 [내보내기] 버튼 (킥오프 §11 6차 개정). */
 export async function exportProjectHtml(projectId: string): Promise<ExportResult> {
-  const res = await request({ path: `/projects/${projectId}/export`, method: "POST" });
+  const res = await request({ path: `/projects/${projectId}/export`, method: "POST", download: true });
   if (!res.ok) {
     throw new Error(errorMessage(res, "내보내기 실패"));
   }
+  if (res.headers[NATIVE_DOWNLOAD_HEADER]) {
+    return { nativeDownload: true, warning: null };
+  }
   return {
+    nativeDownload: false,
     blob: new Blob([res.bodyText], { type: "text/html" }),
     filename: filenameFromDisposition(res.headers["content-disposition"] ?? null) ?? `${projectId}.html`,
     warning: res.headers["x-mockspec-warning"] ?? null,
