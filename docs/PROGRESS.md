@@ -11,7 +11,7 @@
 
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
-**다중 장면 전이 + 흐름도 구현 완료 (2026-07-12) — T26~T28 전부 완료 (FR-EDT-10·FR-EXP-06). 브랜치 `feat/scene-transitions` (main 미병합 — 사용자 실사용 검증·병합 동의 대기). 새 세션은 여기서 시작.**
+**다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12, CI green·rebase 병합, 브랜치 삭제). 다음: 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S·뷰어 세로 스크롤 내부화 제안 답변 대기) 또는 S3. 새 세션은 여기서 시작.**
 
 ## 전이·흐름도 WBS 체크리스트 (technical-spec §9.2, 2026-07-12 착수)
 
@@ -56,6 +56,12 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-12 — 전이·흐름도 스택 main 병합 (PR #1)
+- `feat/scene-transitions`(T26~T28) + `fix/viewer-capture-width`(실사용 11~13차 + 사용 가이드)를 하나로 합쳐 **PR #1** 생성 → CI green(verify 1m11s) 확인 → **rebase 병합**(선형 이력 유지, 10커밋). 로컬·원격 브랜치 삭제.
+- 포함: 전이 지정 UI·흐름도(자체 SVG)·전이 링크 / captureWidth·Height(반응형·100vh 재현) / 장면 제목 인라인 편집 / 경로 D 내보내기 chrome.downloads 직행 / 스냅샷 이미지 최적화(WebP) / docs/user-guide.md.
+- 다음 할 일: 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S) 또는 S3. **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤) 제안은 사용자 답변 대기.**
+- 막힌 지점: 없음.
 
 ### 2026-07-12 — 사용 가이드 신설 (docs/user-guide.md — 세 연결 방식 상세)
 - 브랜치: `fix/viewer-capture-width` (같은 브랜치에 docs 커밋).
