@@ -131,4 +131,25 @@ describe("shared contract", () => {
     const legacy: SpecProject = { ...project, annotations: [{ ...project.annotations[0], transition: undefined }] };
     expect(JSON.parse(JSON.stringify(legacy)).annotations[0]).not.toHaveProperty("transition");
   });
+
+  it("작성자 라벨(T29) — ownerLabel이 계약에 포함되고 왕복 무손실, 없으면 하위 호환", () => {
+    const now = new Date().toISOString();
+    const project: SpecProject = {
+      version: 1,
+      id: "prj_test000005",
+      name: "라벨 샘플",
+      ownerLabel: "김기획",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "upload", originalFilename: "mockup.zip", uploadedAt: now },
+      sceneCodeSeq: 1,
+      scenes: [],
+      annotations: [],
+    };
+    expect(JSON.parse(JSON.stringify(project))).toEqual(project);
+    expect(project.ownerLabel).toBe("김기획");
+    // ownerLabel 없는 기존 spec은 필드 자체가 없어 하위 호환 (인증 아님 — 표시용)
+    const legacy: SpecProject = { ...project, ownerLabel: undefined };
+    expect(JSON.parse(JSON.stringify(legacy))).not.toHaveProperty("ownerLabel");
+  });
 });

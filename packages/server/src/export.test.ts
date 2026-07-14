@@ -163,6 +163,62 @@ describe("export API (T8)", () => {
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe("NOT_FOUND");
   });
+
+  it("export 성공 시 산출물 이력(메타)을 기록하고 목록 요약에 반영한다 (T29, FR-EXP-08)", async () => {
+    const project = await newProject();
+    await request(app)
+      .put(`/api/projects/${project.id}`)
+      .set("Host", ROOT)
+      .send({ ...project, scenes: [scene()], annotations: [] });
+
+    // export 전에는 이력 요약이 0
+    let list = await request(app).get("/api/projects").set("Host", ROOT);
+    expect(list.body[0].exportCount).toBe(0);
+    expect(list.body[0].lastExportAt).toBeUndefined();
+
+    await request(app).post(`/api/projects/${project.id}/export`).set("Host", ROOT).expect(200);
+    await request(app).post(`/api/projects/${project.id}/export`).set("Host", ROOT).expect(200);
+
+    // 두 번 내보내면 이력 요약이 2회로 누적된다 (산출물 파일은 보관하지 않음 — 메타만)
+    list = await request(app).get("/api/projects").set("Host", ROOT);
+    expect(list.body[0].exportCount).toBe(2);
+    expect(typeof list.body[0].lastExportAt).toBe("string");
+
+    // 이력 파일은 spec.json 밖 서버 소유 별도 파일(exports.json)에 쌓인다 (§6.3)
+    const raw = await fs.readFile(path.join(tmp, "projects", project.id, "exports.json"), "utf8");
+    const records = JSON.parse(raw) as Array<{ id: string; bytes: number; masked: boolean }>;
+    expect(records).toHaveLength(2);
+    expect(records[0]!.id).toMatch(/^exp_/);
+    expect(records[0]!.bytes).toBeGreaterThan(0);
+    expect(records[0]!.masked).toBe(false);
+  });
+
+  it("마스킹본을 내보내면 이력 masked=true로 기록된다 (T29)", async () => {
+    const project = await newProject();
+    const orig = await request(app)
+      .post(`/api/projects/${project.id}/assets`)
+      .set("Host", ROOT)
+      .attach("snapshot", Buffer.from("<!doctype html><html><body>홍길동</body></html>"), "s.html");
+    const masked = await request(app)
+      .post(`/api/projects/${project.id}/assets`)
+      .set("Host", ROOT)
+      .attach("snapshot", Buffer.from("<!doctype html><html><body>고객</body></html>"), "s.html");
+    await request(app)
+      .put(`/api/projects/${project.id}`)
+      .set("Host", ROOT)
+      .send({
+        ...project,
+        scenes: [scene({ snapshotAsset: orig.body.assetKey, maskedSnapshotAsset: masked.body.assetKey })],
+        annotations: [],
+        maskingRules: [{ id: "msk_t", find: "홍길동", replace: "고객" }],
+      });
+
+    await request(app).post(`/api/projects/${project.id}/export`).set("Host", ROOT).expect(200);
+
+    const raw = await fs.readFile(path.join(tmp, "projects", project.id, "exports.json"), "utf8");
+    const records = JSON.parse(raw) as Array<{ masked: boolean }>;
+    expect(records[0]!.masked).toBe(true);
+  });
 });
 
 describe("buildExportHtml", () => {

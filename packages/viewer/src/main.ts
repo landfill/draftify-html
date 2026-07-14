@@ -811,9 +811,10 @@ function renderHeader(project: SpecProject, generatedAt: string | null): HTMLEle
   const meta = child("div", "ms-meta");
   const sceneCount = project.scenes.length;
   const annotationCount = project.annotations.length;
+  const owner = project.ownerLabel ? `작성자 ${project.ownerLabel} · ` : "";
   setText(
     meta,
-    `생성: ${generatedAt ? formatDate(generatedAt) : "-"} · 화면 ${sceneCount} · 어노테이션 ${annotationCount}`,
+    `${owner}생성: ${generatedAt ? formatDate(generatedAt) : "-"} · 화면 ${sceneCount} · 어노테이션 ${annotationCount}`,
   );
   header.append(title, meta);
   return header;

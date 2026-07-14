@@ -50,6 +50,18 @@ describe("콘솔 페이지 서빙 (T9)", () => {
     expect(CONSOLE_HTML).toContain("encodeConnection");
   });
 
+  it("세 생성 폼에 작성자(ownerLabel) 입력이 있고 카드/삭제/이력이 배선돼 있다 (T29)", () => {
+    // 폼 3종 작성자 입력
+    expect(CONSOLE_HTML).toContain('id="project-owner"');
+    expect(CONSOLE_HTML).toContain('id="url-project-owner"');
+    expect(CONSOLE_HTML).toContain('id="snippet-project-owner"');
+    // 전송 배선(ownerLabel)·카드 표시·이력 요약·삭제 confirm에 이름 노출
+    expect(CONSOLE_HTML).toContain("ownerLabel");
+    expect(CONSOLE_HTML).toContain("project.ownerLabel");
+    expect(CONSOLE_HTML).toContain("exportCount");
+    expect(CONSOLE_HTML).toContain("내보내기 ");
+  });
+
   it("인라인 콘솔 JS가 문법 오류 없이 파싱된다 (템플릿 리터럴 내 raw 개행 등 회귀 방지)", () => {
     // CONSOLE_JS는 TS 템플릿 리터럴이라 JS 문자열 안 개행은 `\\n`으로 써야 한다.
     // `"\n"`을 잘못 쓰면 빌드 시 실제 개행이 되어 인라인 스크립트 전체가 깨진다(실사용에서 발견).

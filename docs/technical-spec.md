@@ -95,6 +95,7 @@ export interface SpecProject {
   version: 1;
   id: string;                    // "prj_" + nanoid(10)
   name: string;
+  ownerLabel?: string;           // 작성자 표시 라벨 — 인증 아님(POL-M09), 콘솔 생성 시 선택 입력 (FR-CON-03)
   createdAt: string;             // ISO 8601
   updatedAt: string;
   mockupSource:                  // [S2] discriminated union으로 확장 (킥오프 s2 §1)
@@ -162,12 +163,16 @@ export interface Anchor {
 
 아래는 S2 범위 밖으로 확정 (2026-07-10, 킥오프 s2 §0) — S2 종료 후 실수요를 보고 판단.
 `Annotation.transition`은 2026-07-12 착수 확정으로 §2 본 모델에 승격 (T26~T28).
+`ownerLabel`·산출물 이력은 2026-07-14 착수 확정(사용자 결정)으로 승격 (T29) — 단 이력은
+**메타 전용**: `ExportRecord { id, createdAt, specUpdatedAt, bytes, masked }`를 서버 소유
+별도 파일 `exports.json`에 기록한다(§6.3). 예정안의 `htmlRef`(산출물 파일 보관)는 **미채택** —
+산출물은 수십 MB라 매 export 보관은 저장소 부담이고 재다운로드는 재-export로 충분(YAGNI).
+`members[]`도 **보류** — 편집자 1인 규칙(POL-M08)과 겹쳐 실수요 미확인, ownerLabel 1개로 시작.
 
 ```typescript
 // 신규 엔티티
 Policy { id: "pol_"+nanoid(10), code: "POL-###", title, body } // 정책정의서 (output-standard §3.2)
-Export { id, projectId, createdAt, htmlRef, specVersion }      // 산출물 이력
-Project.members[], Project.ownerLabel                          // 작성자 라벨 (인증 아님)
+Project.members[]                                              // 다중 작성자 라벨 (보류 — 위 참조)
 
 // [S3] 프로젝트 설정 — LLM 옵트인 (기본 false. POL-M13)
 Project.settings?: { llmDraftEnabled: boolean };
@@ -287,14 +292,14 @@ resolve(anchor):
 
 | 메서드/경로 | 역할 | 비고 |
 |---|---|---|
-| `POST /projects` | multipart(zip, name) → 프로젝트 생성 | 응답: SpecProject + 목업 URL. [S2] JSON body(`{ name, originUrl }`)도 수용 — §7.2 검증 + 오리진 `GET /` 도달성 확인 후 생성 |
-| `GET /projects` | 목록 (콘솔용) | |
+| `POST /projects` | multipart(zip, name) → 프로젝트 생성 | 응답: SpecProject + 목업 URL. [S2] JSON body(`{ name, originUrl }`)도 수용 — §7.2 검증 + 오리진 `GET /` 도달성 확인 후 생성. [T29] 세 등록 경로 모두 `ownerLabel`(선택) 수용 |
+| `GET /projects` | 목록 (콘솔용) | [T29] 항목마다 산출물 이력 요약(`exportCount`·`lastExportAt`) 동봉 (§6.3) |
 | `GET /projects/:id` | spec.json 반환 | SDK 초기 로드 |
 | `PUT /projects/:id` | SpecProject **전체 교체** | 500ms 디바운스 저장의 대상. `version`·`id` 불일치 시 400 |
 | `DELETE /projects/:id` | 프로젝트 삭제 | 확인은 콘솔 UI 책임 |
 | `POST /projects/:id/assets` | 동결 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재동결·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
-| `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12) |
+| `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12). [T29] 성공 시 이력 메타 기록 (§6.3) |
 | `POST /projects/:id/token` | [S2.5] 경로 D 토큰 재발급·폐기 | 경로 D 프로젝트 한정. 재발급 시 구 토큰 즉시 무효 (pathD 킥오프 §6) |
 
 에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작. [S2] 프록시(경로 B)가 `BAD_GATEWAY`(502) 추가 — 오리진 도달 실패·오리진 밖 리다이렉트.
@@ -310,6 +315,17 @@ resolve(anchor):
 - 온라인 복귀(online 이벤트)·SDK 재마운트 시 재전송, 성공하면 큐 비움
 - 복원 충돌 규칙 (ID-05): pending이 존재하면 **묻지 않고 로컬 우선 PUT** (마지막 쓰기 승리). 비교·병합 UI 없음. 다중 탭 편집은 명시적 비지원 (POL-M08 연장)
 - 패널 상단 저장 상태 표시와 연동 (detailed-spec §3.8)
+
+### 6.3 산출물 이력 (server/store/exportStore.ts — T29, FR-EXP-08)
+
+- 모든 export 경로(콘솔·SDK·확장)가 `POST /projects/:id/export` 한 곳을 지나므로 이 라우트에서 기록한다
+- 레코드: `ExportRecord { id: "exp_"+nanoid(10), createdAt, specUpdatedAt, bytes, masked }` —
+  `specUpdatedAt`은 export 시점 spec의 `updatedAt`(어느 판본을 내보냈는지), `masked`는 마스킹본 사용 여부
+- 저장 위치: `data/projects/{id}/exports.json` — **서버 소유 별도 메타 파일**. spec.json에 넣지
+  않는 이유는 토큰(token.json)과 동일: spec.json은 클라이언트 PUT이 전체 교체하는 파일이라
+  클라이언트가 모르는 서버 기록이 덮어써진다
+- 기록은 best-effort — 이력 쓰기 실패가 export 자체를 실패시키지 않는다
+- 산출물 HTML 파일은 보관하지 않는다 (§2.2 — htmlRef 미채택 이유)
 
 ---
 
@@ -449,6 +465,12 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 | T26 | shared: `Annotation.transition` 승격 | 왕복 무손실, transition 없는 기존 spec.json 하위 호환 |
 | T27 | SDK: 전이 지정 UI | 어노테이션 폼에 장면 드롭다운(다른 장면만)+조건 텍스트, 저장 왕복. 대상 장면 삭제 시 transition 함께 제거 |
 | T28 | 뷰어·산출물: 전이 링크 + 흐름도(자체 SVG) | 전이 링크 클릭 시 장면 전환, 흐름도 노드/간선 라벨 렌더(전이 없으면 섹션 생략), E2E — file://에서 흐름도·링크 동작·네트워크 0건 |
+
+작성자 라벨·산출물 이력 WBS (2026-07-14 착수 확정 — FR-CON-03·FR-EXP-08, T28에 이어 번호):
+
+| # | 작업 | AC 요약 |
+|---|------|---------|
+| T29 | `ownerLabel` 승격 + 산출물 이력(메타 전용, §6.3) | 세 등록 경로 ownerLabel 수용·왕복 무손실(라벨 없는 기존 spec.json 하위 호환), export 시 이력 기록·목록 요약 동봉, 콘솔 카드·삭제 confirm·산출물 헤더에 작성자 표시 |
 
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
 

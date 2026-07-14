@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import type { NextFunction, Request, Response } from "express";
 import type { SpecProject } from "@mockspec/shared";
 import { readAsset, readSpec } from "../store/projectStore.js";
+import { appendExportRecord } from "../store/exportStore.js";
 import { sendError } from "../errors.js";
 
 const EXPORT_SIZE_WARNING_BYTES = 50 * 1024 * 1024;
@@ -224,11 +225,13 @@ export async function exportProjectHtml(
     if (!project) return sendError(res, "NOT_FOUND", `프로젝트 ${req.params.id}를 찾을 수 없습니다.`);
 
     const snapshots: SnapshotBundle[] = [];
+    let usedMasked = false;
     for (const scene of project.scenes) {
       const assetKey = scene.maskedSnapshotAsset || scene.snapshotAsset;
       if (!assetKey) continue;
       const data = await readAsset(project.id, assetKey);
       if (!data) continue;
+      if (assetKey === scene.maskedSnapshotAsset) usedMasked = true;
       snapshots.push({
         sceneId: scene.id,
         assetKey: assetKey,
@@ -242,6 +245,13 @@ export async function exportProjectHtml(
       snapshots,
       viewerScript: await readViewerScript(),
     });
+
+    // [T29] 산출물 이력 — 메타만 기록, best-effort (이력 실패가 export를 막지 않는다. §6.3)
+    await appendExportRecord(project.id, {
+      specUpdatedAt: project.updatedAt,
+      bytes: Buffer.byteLength(html, "utf8"),
+      masked: usedMasked,
+    }).catch(() => undefined);
 
     if (Buffer.byteLength(html, "utf8") > EXPORT_SIZE_WARNING_BYTES) {
       res.set("X-Mockspec-Warning", "EXPORT_TOO_LARGE");

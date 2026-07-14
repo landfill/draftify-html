@@ -2,7 +2,7 @@ import express, { Router } from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
 import multer from "multer";
-import type { SpecProject } from "@mockspec/shared";
+import type { ProjectListItem, SpecProject } from "@mockspec/shared";
 import { extractZip, ZipSlipError } from "../unzip/extract.js";
 import { validateOrigin, SsrfError } from "../proxy/ssrfGuard.js";
 import {
@@ -15,6 +15,7 @@ import {
   readAsset,
 } from "../store/projectStore.js";
 import { mockupDir } from "../store/paths.js";
+import { exportSummary } from "../store/exportStore.js";
 import { verifyToken, issueToken, revokeToken } from "../store/tokenStore.js";
 import { sendError } from "../errors.js";
 import { exportProjectHtml } from "./export.js";
@@ -35,6 +36,16 @@ const uploadAsset = multer({
 
 function isMulterLimit(err: unknown): boolean {
   return err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE";
+}
+
+/**
+ * [T29] 작성자 라벨 정규화 — 선택 입력, 표시용(인증 아님, POL-M09).
+ * 공백 정리 + 60자 컷 (카드·산출물 헤더 한 줄 표시가 목적이라 그 이상은 의미 없음).
+ */
+function parseOwnerLabel(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim().slice(0, 60);
+  return trimmed || undefined;
 }
 
 /**
@@ -69,7 +80,12 @@ export function projectsRouter(): Router {
 
   router.get("/projects", async (_req, res, next) => {
     try {
-      res.json(await listProjects());
+      // [T29] 콘솔 목록에 산출물 이력 요약 동봉 (technical-spec §6.3)
+      const projects = await listProjects();
+      const items: ProjectListItem[] = await Promise.all(
+        projects.map(async (p) => ({ ...p, ...(await exportSummary(p.id)) })),
+      );
+      res.json(items);
     } catch (err) {
       next(err);
     }
@@ -213,7 +229,11 @@ async function handleUpload(
         ? req.body.name.trim()
         : file.originalname.replace(/\.zip$/i, "");
 
-    const project = await createProject(name, { type: "upload", originalFilename: file.originalname });
+    const project = await createProject(
+      name,
+      { type: "upload", originalFilename: file.originalname },
+      parseOwnerLabel(req.body?.ownerLabel),
+    );
     try {
       const result = await extractZip(file.buffer, mockupDir(project.id));
 
@@ -275,7 +295,7 @@ async function handleSnippetRegistration(
     if (!name) {
       return sendError(res, "INVALID_REQUEST", "프로젝트 이름이 필요합니다.");
     }
-    const project = await createProject(name, { type: "snippet" });
+    const project = await createProject(name, { type: "snippet" }, parseOwnerLabel(req.body.ownerLabel));
     const token = await issueToken(project.id);
     res.status(201).json({ project, token });
   } catch (err) {
@@ -314,7 +334,7 @@ async function handleProxyRegistration(
       return sendError(res, "INVALID_REQUEST", "오리진에 도달할 수 없습니다.");
     }
 
-    const project = await createProject(name, { type: "proxy", originUrl });
+    const project = await createProject(name, { type: "proxy", originUrl }, parseOwnerLabel(req.body.ownerLabel));
 
     res.status(201).json({
       project,

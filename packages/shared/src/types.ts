@@ -11,6 +11,11 @@ export interface SpecProject {
   /** "prj_" + nanoid(10) */
   id: string;
   name: string;
+  /**
+   * [T29] 작성자 표시 라벨 — 인증이 아니라 표시·실수 방지용 (POL-M09, FR-CON-03).
+   * 콘솔 생성 시 선택 입력. 콘솔 카드·삭제 확인·산출물 헤더에 표시.
+   */
+  ownerLabel?: string;
   /** ISO 8601 */
   createdAt: string;
   /** ISO 8601 */
@@ -166,4 +171,29 @@ export interface Rect {
   y: number;
   w: number;
   h: number;
+}
+
+/**
+ * [T29] 산출물 이력 1건 — 메타 전용, 산출물 HTML은 보관하지 않는다 (technical-spec §6.3).
+ * spec.json이 아니라 서버 소유 별도 파일(exports.json)에 쌓인다 —
+ * spec.json은 클라이언트 PUT이 전체 교체하는 파일이라 서버 기록이 덮어써진다(토큰과 동일 이유).
+ */
+export interface ExportRecord {
+  /** "exp_" + nanoid(10) */
+  id: string;
+  /** ISO 8601 — export 시각 */
+  createdAt: string;
+  /** export 시점 spec의 updatedAt — 어느 판본을 내보냈는지 */
+  specUpdatedAt: string;
+  /** 산출물 HTML 크기 (bytes) */
+  bytes: number;
+  /** 마스킹본(maskedSnapshotAsset)이 하나라도 포함됐는지 */
+  masked: boolean;
+}
+
+/** [T29] GET /projects 목록 항목 — 콘솔 표시용 산출물 이력 요약을 동봉한다. */
+export interface ProjectListItem extends SpecProject {
+  exportCount: number;
+  /** ISO 8601 — 마지막 export 시각. 0회면 없음 */
+  lastExportAt?: string;
 }

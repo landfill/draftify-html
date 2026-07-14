@@ -78,6 +78,7 @@ const CONSOLE_JS = `
 var listEl = document.getElementById("project-list");
 var formEl = document.getElementById("upload-form");
 var nameEl = document.getElementById("project-name");
+var ownerEl = document.getElementById("project-owner");
 var zipEl = document.getElementById("project-zip");
 var submitEl = document.getElementById("upload-submit");
 var uploadStatusEl = document.getElementById("upload-status");
@@ -85,6 +86,7 @@ var listStatusEl = document.getElementById("list-status");
 var tabs = document.querySelectorAll(".c-tab");
 var panels = document.querySelectorAll(".c-tabpanel");
 var urlNameEl = document.getElementById("url-project-name");
+var urlOwnerEl = document.getElementById("url-project-owner");
 var originUrlEl = document.getElementById("origin-url");
 var urlFormEl = document.getElementById("url-form");
 var urlSubmitEl = document.getElementById("url-submit");
@@ -235,6 +237,7 @@ async function exportProject(project, statusTarget) {
     ? "다운로드됨 — 50MB를 초과해 메일 첨부가 어려울 수 있습니다."
     : "다운로드됨: " + filename;
   setStatus(statusTarget, note, "ok");
+  void renderList(); // [T29] 카드의 내보내기 이력 요약 갱신
 }
 
 // 연결 코드 = "mockspec:" + base64url(JSON{p,t,s}). 확장(shared/connection.ts)과 형식 동일.
@@ -283,7 +286,9 @@ async function reissueToken(project) {
 }
 
 async function deleteProject(project) {
-  var go = window.confirm("프로젝트와 모든 화면·어노테이션이 삭제됩니다. 되돌릴 수 없습니다.");
+  // 이름·작성자를 함께 보여 남의 프로젝트 오삭제를 방지한다 (POL-M09 — 인증 없는 대신 확인 강화)
+  var who = project.ownerLabel ? " (작성자: " + project.ownerLabel + ")" : "";
+  var go = window.confirm("'" + project.name + "'" + who + " 프로젝트와 모든 화면·어노테이션이 삭제됩니다. 되돌릴 수 없습니다.");
   if (!go) return;
   var res = await fetch("/api/projects/" + encodeURIComponent(project.id), { method: "DELETE" });
   if (!res.ok && res.status !== 404) {
@@ -301,8 +306,13 @@ function renderProject(project) {
   var badgeLabel = srcType === "proxy" ? "URL 프록시" : srcType === "snippet" ? "확장" : "ZIP 업로드";
   title.appendChild(el("span", "c-badge", badgeLabel));
   head.appendChild(title);
-  var metaText = "화면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
+  var metaText = (project.ownerLabel ? project.ownerLabel + " · " : "") +
+    "화면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
     " · " + formatDate(project.updatedAt) + " 수정";
+  // [T29] 산출물 이력 요약 — 목록 응답의 exportCount·lastExportAt (0회면 미표시)
+  if (project.exportCount > 0) {
+    metaText += " · 내보내기 " + project.exportCount + "회 (" + formatDate(project.lastExportAt) + ")";
+  }
   if (srcType === "proxy") metaText += " · " + project.mockupSource.originUrl;
   if (srcType === "snippet" && project.mockupSource.lastSeenOrigin) {
     metaText += " · " + project.mockupSource.lastSeenOrigin;
@@ -393,6 +403,7 @@ formEl.addEventListener("submit", function (event) {
   }
   var form = new FormData();
   form.append("name", nameEl.value.trim());
+  if (ownerEl.value.trim()) form.append("ownerLabel", ownerEl.value.trim());
   form.append("zip", file);
 
   submitEl.disabled = true;
@@ -427,6 +438,7 @@ formEl.addEventListener("submit", function (event) {
 
 var snippetFormEl = document.getElementById("snippet-form");
 var snippetNameEl = document.getElementById("snippet-project-name");
+var snippetOwnerEl = document.getElementById("snippet-project-owner");
 var snippetSubmitEl = document.getElementById("snippet-submit");
 var snippetStatusEl = document.getElementById("snippet-status");
 var snippetResultEl = document.getElementById("snippet-result");
@@ -447,7 +459,7 @@ snippetFormEl.addEventListener("submit", function (event) {
   fetch("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name, source: "snippet" })
+    body: JSON.stringify({ name: name, source: "snippet", ownerLabel: snippetOwnerEl.value.trim() || undefined })
   })
     .then(async function (res) {
       if (!res.ok) {
@@ -497,7 +509,7 @@ urlFormEl.addEventListener("submit", function (event) {
   fetch("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name, originUrl: originUrl })
+    body: JSON.stringify({ name: name, originUrl: originUrl, ownerLabel: urlOwnerEl.value.trim() || undefined })
   })
     .then(async function (res) {
       if (!res.ok) {
@@ -705,6 +717,10 @@ export const CONSOLE_HTML = `<!doctype html>
             <input id="project-name" type="text" name="name" placeholder="예: 주문 개편 목업">
           </div>
           <div class="c-row">
+            <label for="project-owner">작성자 (선택)</label>
+            <input id="project-owner" type="text" placeholder="예: 김기획 — 표시용, 인증 아님">
+          </div>
+          <div class="c-row">
             <label for="project-zip">빌드 zip</label>
             <input id="project-zip" type="file" name="zip" accept=".zip,application/zip" required>
           </div>
@@ -725,6 +741,10 @@ export const CONSOLE_HTML = `<!doctype html>
             <input id="url-project-name" type="text" placeholder="예: 스테이징 환경 목업" required>
           </div>
           <div class="c-row">
+            <label for="url-project-owner">작성자 (선택)</label>
+            <input id="url-project-owner" type="text" placeholder="예: 김기획 — 표시용, 인증 아님">
+          </div>
+          <div class="c-row">
             <label for="origin-url">오리진 URL</label>
             <input id="origin-url" type="text" placeholder="예: https://staging.mockup.internal" required>
           </div>
@@ -742,6 +762,10 @@ export const CONSOLE_HTML = `<!doctype html>
           <div class="c-row">
             <label for="snippet-project-name">프로젝트 이름</label>
             <input id="snippet-project-name" type="text" placeholder="예: 주문 어드민 (로그인 뒤 화면)" required>
+          </div>
+          <div class="c-row">
+            <label for="snippet-project-owner">작성자 (선택)</label>
+            <input id="snippet-project-owner" type="text" placeholder="예: 김기획 — 표시용, 인증 아님">
           </div>
           <p class="c-hint">
             로그인해야 보이는 화면(SSO 포함)이나 로컬에서만 도는 목업용입니다.

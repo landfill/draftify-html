@@ -11,6 +11,8 @@ export type {
   Rect,
   MarkerOffset,
   Transition,
+  ExportRecord,
+  ProjectListItem,
 } from "./types.js";
 
 export {
