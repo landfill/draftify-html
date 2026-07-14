@@ -88,6 +88,37 @@ describe("Spec API (T3)", () => {
     expect(actual).toEqual(expected);
   });
 
+  it("작성자 라벨(T29) — 생성 시 ownerLabel을 받아 저장하고 목록·spec에 반영한다", async () => {
+    const zip = new JSZip();
+    zip.file("index.html", "<!doctype html><html><body>x</body></html>");
+    const buf = await zip.generateAsync({ type: "nodebuffer" });
+    const res = await request(app)
+      .post("/api/projects")
+      .set("Host", ROOT)
+      .field("name", "라벨 프로젝트")
+      .field("ownerLabel", "  김기획  ") // 공백은 서버가 정리
+      .attach("zip", buf, "m.zip");
+    expect(res.status).toBe(201);
+    expect(res.body.project.ownerLabel).toBe("김기획");
+
+    const list = await request(app).get("/api/projects").set("Host", ROOT);
+    expect(list.body[0].ownerLabel).toBe("김기획");
+  });
+
+  it("작성자 라벨(T29) — 빈 문자열/공백만이면 필드를 만들지 않는다 (선택 입력)", async () => {
+    const zip = new JSZip();
+    zip.file("index.html", "<!doctype html><html><body>x</body></html>");
+    const buf = await zip.generateAsync({ type: "nodebuffer" });
+    const res = await request(app)
+      .post("/api/projects")
+      .set("Host", ROOT)
+      .field("name", "라벨 없음")
+      .field("ownerLabel", "   ")
+      .attach("zip", buf, "m.zip");
+    expect(res.status).toBe(201);
+    expect(res.body.project).not.toHaveProperty("ownerLabel");
+  });
+
   it("PUT /:id — version·id 불일치는 400", async () => {
     const p = await newProject();
     const badVersion = await request(app).put(`/api/projects/${p.id}`).set("Host", ROOT).send({ ...p, version: 2 });

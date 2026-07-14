@@ -203,4 +203,15 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
     root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
     expect(root.querySelector(".ms-flow-body svg")).not.toBeNull();
   });
+
+  it("뷰어: ownerLabel이 있으면 헤더 메타에 작성자를 표시하고, 없으면 표시하지 않는다 (T29)", () => {
+    document.body.innerHTML = `<div id="app"></div>`;
+    const root = document.getElementById("app")!;
+
+    renderViewer(project({ ownerLabel: "김기획", scenes: [scene("scn_1", 0)] }), new Map(), root);
+    expect(root.querySelector(".ms-meta")?.textContent).toContain("작성자 김기획");
+
+    renderViewer(project({ scenes: [scene("scn_1", 0)] }), new Map(), root);
+    expect(root.querySelector(".ms-meta")?.textContent).not.toContain("작성자");
+  });
 });

@@ -23,7 +23,8 @@ export async function createProject(
   sourceInfo:
     | { type: "upload"; originalFilename: string }
     | { type: "proxy"; originUrl: string }
-    | { type: "snippet" }
+    | { type: "snippet" },
+  ownerLabel?: string,
 ): Promise<SpecProject> {
   const id = makeProjectId();
   const now = new Date().toISOString();
@@ -37,6 +38,7 @@ export async function createProject(
     version: 1,
     id,
     name,
+    ...(ownerLabel ? { ownerLabel } : {}),
     createdAt: now,
     updatedAt: now,
     mockupSource,

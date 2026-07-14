@@ -26,3 +26,9 @@ export const assetsDir = (id: string): string => path.join(projectDir(id), "asse
  * 덮어쓰기·응답 유출 표면이 된다 (pathD 킥오프 §8-2).
  */
 export const tokenFile = (id: string): string => path.join(projectDir(id), "token.json");
+
+/**
+ * [T29] 산출물 이력(메타 전용 — technical-spec §6.3). spec.json 밖에 두는 이유는
+ * 토큰과 동일: 클라이언트 PUT의 전체 교체가 서버 기록을 덮어쓴다.
+ */
+export const exportsFile = (id: string): string => path.join(projectDir(id), "exports.json");

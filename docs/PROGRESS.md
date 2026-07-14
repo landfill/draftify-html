@@ -13,7 +13,12 @@
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
 **다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12).**
 **용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 §11 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
-**뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제). 다음: 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
+**뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
+**작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — `feat/owner-label-export-history` 구현·검증 완료 (2026-07-14), main 병합 동의 대기. 다음: 병합 → 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
+
+## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
+
+- [x] T29 `ownerLabel` 승격 + 산출물 이력(메타 전용, §6.3) — vitest 176 passed(+7)·E2E 4본 통과. 실 서버 구동 검증: 라벨 생성(공백 정리)→export 2회→목록 요약 "내보내기 2회"·뷰어 헤더 "작성자 김기획"·삭제 confirm에 이름·산출물 임베드 spec에 ownerLabel. 이력은 `exports.json`(서버 소유, spec.json 밖)에 메타만. htmlRef(파일 보관)·members[]는 미채택/보류 — technical-spec §2.2
 
 ## 전이·흐름도 WBS 체크리스트 (technical-spec §9.2, 2026-07-12 착수)
 
@@ -58,6 +63,18 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-14 — 작성자 라벨 + 산출물 이력 (T29, FR-CON-03·FR-EXP-08)
+- 브랜치: `feat/owner-label-export-history` (main 미병합, 동의 대기).
+- 배경: 후속 판단 잔여 중 사용자 선택. S2 로드맵(아키텍처 §6·§3.5)에 원래 있던 항목 — 인증 없이 표시·오삭제 방지용 라벨(POL-M09) + 산출물 이력(FR-EXP-08). 사용자 결정 2건: **이력=메타 전용**(htmlRef 파일 보관 미채택 — 수십 MB 산출물을 매번 쌓지 않음, 재다운로드는 재-export로 충분), **라벨=ownerLabel 1개**(members[] 보류 — 편집자 1인 규칙과 겹쳐 실수요 미확인).
+- 완료(shared): `SpecProject.ownerLabel?`(선택, 표시용) 승격 + `ExportRecord`·`ProjectListItem` 타입 신설. 왕복 무손실·필드 부재 하위 호환.
+- 완료(server): ① `exportStore.ts` 신설 — `exports.json`(서버 소유 별도 파일, spec.json 밖 — PUT 전체 교체가 서버 기록 덮어쓰는 것 방지, token.json과 동일 이유)에 이력 메타 append + 목록 요약(`exportCount`·`lastExportAt`) ② `POST /export`가 성공 시 이력 기록(best-effort — 이력 실패가 export를 막지 않음), 마스킹본 사용 시 `masked:true` ③ `createProject`가 ownerLabel 수용, 세 등록 핸들러(zip·URL·snippet) 모두 `parseOwnerLabel`(공백 정리·60자 컷) ④ `GET /projects`가 항목마다 이력 요약 동봉.
+- 완료(콘솔): 세 생성 폼에 "작성자(선택)" 입력, 카드 메타에 작성자·"내보내기 N회(날짜)", **삭제 confirm에 프로젝트명+작성자**(오삭제 방지), export 성공 후 목록 갱신(이력 요약 반영).
+- 완료(뷰어): 산출물 헤더 메타에 "작성자 {라벨}"(있을 때만).
+- 문서 동기화: technical-spec §2(ownerLabel 필드)·§2.2(예정 필드 갱신 — htmlRef 미채택·members 보류 근거)·§6 API표·§6.3(이력 신설)·§9.2 WBS T29, detailed-spec §2.2·§4.1, PRD §5·후속 판단 표. (기존 스펙이 예고만 한 필드의 구현 — 킥오프 §11 결정 변경 아님, 착수 확정 기록만)
+- 검증: `npm run typecheck`·build exit 0, `npm test` **176 passed**(+7: shared 라벨 왕복 1 / export 이력 2 / store-api 라벨 생성·빈값 2 / 콘솔 폼 배선 1 / 뷰어 헤더 1), `npm run test:e2e` **4본 통과**. **실 서버(임시 데이터 디렉토리) 구동**: 라벨 생성(공백 "  김기획  "→"김기획")→export 2회→목록 `{ownerLabel:"김기획",exportCount:2,lastExportAt}`, 뷰어 헤더 "작성자 김기획 · 생성…", 콘솔 카드 "김기획 · … · 내보내기 2회", 삭제 confirm "'라벨 검증 프로젝트' (작성자: 김기획) …", 산출물 임베드 spec.ownerLabel="김기획" 확인.
+- 다음 할 일: 사용자 검토 → main 병합 동의 → 병합. 이후 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3.
+- 막힌 지점: 없음.
 
 ### 2026-07-14 — 뷰어 세로 스크롤 내부화 (3컬럼 고정, 답변 대기였던 제안 사용자 채택)
 - 브랜치: `fix/viewer-internal-vertical-scroll` → **PR #3로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 피드백 1건(gemini 봇 — E2E 페이지 스크롤 검증의 서브픽셀 간헐 실패 가능성) 반영: 1px 허용 오차.
