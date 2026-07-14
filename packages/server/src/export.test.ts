@@ -7,6 +7,7 @@ import JSZip from "jszip";
 import type { Annotation, Scene, SpecProject } from "@mockspec/shared";
 import { buildApp } from "./app.js";
 import { buildExportHtml, type SnapshotBundle } from "./routes/export.js";
+import { appendExportRecord, readExportRecords } from "./store/exportStore.js";
 
 const app = buildApp();
 const ROOT = "localhost:4000";
@@ -218,6 +219,35 @@ describe("export API (T8)", () => {
     const raw = await fs.readFile(path.join(tmp, "projects", project.id, "exports.json"), "utf8");
     const records = JSON.parse(raw) as Array<{ masked: boolean }>;
     expect(records[0]!.masked).toBe(true);
+  });
+
+  it("동시 append(더블클릭 등)에도 이력이 유실되지 않는다 — 프로젝트별 쓰기 직렬화 (리뷰 반영)", async () => {
+    const project = await newProject();
+    // 같은 프로젝트에 병렬 10건 — 직렬화 없으면 read-modify-write 교차로 유실된다
+    await Promise.all(
+      Array.from({ length: 10 }, () =>
+        appendExportRecord(project.id, { specUpdatedAt: project.updatedAt, bytes: 1, masked: false }),
+      ),
+    );
+    const records = await readExportRecords(project.id);
+    expect(records).toHaveLength(10);
+    expect(new Set(records.map((r) => r.id)).size).toBe(10); // 전부 고유
+  });
+
+  it("손상된 exports.json은 빈 이력으로 취급하고 목록 조회를 깨뜨리지 않는다 — 자가 치유 (리뷰 반영)", async () => {
+    const project = await newProject();
+    const file = path.join(tmp, "projects", project.id, "exports.json");
+    await fs.writeFile(file, "{ 깨진 JSON", "utf8");
+
+    // GET /projects가 500이 아니라 정상 응답, 손상 프로젝트는 이력 0으로
+    const list = await request(app).get("/api/projects").set("Host", ROOT);
+    expect(list.status).toBe(200);
+    expect(list.body[0].exportCount).toBe(0);
+
+    // 다음 export가 정상 JSON으로 덮어써 자가 치유
+    await request(app).post(`/api/projects/${project.id}/export`).set("Host", ROOT).expect(200);
+    const healed = await readExportRecords(project.id);
+    expect(healed).toHaveLength(1);
   });
 });
 
