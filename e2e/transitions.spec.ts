@@ -126,8 +126,9 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
 
   // 세로 스크롤 내부화: 긴 스냅샷(800px > 뷰포트)이어도 페이지는 스크롤되지 않고
   // 중앙(.ms-main)만 내부 스크롤 — 헤더·화면 목록·어노테이션 패널이 항상 보인다
+  // 서브픽셀 렌더링·배율 환경에서 scrollHeight가 1px 크게 측정될 수 있어 1px는 허용
   const pageScrolls = await viewer.evaluate(
-    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    () => document.documentElement.scrollHeight - document.documentElement.clientHeight > 1,
   );
   expect(pageScrolls, "페이지 세로 스크롤 없음").toBe(false);
   await expect
