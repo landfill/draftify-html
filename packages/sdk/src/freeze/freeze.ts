@@ -14,14 +14,27 @@ export { countScripts, FreezeError } from "./verify.js";
 /**
  * single-file-core 옵션. 핵심:
  * - blockScripts: 모든 <script> 제거 (핵심 무해화 — §7.1, 아래 검증으로 이중 강제)
+ * - blockFonts: 웹폰트를 임베드하지 않고 시스템 폰트로 렌더 (킥오프 §11 11차)
+ * - blockVideos/blockAudios: 미디어 콘텐츠 미임베드, 레이아웃 영역만 유지 (킥오프 §11 11차)
  * - saveFilenameTemplateData:false: 동결 후 옵션 JSON <script>가 재삽입되는 것 방지
  * - removedElementsSelector: SDK 자신(data-mockspec-root 호스트) 제외 (§5)
  * - loadDeferredImages:false: 이미 로드된 정적 목업 — 스크롤 조작/지연 불필요
  * - insertMetaCSP/insertSingleFileComment/saveFavicon:false: 스냅샷을 최소·무네트워크로
- * 나머지(이미지·폰트 data URI화, CSS 인라인, 미사용 스타일 제거)는 single-file 기본 동작.
+ * 나머지(이미지 data URI화, CSS 인라인, 미사용 스타일 제거)는 single-file 기본 동작.
  */
 const FREEZE_OPTIONS: Record<string, unknown> = {
   blockScripts: true,
+  // 폰트 임베드 금지 (킥오프 §11 11차) — 기획서는 레이아웃·구조 전달이 목적이라 시스템
+  // 폰트로 충분하고, CJK 웹폰트는 웨이트당 수 MB라 스냅샷 비대화의 최대 원인이었다.
+  // 폰트를 안 쓰므로 removeUnusedFonts·removeAlternativeFonts는 무의미 + 후자는 실사용
+  // 크래시(local() 정규식) 진원이라 함께 끈다 → 크래시 표면도 감소.
+  blockFonts: true,
+  removeUnusedFonts: false,
+  removeAlternativeFonts: false,
+  // 비디오는 콘텐츠 대신 포스터+링크로 대체(single-file 기본 동작) — 재생 미디어 미임베드,
+  // 요소(레이아웃 영역)는 남아 와이어프레임 자리로 표시된다 (킥오프 §11 11차).
+  // 오디오·포스터는 single-file 옵션으로 못 막으므로 동결 직전 neutralizeMedia로 소스를 뗀다.
+  blockVideos: true,
   // removeFrames:true 필수 — single-file의 프레임 캡처는 확장 프로그램 메시징
   // (chrome.runtime.sendMessage)에 의존한다. 우리는 페이지에 주입된 SDK라 그 경로가
   // 동작하지 않고 무한 대기에 빠진다. S1 목업은 단일 페이지라 iframe 캡처 불필요.
@@ -30,12 +43,8 @@ const FREEZE_OPTIONS: Record<string, unknown> = {
   saveFilenameTemplateData: false,
   removeHiddenElements: true,
   removeUnusedStyles: true,
-  removeUnusedFonts: true,
   compressHTML: true,
   loadDeferredImages: false,
-  blockVideos: false,
-  blockAudios: false,
-  removeAlternativeFonts: true,
   removeAlternativeMedias: true,
   removeAlternativeImages: true,
   groupDuplicateImages: true,
@@ -46,29 +55,49 @@ const FREEZE_OPTIONS: Record<string, unknown> = {
 };
 
 /**
- * 폰트를 임베드하지 않고 CSS 최소화를 끈 안전 폴백 옵션.
+ * CSS 최소화를 끈 안전 폴백 옵션.
  *
- * single-file-core는 실 사이트의 복잡한 CSS(예: `@font-face`의 `local()` 소스가 얽힌
- * 조건 파싱)를 처리하다 내부에서 정규식 오류로 throw한다(경로 D 실사용 —
- * "Invalid regular expression: /^local(/"). 그 오류는 폰트 대체·미사용 제거 경로에 있으므로
- * 그 최적화를 끈다.
- *
- * 단, 그 경로를 끄면 폰트가 전부 임베드되어 스냅샷이 폭증한다(특히 한글/CJK 웹폰트는
- * 웨이트당 수 MB → 50MB 상한 초과, 경로 D 실사용에서 확인). 그래서 폴백에서는
- * **`blockFonts: true`로 웹폰트 임베드를 건너뛴다** — 스냅샷은 시스템 폰트로 렌더되지만
- * (기획서 용도엔 무방), 동결이 성립하고 네트워크 0건·크기 정상이 유지된다.
- * 핵심 무해화(blockScripts + <script> 0개 검증)는 폴백에서도 그대로다.
+ * single-file-core는 실 사이트의 복잡한 CSS(예: `@media`/`@supports` 조건 파싱)를
+ * 처리하다 내부에서 정규식 오류로 throw할 수 있다(경로 D 실사용 —
+ * "Invalid regular expression: /^local(/"). 1차가 이미 폰트를 차단(blockFonts)하고
+ * 폰트 대체·미사용 제거를 끄지만, 남은 CSS 최소화 단계(미사용 스타일·대체 미디어·
+ * 이미지 그룹핑·압축)도 병적인 입력에서 throw할 수 있으므로 폴백에서 전부 끈다.
+ * 폰트·미디어 차단(blockFonts·blockVideos·blockAudios)은 1차와 동일하게 유지된다(스프레드).
+ * 핵심 무해화(blockScripts + <script> 0개 검증)도 폴백에서 그대로다.
  */
 const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
   ...FREEZE_OPTIONS,
-  blockFonts: true, // 웹폰트 임베드 안 함 — CJK 폰트로 인한 50MB 초과 방지 + 폰트 처리 크래시 회피
-  removeUnusedFonts: false,
-  removeAlternativeFonts: false, // 정규식 크래시의 진원 액션
   removeUnusedStyles: false,
   removeAlternativeMedias: false,
   groupDuplicateImages: false,
   compressHTML: false,
 };
+
+/**
+ * 동결 직전 미디어 소스를 임시로 뗀다 (킥오프 §11 11차). 반환값을 호출해 복원한다.
+ *
+ * single-file은 오디오 소스와 비디오 poster를 그대로 임베드한다(blockVideos는 비디오
+ * 재생 소스만 포스터+링크로 대체할 뿐 오디오·poster는 못 막는다). 재생 미디어·포스터는
+ * 기획서에 불필요하고 임베드 시 수 MB~수십 MB가 되므로, 요소(레이아웃 영역)는 남기고
+ * 로딩 속성(src/srcset/poster)만 잠시 비운다. 라이브 DOM 조작이라 finally에서 원복한다
+ * (margin 처리와 동일한 임시 변형 패턴).
+ */
+export function neutralizeMedia(): () => void {
+  const targets = document.querySelectorAll("audio, video, audio source, video source");
+  const saved: Array<{ el: Element; attr: string; value: string }> = [];
+  for (const el of Array.from(targets)) {
+    for (const attr of ["src", "srcset", "poster"]) {
+      const value = el.getAttribute(attr);
+      if (value != null) {
+        saved.push({ el, attr, value });
+        el.removeAttribute(attr);
+      }
+    }
+  }
+  return () => {
+    for (const { el, attr, value } of saved) el.setAttribute(attr, value);
+  };
+}
 
 async function runFreeze(options: Record<string, unknown>): Promise<string> {
   const { content } = await getPageData({ ...options }, {});
@@ -96,6 +125,7 @@ export async function freezeDocument(): Promise<string> {
   const prevTransition = html.style.transition;
   html.style.transition = "none";
   html.style.marginRight = "";
+  const restoreMedia = neutralizeMedia();
   try {
     try {
       return await runFreeze(FREEZE_OPTIONS);
@@ -106,6 +136,7 @@ export async function freezeDocument(): Promise<string> {
       return await runFreeze(SAFE_FALLBACK_OPTIONS);
     }
   } finally {
+    restoreMedia();
     html.style.marginRight = prevMargin;
     html.style.transition = prevTransition;
   }
