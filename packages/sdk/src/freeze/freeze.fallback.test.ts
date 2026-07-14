@@ -79,4 +79,30 @@ describe("neutralizeMedia (킥오프 §11 11차 — 오디오·비디오 포스�
     expect(document.getElementById("a")!.getAttribute("src")).toBe("/sound.mp3");
     expect(document.querySelector("#v2 source")!.getAttribute("srcset")).toBe("/c2.webm 2x");
   });
+
+  it("열린 shadow DOM 내부 미디어도 제거·복원한다 (single-file이 open shadow root를 직렬화 — 리뷰 반영)", () => {
+    document.body.innerHTML = `<div id="host"></div>`;
+    const shadow = document.getElementById("host")!.attachShadow({ mode: "open" });
+    shadow.innerHTML = `<video id="sv" src="/shadow.mp4" poster="/sp.jpg"></video>`;
+
+    const restore = neutralizeMedia();
+    const sv = shadow.getElementById("sv")!;
+    expect(sv.hasAttribute("src")).toBe(false);
+    expect(sv.hasAttribute("poster")).toBe(false);
+    expect(shadow.querySelectorAll("video")).toHaveLength(1); // 요소는 유지
+
+    restore();
+    expect(sv.getAttribute("src")).toBe("/shadow.mp4");
+    expect(sv.getAttribute("poster")).toBe("/sp.jpg");
+  });
+
+  it("우리 패널(data-mockspec-root)의 shadow DOM은 건드리지 않는다 (동결에서 통째 제외되므로)", () => {
+    document.body.innerHTML = `<div id="panel" data-mockspec-root></div>`;
+    const shadow = document.getElementById("panel")!.attachShadow({ mode: "open" });
+    shadow.innerHTML = `<audio id="pa" src="/panel.mp3"></audio>`;
+
+    const restore = neutralizeMedia();
+    expect(shadow.getElementById("pa")!.getAttribute("src")).toBe("/panel.mp3"); // 손대지 않음
+    restore();
+  });
 });
