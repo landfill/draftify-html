@@ -124,6 +124,18 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
     .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientHeight), { message: "장면 1 iframe = captureHeight" })
     .toBe(800);
 
+  // 세로 스크롤 내부화: 긴 스냅샷(800px > 뷰포트)이어도 페이지는 스크롤되지 않고
+  // 중앙(.ms-main)만 내부 스크롤 — 헤더·화면 목록·어노테이션 패널이 항상 보인다
+  const pageScrolls = await viewer.evaluate(
+    () => document.documentElement.scrollHeight > document.documentElement.clientHeight,
+  );
+  expect(pageScrolls, "페이지 세로 스크롤 없음").toBe(false);
+  await expect
+    .poll(() => viewer.locator(".ms-main").evaluate((el) => el.scrollHeight - el.clientHeight), {
+      message: "중앙 컬럼 내부 세로 스크롤",
+    })
+    .toBeGreaterThan(0);
+
   // 링크 클릭 → 장면 2로 전환(실행 대신 이동) + 흐름도 하이라이트 동기화
   await link.click();
   await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-002");

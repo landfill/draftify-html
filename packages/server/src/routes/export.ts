@@ -16,8 +16,10 @@ const VIEWER_CSS = `
 * { box-sizing: border-box; }
 body { margin: 0; background: #f7f8f9; }
 button, input, textarea { font: inherit; }
-/* 헤더·(선택)흐름도·본문 3단 — 흐름도 섹션이 없어도 본문이 남은 높이를 채우도록 flex */
-.ms-shell { min-height: 100vh; display: flex; flex-direction: column; }
+/* 헤더·(선택)흐름도·본문 3단 — 흐름도 섹션이 없어도 본문이 남은 높이를 채우도록 flex.
+   셸을 뷰포트 높이에 고정해 페이지 세로 스크롤을 없앤다 — 헤더·화면 목록·어노테이션
+   패널은 항상 보이고, 세로 스크롤은 3컬럼 각자 내부에서 일어난다 (긴 스냅샷은 중앙만 스크롤) */
+.ms-shell { height: 100vh; display: flex; flex-direction: column; }
 .ms-layout { flex: 1; }
 .ms-header {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -25,7 +27,8 @@ button, input, textarea { font: inherit; }
 }
 .ms-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 700; }
 .ms-meta { color: #5f6368; font-size: 13px; white-space: nowrap; }
-.ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; min-height: 0; }
+/* 행을 minmax(0,1fr)로 고정 — auto 행은 콘텐츠 높이로 커져 셸을 넘치므로 내부 스크롤이 안 생긴다 */
+.ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); min-height: 0; }
 .ms-layout--collapsed { grid-template-columns: 40px minmax(0, 1fr) 300px; }
 .ms-sidebar, .ms-panel {
   background: #fff; border-right: 1px solid #dfe3e7; overflow: auto; min-width: 0;
@@ -97,7 +100,8 @@ button, input, textarea { font: inherit; }
 .ms-flow { background: #fff; border-bottom: 1px solid #dfe3e7; }
 .ms-flow-head { display: flex; align-items: center; justify-content: space-between; padding-right: 12px; }
 .ms-flow-head .ms-section-title { padding-bottom: 8px; }
-.ms-flow-body { overflow-x: auto; padding: 0 14px 14px; }
+/* 큰 그래프가 본문(3컬럼)을 밀어내지 않도록 높이를 제한하고 섹션 안에서만 스크롤 */
+.ms-flow-body { overflow: auto; max-height: 40vh; padding: 0 14px 14px; }
 .ms-flow-body svg { display: block; }
 .ms-flow-edge { fill: none; stroke: #5f6368; stroke-width: 1.5; }
 .ms-flow-label { font: 600 11px/1 Inter, ui-sans-serif, system-ui, sans-serif; fill: #5f6368; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
@@ -108,6 +112,8 @@ button, input, textarea { font: inherit; }
 .ms-flow-node.is-active rect { stroke: #1a73e8; stroke-width: 2; fill: #d2e3fc; }
 .ms-warning { color: #b06000; font-weight: 700; }
 @media (max-width: 900px) {
+  /* 1단 스택은 뷰포트에 3컬럼이 다 안 들어간다 — 페이지 스크롤로 되돌린다 */
+  .ms-shell { height: auto; min-height: 100vh; }
   .ms-header { align-items: flex-start; flex-direction: column; }
   .ms-meta { white-space: normal; }
   .ms-layout { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
