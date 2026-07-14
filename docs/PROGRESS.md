@@ -16,7 +16,7 @@
 **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
 **작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건 반영·브랜치 삭제).**
 **동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
-**어노테이션 끝 번호 재사용(킥오프 §11 12차) — `fix/annotation-trailing-number-reuse`, Draft PR #6 열림. 중간 결번 유지 + 신규는 현재 최대 번호+1. 로컬 검증 완료, CI 진행 중.**
+**어노테이션 끝 번호 재사용(킥오프 §11 12차) — `fix/annotation-trailing-number-reuse`, Draft PR #6 열림. 중간 결번 유지 + 신규는 현재 최대 번호+1. 로컬 검증·CI green.**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -71,7 +71,7 @@
 - 배경(사용자 결정): 기존 단조 증가 카운터는 `1,2,3,4 → 1,3,4 → 신규 5 → 5 삭제 → 신규 6`으로 작성 중 마지막 항목을 삭제·재생성할 때 번호가 불필요하게 커졌다. 모든 번호를 당기는 재정렬은 기존 마커·참조 번호를 바꾸므로 제외.
 - 완료: `addAnnotation`이 저장된 `annoNumberSeq`를 맹신하지 않고 현재 장면의 남은 최대 번호+1을 계산. 직접 삭제·[빈 어노테이션 정리] 모두 `annoNumberSeq`를 같은 규칙으로 갱신. 결과는 `1,3,4 → 신규 5`, 5 삭제 후 신규도 다시 5이며 중간 결번 2는 유지. 빈 어노테이션 정리 확인 문구도 끝 번호 재사용 가능으로 변경.
 - 문서 동기화: 킥오프 §6.3·§11(12차), PRD R6, detailed-spec §3.4·POL-M02, technical-spec 데이터 모델·테스트, output-standard §1.2, shared 타입 주석. 과거 산출물과 새 산출물에서 재사용된 마지막 번호가 다른 항목을 가리킬 수 있는 트레이드오프와 전역 유일 `ann_*` 내부 ID의 역할을 명시.
-- 검증: 신규 회귀 테스트 2건(직접 삭제, 빈 어노테이션 정리). `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**. 샌드박스 내 최초 전체 테스트는 로컬 listen EPERM으로 실패했으나 권한 허용 재실행에서 전부 통과(코드 실패 아님). 빌드의 기존 single-file-core IIFE `import.meta` 경고는 유지.
+- 검증: 신규 회귀 테스트 2건(직접 삭제, 빈 어노테이션 정리). `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**, PR #6 GitHub Actions `verify` green. 샌드박스 내 최초 전체 테스트는 로컬 listen EPERM으로 실패했으나 권한 허용 재실행에서 전부 통과(코드 실패 아님). 빌드의 기존 single-file-core IIFE `import.meta` 경고는 유지.
 - **주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 기존 프로젝트는 다음 어노테이션 추가 시 현재 저장된 번호에서 자동 계산되므로 데이터 마이그레이션 불필요.**
 - 다음 할 일: PR #6 CI·리뷰 확인. main 병합은 별도 명시적 동의 필요.
 - 막힌 지점: 없음.
