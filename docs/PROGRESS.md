@@ -14,7 +14,7 @@
 **다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12).**
 **용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 §11 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
 **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
-**작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — `feat/owner-label-export-history` 구현·검증 완료 (2026-07-14), main 병합 동의 대기. 다음: 병합 → 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
+**작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건(gemini 2 + codex 1, 후자는 중복) 반영·브랜치 삭제). 다음: 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -65,7 +65,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-14 — 작성자 라벨 + 산출물 이력 (T29, FR-CON-03·FR-EXP-08)
-- 브랜치: `feat/owner-label-export-history` (main 미병합, 동의 대기).
+- 브랜치: `feat/owner-label-export-history` → **PR #4로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 반영: gemini 봇 2건 — ① 손상된 exports.json이 GET /projects를 500으로 깨뜨림 → 파싱 실패 시 빈 이력 자가 치유 ② 동시 append 경쟁 → 프로젝트별 쓰기 직렬화(serialize promise 체인). codex 봇 P2 1건은 ②와 중복(원본 커밋 앵커)이라 답글로 정리. 각각 회귀 테스트 추가(vitest 178).
 - 배경: 후속 판단 잔여 중 사용자 선택. S2 로드맵(아키텍처 §6·§3.5)에 원래 있던 항목 — 인증 없이 표시·오삭제 방지용 라벨(POL-M09) + 산출물 이력(FR-EXP-08). 사용자 결정 2건: **이력=메타 전용**(htmlRef 파일 보관 미채택 — 수십 MB 산출물을 매번 쌓지 않음, 재다운로드는 재-export로 충분), **라벨=ownerLabel 1개**(members[] 보류 — 편집자 1인 규칙과 겹쳐 실수요 미확인).
 - 완료(shared): `SpecProject.ownerLabel?`(선택, 표시용) 승격 + `ExportRecord`·`ProjectListItem` 타입 신설. 왕복 무손실·필드 부재 하위 호환.
 - 완료(server): ① `exportStore.ts` 신설 — `exports.json`(서버 소유 별도 파일, spec.json 밖 — PUT 전체 교체가 서버 기록 덮어쓰는 것 방지, token.json과 동일 이유)에 이력 메타 append + 목록 요약(`exportCount`·`lastExportAt`) ② `POST /export`가 성공 시 이력 기록(best-effort — 이력 실패가 export를 막지 않음), 마스킹본 사용 시 `masked:true` ③ `createProject`가 ownerLabel 수용, 세 등록 핸들러(zip·URL·snippet) 모두 `parseOwnerLabel`(공백 정리·60자 컷) ④ `GET /projects`가 항목마다 이력 요약 동봉.
