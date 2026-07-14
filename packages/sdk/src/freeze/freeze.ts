@@ -83,17 +83,29 @@ const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
  * (margin 처리와 동일한 임시 변형 패턴).
  */
 export function neutralizeMedia(): () => void {
-  const targets = document.querySelectorAll("audio, video, audio source, video source");
   const saved: Array<{ el: Element; attr: string; value: string }> = [];
-  for (const el of Array.from(targets)) {
-    for (const attr of ["src", "srcset", "poster"]) {
-      const value = el.getAttribute(attr);
-      if (value != null) {
-        saved.push({ el, attr, value });
-        el.removeAttribute(attr);
+  const MEDIA_SELECTOR = "audio, video, audio source, video source";
+  const MEDIA_ATTRS = ["src", "srcset", "poster"];
+
+  const strip = (root: ParentNode): void => {
+    for (const el of Array.from(root.querySelectorAll(MEDIA_SELECTOR))) {
+      for (const attr of MEDIA_ATTRS) {
+        const value = el.getAttribute(attr);
+        if (value != null) {
+          saved.push({ el, attr, value });
+          el.removeAttribute(attr);
+        }
       }
     }
-  }
+    // 열린 shadow DOM으로 재귀 — single-file은 open shadow root를 직렬화하므로 그 안의
+    // 미디어도 임베드된다(웹 컴포넌트 목업). 우리 패널(data-mockspec-root)은 동결에서
+    // 통째 제외되므로 그 서브트리는 건너뛴다.
+    for (const el of Array.from(root.querySelectorAll("*"))) {
+      if (el.shadowRoot && !el.matches("[data-mockspec-root]")) strip(el.shadowRoot);
+    }
+  };
+  strip(document);
+
   return () => {
     for (const { el, attr, value } of saved) el.setAttribute(attr, value);
   };
