@@ -14,7 +14,8 @@
 **다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12).**
 **용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 §11 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
 **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
-**작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건(gemini 2 + codex 1, 후자는 중복) 반영·브랜치 삭제). 다음: 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
+**작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건 반영·브랜치 삭제).**
+**동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). `feat/freeze-block-fonts-media` 구현·검증 완료 (2026-07-14), main 병합 동의 대기. 다음: 병합 → 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -63,6 +64,16 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-14 — 동결 크기 절감: 폰트·비디오·오디오 콘텐츠 미임베드 (킥오프 §11 11차)
+- 브랜치: `feat/freeze-block-fonts-media` (main 미병합, 동의 대기).
+- 배경(사용자 결정): 스냅샷 비대화 케이스 분석 중 사용자가 "기획서는 디폴트 폰트로 충분, 비디오·오디오는 최대로 봐야 섬네일이고 섬네일도 과할 수 있어 와이어프레임 영역만 잡으면 된다"고 결정. 기존엔 `blockFonts`가 폴백(크래시) 경로에서만 발동 → 정상 성공한 CJK 페이지가 수 MB 폰트를 상시 임베드, 비디오·오디오는 미차단. "원본과 시각적 동일" 계약을 바꾸므로 AGENTS.md §4 절차대로 킥오프 §7·§11(11차)·T6 DoD 먼저 개정 후 구현.
+- 완료(freeze.ts): ① FREEZE_OPTIONS 1차에 **`blockFonts:true`**(시스템 폰트) + `removeUnusedFonts`·`removeAlternativeFonts`(크래시 진원) off → 크기 + 크래시 표면 동시 감소 ② **`blockVideos:true`**(비디오는 포스터+링크 대체) ③ **`neutralizeMedia`** 신설 — single-file에 blockAudios 옵션이 없고 blockVideos도 오디오·비디오 poster는 못 막으므로, 동결 직전 audio·video·source의 `src`/`srcset`/`poster`를 임시 제거(요소=레이아웃 영역 유지) 후 finally 원복(margin 패턴과 동일). SAFE_FALLBACK도 스프레드로 동일 차단 유지.
+- **발견(중요)**: `blockAudios`는 single-file-core에 없는 옵션(있는 건 blockVideos뿐) — 그래서 오디오/포스터는 옵션이 아니라 neutralizeMedia로 처리.
+- 검증: `npm test` **180 passed**(+4: 1차 옵션 blockFonts/blockVideos 검증, neutralizeMedia 제거·요소 유지·복원), `npm run test:e2e` 4본 통과. **실 Chromium 검증(하니스)**: 웹폰트(40KB)+비디오/오디오(60KB)+포스터(30KB) fixture를 로컬 서버로 띄워 실제 single-file 동결 → 스냅샷 **82KB→2KB**, fontEmbedded/videoEmbedded 모두 false, `<video>`·`<audio>` 요소·본문 텍스트는 유지.
+- **주의: SDK 변경 — 서버 재기동(빌드 반영) 필요. 기존 스냅샷은 재동결해야 크기 절감 적용.**
+- 다음 할 일: 사용자 검토 → main 병합 동의 → 병합. 이후 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3.
+- 막힌 지점: 없음.
 
 ### 2026-07-14 — 작성자 라벨 + 산출물 이력 (T29, FR-CON-03·FR-EXP-08)
 - 브랜치: `feat/owner-label-export-history` → **PR #4로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 반영: gemini 봇 2건 — ① 손상된 exports.json이 GET /projects를 500으로 깨뜨림 → 파싱 실패 시 빈 이력 자가 치유 ② 동시 append 경쟁 → 프로젝트별 쓰기 직렬화(serialize promise 체인). codex 봇 P2 1건은 ②와 중복(원본 커밋 앵커)이라 답글로 정리. 각각 회귀 테스트 추가(vitest 178).

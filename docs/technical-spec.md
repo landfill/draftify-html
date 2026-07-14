@@ -273,10 +273,13 @@ resolve(anchor):
 - 옵션:
   - 스크립트 제거 (결과에 `<script>` 0개 — **검증 로직으로 강제**, 위반 시 동결 실패 처리)
   - CSS 인라인화
-  - 이미지·폰트 data URI화
+  - 이미지 data URI화 (동결 후처리로 큰 래스터는 WebP 재인코딩·2048px 상한 — §11 9차)
+  - **폰트 차단**(`blockFonts`) — 웹폰트 임베드 없이 시스템 폰트로 렌더 (킥오프 §11 11차). CJK 웹폰트 비대화 방지 + 폰트 처리 크래시 표면 감소. 파생: `removeUnusedFonts`·`removeAlternativeFonts` off
+  - **비디오·오디오 콘텐츠 미임베드** — 비디오는 `blockVideos`(포스터+링크 대체), 오디오·비디오 포스터는 single-file 옵션으로 못 막으므로 동결 직전 `neutralizeMedia`가 `src`/`srcset`/`poster`를 임시 제거(요소=레이아웃 영역은 유지). 킥오프 §11 11차
   - `<canvas>` → `toDataURL()` 이미지 치환
   - SDK 자신 제외: `data-mockspec-root` 마킹 요소 제외 옵션
 - 결과 HTML은 `POST /api/projects/:id/assets`로 업로드 → 응답 asset 키를 `Scene.snapshotAsset`에 기록
+- 2단 폴백: 1차(전체 최적화)가 single-file 내부 오류로 throw하면 CSS 최소화를 끈 안전 옵션으로 1회 재시도 (킥오프 §11 3차·4차). `blockFonts`·`blockVideos`·`blockAudios`는 1차·폴백 공통
 - 실패 정책: detailed-spec §3.7 (배지 + 재시도, 스크린샷 fallback은 S2)
 
 ---
@@ -427,7 +430,7 @@ fixtures 사양은 implementation-decisions ID-12 (의존성 0의 Todo SPA, 라�
 | T3 | Spec API + 파일 저장 | §6 전체 엔드포인트 vitest 통과 (왕복 무손실) |
 | T4 | SDK: FAB·패널·모드 전환 | 편집/미리보기 토글, Shadow DOM 격리, 미리보기에서 목업 정상 조작 |
 | T5 | SDK: 어노테이션·앵커·마커 | 부착 시퀀스 동작, 라우트 복귀 시 마커 복원, 텍스트 변경 후 재탐색 성공 1케이스 |
-| T6 | SDK: 장면 등록 + 동결 | 스냅샷 업로드 확인, 단독 오픈 시 원본과 시각적 동일(수동) + `<script>` 0개(자동) |
+| T6 | SDK: 장면 등록 + 동결 | 스냅샷 업로드 확인, 단독 오픈 시 레이아웃·구조가 원본과 동일(폰트 시스템 대체·미디어 영역만, §11 11차)(수동) + `<script>` 0개(자동) |
 | T7 | SDK: 저장·오프라인 큐 | 서버 중단 상태 편집 → 재기동 후 자동 반영 |
 | T8 | 뷰어 + export 조립 | §8 사양 HTML이 file://로 열림, 마커·패널·상호 하이라이트 동작 |
 | T9 | 콘솔 페이지 | 업로드→편집 열기→export가 콘솔만으로 가능 |
