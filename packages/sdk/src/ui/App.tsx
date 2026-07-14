@@ -309,7 +309,7 @@ export function App({ projectId }: { projectId: string }) {
   const clearEmptyAnns = (sceneId: string) => {
     const count = annotationsOfScene(doc, sceneId).filter(isEmptyAnnotation).length;
     if (count === 0) return;
-    if (!confirm(`제목·설명이 빈 어노테이션 ${count}개를 삭제합니다. 번호는 재사용되지 않습니다.`)) return;
+    if (!confirm(`제목·설명이 빈 어노테이션 ${count}개를 삭제합니다. 끝 번호는 다음 추가 시 재사용될 수 있습니다.`)) return;
     setDoc((d) => deleteEmptyAnnotations(d, sceneId));
   };
 

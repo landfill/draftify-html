@@ -15,7 +15,8 @@
 **용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 §11 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
 **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
 **작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건 반영·브랜치 삭제).**
-**동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제). 다음: 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3 — 사용자 입력 대기. 새 세션은 여기서 시작.**
+**동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
+**어노테이션 끝 번호 재사용(킥오프 §11 12차) — `fix/annotation-trailing-number-reuse`에서 구현·검증 완료, 미커밋. 중간 결번 유지 + 신규는 현재 최대 번호+1. 사용자 검토/커밋 요청 대기.**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -64,6 +65,16 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-14 — 어노테이션 끝 번호 재사용 (킥오프 §11 12차)
+- 브랜치: `fix/annotation-trailing-number-reuse` (미커밋, main 병합 안 함).
+- 배경(사용자 결정): 기존 단조 증가 카운터는 `1,2,3,4 → 1,3,4 → 신규 5 → 5 삭제 → 신규 6`으로 작성 중 마지막 항목을 삭제·재생성할 때 번호가 불필요하게 커졌다. 모든 번호를 당기는 재정렬은 기존 마커·참조 번호를 바꾸므로 제외.
+- 완료: `addAnnotation`이 저장된 `annoNumberSeq`를 맹신하지 않고 현재 장면의 남은 최대 번호+1을 계산. 직접 삭제·[빈 어노테이션 정리] 모두 `annoNumberSeq`를 같은 규칙으로 갱신. 결과는 `1,3,4 → 신규 5`, 5 삭제 후 신규도 다시 5이며 중간 결번 2는 유지. 빈 어노테이션 정리 확인 문구도 끝 번호 재사용 가능으로 변경.
+- 문서 동기화: 킥오프 §6.3·§11(12차), PRD R6, detailed-spec §3.4·POL-M02, technical-spec 데이터 모델·테스트, output-standard §1.2, shared 타입 주석. 과거 산출물과 새 산출물에서 재사용된 마지막 번호가 다른 항목을 가리킬 수 있는 트레이드오프와 전역 유일 `ann_*` 내부 ID의 역할을 명시.
+- 검증: 신규 회귀 테스트 2건(직접 삭제, 빈 어노테이션 정리). `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**. 샌드박스 내 최초 전체 테스트는 로컬 listen EPERM으로 실패했으나 권한 허용 재실행에서 전부 통과(코드 실패 아님). 빌드의 기존 single-file-core IIFE `import.meta` 경고는 유지.
+- **주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 기존 프로젝트는 다음 어노테이션 추가 시 현재 저장된 번호에서 자동 계산되므로 데이터 마이그레이션 불필요.**
+- 다음 할 일: 사용자 검토 후 요청 시 Lore 형식 커밋·PR 준비. main 병합은 별도 명시적 동의 필요.
+- 막힌 지점: 없음.
 
 ### 2026-07-14 — 동결 크기 절감: 폰트·비디오·오디오 콘텐츠 미임베드 (킥오프 §11 11차)
 - 브랜치: `feat/freeze-block-fonts-media` → **PR #5로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 반영(gemini): neutralizeMedia가 라이트 DOM만 훑어 **open shadow DOM 미디어를 놓치는 갭** — single-file이 options.shadowRoots로 open shadow root를 직렬화함을 확인, open shadow root로 재귀하도록 수정(패널 data-mockspec-root shadow는 제외). shadow DOM 제거·복원 회귀 테스트 2건 + 실 Chromium(shadow 내부 video/audio 미임베드·요소 유지·라이브 복원) 재검증.

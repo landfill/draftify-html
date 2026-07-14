@@ -81,7 +81,15 @@ export function deleteScene(doc: EditorDoc, id: string): EditorDoc {
   };
 }
 
-/** 어노테이션 부착. 장면 내 번호를 단조 증가로 부여(삭제 시 재부여 금지). */
+/** 현재 남아 있는 어노테이션 기준 다음 번호. 중간 결번은 유지하고 끝 번호만 재사용한다. */
+function nextAnnotationNumber(annotations: Annotation[], sceneId: string): number {
+  return annotations.reduce(
+    (max, annotation) => annotation.sceneId === sceneId ? Math.max(max, annotation.number) : max,
+    0,
+  ) + 1;
+}
+
+/** 어노테이션 부착. 장면 내 현재 최대 번호+1을 부여한다(킥오프 §11 12차). */
 export function addAnnotation(
   doc: EditorDoc,
   sceneId: string,
@@ -89,10 +97,11 @@ export function addAnnotation(
 ): { doc: EditorDoc; annotation: Annotation } {
   const scene = doc.scenes.find((s) => s.id === sceneId);
   if (!scene) throw new Error(`scene ${sceneId} not found`);
+  const number = nextAnnotationNumber(doc.annotations, sceneId);
   const annotation: Annotation = {
     id: annId(),
     sceneId,
-    number: scene.annoNumberSeq,
+    number,
     anchor,
     title: "",
     description: "",
@@ -101,7 +110,7 @@ export function addAnnotation(
     doc: {
       ...doc,
       scenes: doc.scenes.map((s) =>
-        s.id === sceneId ? { ...s, annoNumberSeq: s.annoNumberSeq + 1 } : s,
+        s.id === sceneId ? { ...s, annoNumberSeq: number + 1 } : s,
       ),
       annotations: [...doc.annotations, annotation],
     },
@@ -143,8 +152,17 @@ export function updateAnnotation(doc: EditorDoc, id: string, patch: Partial<Anno
 }
 
 export function deleteAnnotation(doc: EditorDoc, id: string): EditorDoc {
-  // 번호는 재부여하지 않는다 — annoNumberSeq는 유지 (빈 번호 허용).
-  return { ...doc, annotations: doc.annotations.filter((a) => a.id !== id) };
+  const deleted = doc.annotations.find((a) => a.id === id);
+  if (!deleted) return doc;
+
+  const annotations = doc.annotations.filter((a) => a.id !== id);
+  return {
+    ...doc,
+    scenes: doc.scenes.map((scene) => scene.id === deleted.sceneId
+      ? { ...scene, annoNumberSeq: nextAnnotationNumber(annotations, deleted.sceneId) }
+      : scene),
+    annotations,
+  };
 }
 
 /** 미작성 핀 — title·description 모두 공백. 유지하되 구분 표시한다 (킥오프 §11 5차 개정). */
@@ -154,9 +172,13 @@ export function isEmptyAnnotation(a: Annotation): boolean {
 
 /** 장면 내 미작성(빈) 어노테이션 일괄 삭제 — 패널 [빈 어노테이션 정리] 버튼. */
 export function deleteEmptyAnnotations(doc: EditorDoc, sceneId: string): EditorDoc {
+  const annotations = doc.annotations.filter((a) => a.sceneId !== sceneId || !isEmptyAnnotation(a));
   return {
     ...doc,
-    annotations: doc.annotations.filter((a) => a.sceneId !== sceneId || !isEmptyAnnotation(a)),
+    scenes: doc.scenes.map((scene) => scene.id === sceneId
+      ? { ...scene, annoNumberSeq: nextAnnotationNumber(annotations, sceneId) }
+      : scene),
+    annotations,
   };
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Anchor, SpecProject } from "@mockspec/shared";
 import {
-  applyDocToProject, createScene, deleteScene, docFromProject,
+  applyDocToProject, createScene, deleteAnnotation, deleteEmptyAnnotations, deleteScene, docFromProject,
   projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot, updateSceneTitle,
 } from "./state.js";
 
@@ -106,5 +106,43 @@ describe("전이 (T27, §3.10)", () => {
     // 직렬화(spec.json 형식)에서도 필드가 남지 않는다
     const serialized = JSON.parse(JSON.stringify(applyDocToProject(project, doc))) as SpecProject;
     expect(serialized.annotations[0]).not.toHaveProperty("transition");
+  });
+});
+
+describe("어노테이션 번호 할당 (킥오프 §11 12차)", () => {
+  const anchor: Anchor = { selector: "body > button", rect: { x: 0, y: 0, w: 0.1, h: 0.1 } };
+
+  it("중간 결번은 유지하고 삭제한 끝 번호만 다음 생성에서 재사용한다", () => {
+    let doc = docFromProject(project);
+    const added = [];
+    for (let i = 0; i < 4; i += 1) {
+      const result = addAnnotation(doc, "scn_one", anchor);
+      doc = result.doc;
+      added.push(result.annotation);
+    }
+
+    doc = deleteAnnotation(doc, added[1]!.id);
+    expect(doc.annotations.map((annotation) => annotation.number)).toEqual([1, 3, 4]);
+
+    const fifth = addAnnotation(doc, "scn_one", anchor);
+    expect(fifth.annotation.number).toBe(5);
+    doc = deleteAnnotation(fifth.doc, fifth.annotation.id);
+
+    const reused = addAnnotation(doc, "scn_one", anchor);
+    expect(reused.annotation.number).toBe(5);
+    expect(reused.doc.scenes[0]?.annoNumberSeq).toBe(6);
+  });
+
+  it("빈 어노테이션 정리로 끝 번호가 삭제되어도 다음 번호를 다시 계산한다", () => {
+    let doc = docFromProject(project);
+    const first = addAnnotation(doc, "scn_one", anchor);
+    doc = updateAnnotation(first.doc, first.annotation.id, { title: "유지" });
+    const second = addAnnotation(doc, "scn_one", anchor);
+    doc = updateAnnotation(second.doc, second.annotation.id, { title: "유지" });
+    doc = addAnnotation(doc, "scn_one", anchor).doc;
+
+    doc = deleteEmptyAnnotations(doc, "scn_one");
+    expect(doc.annotations.map((annotation) => annotation.number)).toEqual([1, 2]);
+    expect(addAnnotation(doc, "scn_one", anchor).annotation.number).toBe(3);
   });
 });

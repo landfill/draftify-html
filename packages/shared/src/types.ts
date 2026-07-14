@@ -23,7 +23,7 @@ export interface SpecProject {
   mockupSource: MockupSource;
   /**
    * 다음 SCR-### 번호. 단조 증가 — 삭제된 장면 번호 재사용 방지.
-   * max+1 방식은 최고 번호 삭제 후 번호가 재사용되어 재부여 금지 규칙(POL-M02·M14)이 깨진다.
+   * max+1 방식은 최고 번호 삭제 후 번호가 재사용되어 재부여 금지 규칙(POL-M14)이 깨진다.
    */
   sceneCodeSeq: number;
   scenes: Scene[];
@@ -90,7 +90,7 @@ export interface Scene {
   stateNote?: string;
   /** 패널·뷰어 정렬 기준 */
   order: number;
-  /** 장면 내 다음 어노테이션 번호. 단조 증가 — 삭제 시 재부여 금지 규칙의 구현 */
+  /** 장면 내 다음 어노테이션 번호. 현재 남은 최대 번호+1 — 끝 번호 삭제 시 감소 가능 */
   annoNumberSeq: number;
   /** asset store 키. 동결 성공 시에만 존재 */
   snapshotAsset?: string;
@@ -118,7 +118,7 @@ export interface Annotation {
   /** "ann_" + nanoid(10) */
   id: string;
   sceneId: string;
-  /** 장면 내 1부터. 삭제 시 재부여 금지 */
+  /** 장면 내 1부터. 기존 번호는 재정렬하지 않고 신규는 현재 최대+1 */
   number: number;
   anchor: Anchor;
   title: string;
