@@ -123,7 +123,7 @@ export interface Scene {
   route: string;                 // 등록 시점 location.pathname+search+hash
   stateNote?: string;            // "모달 열림 상태" 등
   order: number;                 // 패널·뷰어 정렬 기준
-  annoNumberSeq: number;         // 장면 내 다음 어노테이션 번호. 단조 증가 — 삭제 시 재부여 금지 규칙의 구현
+  annoNumberSeq: number;         // 장면 내 다음 어노테이션 번호. 현재 남은 최대 번호+1 — 끝 번호 삭제 시 감소 가능
   snapshotAsset?: string;        // asset store 키. 동결 성공 시에만 존재
   frozenAt?: string;
   captureWidth?: number;         // 동결 시점 뷰포트 레이아웃 폭(px) — 뷰어가 스냅샷 iframe 기준 폭으로 사용, 반응형 캡처 레이아웃 재현 (킥오프 §11 8차)
@@ -135,7 +135,7 @@ export interface Scene {
 export interface Annotation {
   id: string;                    // "ann_" + nanoid(10)
   sceneId: string;
-  number: number;                // 장면 내 1부터. 삭제 시 재부여 금지
+  number: number;                // 장면 내 1부터. 기존 번호는 재정렬하지 않고 신규는 현재 최대+1
   anchor: Anchor;
   title: string;
   description: string;           // 마크다운 허용 (뷰어에서 렌더)
@@ -154,7 +154,7 @@ export interface Anchor {
 
 ### 2.1 설계 노트
 
-- `Scene.code`·`sceneCodeSeq`·`annoNumberSeq`는 킥오프 스펙 §5 대비 **추가 필드** (필드 추가 자유 조항). 표시 코드 체계는 [output-standard.md](./output-standard.md) §1 참조. 카운터를 두는 이유: 최고 번호 항목 삭제 후 max+1로 부여하면 번호가 재사용되어 재부여 금지 규칙(POL-M02·M14)이 깨진다
+- `Scene.code`·`sceneCodeSeq`·`annoNumberSeq`는 킥오프 스펙 §5 대비 **추가 필드** (필드 추가 자유 조항). 표시 코드 체계는 [output-standard.md](./output-standard.md) §1 참조. `sceneCodeSeq`는 장면 코드 영구 결번을 위해 단조 증가한다. `annoNumberSeq`는 어노테이션 추가 시 현재 장면의 남은 최대 번호에서 다시 계산하며, 최고 번호 삭제 시 감소할 수 있다(킥오프 §11 12차)
 - **`data-spec-id`(코어 가이드의 1순위 앵커)는 서비스 모델에서 제외** — 서비스는 목업 소스를 수정하지 않으므로 소스 반영이 불가능. selector+text+attrs 다중 시그니처가 1순위다. (코어 가이드 §4와의 의도적 차이 — "목업 무수정" 제1 기준 우선)
 - 저장 파일: `data/projects/{projectId}/spec.json` = `SpecProject` 직렬화 그대로. **이 파일을 그대로 내려주는 것이 export/import(백업)이다.**
 - 장면 스냅샷(동결 DOM)은 수 MB → JSON이 아니라 asset store(디스크)에 두고 `snapshotAsset` 키로 참조.
@@ -400,7 +400,7 @@ resolve(anchor):
 
 | 레벨 | 도구 | 대상 |
 |------|------|------|
-| Unit | vitest | 앵커 생성·재해석(§4 각 단계별), zip-slip 검증, zip 불필요 경로 제외 필터(§3.2), 번호 카운터(삭제 후 재부여 없음), spec 직렬화 왕복 무손실, 스냅샷 `<script>` 0개 검증기 |
+| Unit | vitest | 앵커 생성·재해석(§4 각 단계별), zip-slip 검증, zip 불필요 경로 제외 필터(§3.2), 번호 할당(중간 결번 유지·끝 번호 재사용), spec 직렬화 왕복 무손실, 스냅샷 `<script>` 0개 검증기 |
 | API | vitest (supertest 등) | §6 전체 엔드포인트 — 프로젝트 생성→PUT→GET 왕복 시 데이터 무손실 |
 | E2E | Playwright 1본 | S1 DoD 시나리오 그대로 자동화 (아래) |
 
