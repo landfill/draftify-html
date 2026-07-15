@@ -20,6 +20,11 @@
 
 ## 1. 먼저 읽을 문서 (읽는 순서)
 
+0. **원격 동기화 — 문서를 읽기 전에 저장소부터 최신으로 만든다.** `git fetch origin` 후
+   로컬 main이 `origin/main`보다 뒤처져 있으면(`git rev-list --count main..origin/main`이 0이 아니면)
+   먼저 동기화한다(`git pull --ff-only`). 다른 머신·다른 에이전트(클라우드 세션 포함)가
+   병합한 결과가 원격에만 있을 수 있다 — 낡은 클론에서 읽은 `PROGRESS.md`는 낡은 진실이고,
+   낡은 base에서 딴 브랜치는 불필요한 충돌을 만든다
 1. `docs/PROGRESS.md` — **지금 어디까지 됐는지.** 항상 여기서 시작한다
 2. `docs/README.md` — 문서 지도
 3. `docs/PRD.md` — 제품 정의·용어·설계 제1원칙·기능 요구사항

@@ -66,6 +66,12 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-15 — AGENTS.md 규약 보강: 세션 시작 시 원격 동기화 의무화
+- 배경(사용자 결정): 새 세션이 원격(origin/main) 최신과 비교하는 장치가 없었다 — 규약은 로컬 `PROGRESS.md`를 읽으라고만 했고, 다른 머신·에이전트가 병합한 결과가 원격에만 있으면 낡은 진실을 읽게 된다. hook 자동화 대신 **규약으로 강제**하기로 결정.
+- 완료: AGENTS.md §1에 0번 절차 신설 — 문서를 읽기 전에 `git fetch origin` 후 로컬 main이 뒤처져 있으면 `git pull --ff-only`로 동기화.
+- 다음 할 일: 없음(규약 단독). 이슈 작업은 #8 착수 대기.
+- 막힌 지점: 없음.
+
 ### 2026-07-15 — 동결 실패 수정: 비실행 데이터 <script>(ld+json) 무해화
 - 브랜치: `fix/freeze-data-scripts` → **PR #14로 main 병합 완료**(2026-07-15, rebase·CI green·리뷰 1건 반영(gemini high + codex P2 동일 지적 — 복원 기준 노드(nextSibling)가 동결 중 라이브 페이지 DOM 변동으로 사라지면 insertBefore가 NotFoundError로 성공한 동결을 깨는 문제 → 기준 소실 시 부모 끝에 복원 + 회귀 테스트 1건, **188 passed**), 로컬·원격 브랜치 삭제).
 - 배경(실사용): 경로 D로 `m.hanatour.com` 연결 시 "동결 실패 — 재시도". 실 Chromium 재현으로 원인 확정 — 페이지의 SSR SEO 스키마 `<script type="application/ld+json">` 1개를 single-file `blockScripts`가 **실행 스크립트가 아니라서 남기고**, 우리 검증(countScripts, §7.1 모든 script 0개)이 FreezeError로 폐기. FreezeError는 설계상 폴백 재시도 없음. **S1 최초 커밋(da85f1a)의 옵션으로도 동일 재현 — 잠재해 있던 갭이며 최근 커밋(#9·#10 뷰어 CSS, PR #5·#6)의 회귀 아님.** 기존 실사용 페이지에 ld+json이 없어 드러나지 않았을 뿐.
