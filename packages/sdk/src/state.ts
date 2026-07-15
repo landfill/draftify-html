@@ -3,7 +3,7 @@ import type { SpecProject, Scene, Annotation, Anchor } from "@mockspec/shared";
 
 /**
  * 편집 상태 (인메모리). 서버 저장 시 SpecProject에 다시 합쳐 전체 문서 PUT으로 보낸다.
- * 장면 캡처(snapshotAsset·frozenAt)은 setSceneSnapshot으로 기록한다.
+ * 장면 캡처(snapshotAsset·frozenAt)는 setSceneSnapshot으로 기록한다.
  */
 export interface EditorDoc {
   sceneCodeSeq: number;
