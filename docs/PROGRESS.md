@@ -75,6 +75,16 @@
 - 다음 할 일: 사용자 검토 → push·PR → CI green → main 병합 동의 → 병합. 별도 대기 중: `fix/viewer-font-size-header`(#9·#10, 커밋 완료·push 대기).
 - 막힌 지점: 없음.
 
+### 2026-07-15 — 산출물 뷰어 폰트 밀도 정합 + 헤더 배경 밴드 (이슈 #9·#10)
+- 브랜치: `fix/viewer-font-size-header` (main 병합 대기 — 사용자 검토·동의 필요).
+- 배경: 이슈 우선순위 합의(#9+#10 묶음 → #8 → #11, #12·#13은 트리거 대기). 둘 다 `VIEWER_CSS`(packages/server/src/routes/export.ts) 영역이라 한 브랜치로 처리.
+- 완료(#9): `:root`에 `font-size: 13px` 명시(미지정 시 브라우저 기본 16px 상속이 원인). `.ms-scene-button`·`.ms-annotation-title`·`.ms-description`을 12px로 — 편집 모드 패널(기준 13px, ann 제목·디스크립션 12px)과 동일 밀도. 헤더 `.ms-title`(18px)·스테이지 타이틀(16px)은 명시값이라 불변(이슈의 "별도 판단" 항목).
+- 완료(#10): `.ms-header`에 파란 그라디언트 밴드(`linear-gradient(135deg,#174ea6,#1a73e8)`) + 흰 제목·연파랑 메타. 네트워크 0건 제약대로 CSS만 사용. `.ms-meta`는 중앙 스테이지(route)에서도 쓰여 밝은 색은 `.ms-header .ms-meta`로 한정(스테이지 쪽 회색 유지 실측 확인).
+- 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**(최초 실패는 Playwright chromium-1228 바이너리 미설치 — `npx playwright install chromium` 후 전부 통과, 코드 무관). 실 Chromium 렌더 실측: root 13px, 장면 타이틀·ann 제목·디스크립션 12px, 스테이지 meta 13px·회색 유지, 헤더 그라디언트·흰 글자 적용. 12줄 디스크립션 밀도 스크린샷 확인.
+- 주의: 뷰어 CSS 변경 — 기존 산출물엔 미반영, **재-export 필요**(재동결 불필요). 서버 재기동(빌드 반영) 후 적용.
+- 다음 할 일: 사용자 검토 → push·PR 개설 → CI green → main 병합 동의 → 병합 → 이슈 #9·#10 닫기. 이후 #8 착수.
+- 막힌 지점: 없음.
+
 ### 2026-07-15 — 실사용 개선 이슈 4건 GitHub 등록 (#8~#11)
 - 배경(사용자 실사용 피드백): 편집·산출물·콘솔에서 발견한 UX 약점을 이슈로 외부화.
 - 등록: **#8** 편집 모드 — 넓은 화면(1920px+)에서 뷰포트 밖 마커 조정 시 스크롤 왕복 강요(하단→우측→상단), 해결 후보는 패널 선택 시 앵커 요소 scrollIntoView / **#9** 산출물 뷰어 — 화면 타이틀·디스크립션 폰트가 편집 모드(12~13px) 대비 과대(16px, `:root` font-size 미지정으로 브라우저 기본 상속 — 실측 확인) / **#10** 산출물 뷰어 — 상단 타이틀 헤더 배경 처리로 문서 정체성 인식 개선(#9와 같은 VIEWER_CSS 영역) / **#11** 콘솔 UI 디자인 개선(방향 합의 후 착수).
