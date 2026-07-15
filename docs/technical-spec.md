@@ -46,7 +46,7 @@
 | 서버 | Express 5 | 팀 경험 재사용. Fastify 등으로 갈아타지 말 것 |
 | 저장 | 파일 기반 JSON (프로젝트당 1파일) + 디스크 asset store | S1 단일 편집자 전제, 동시성 불필요. DB는 S2에서 필요 시 |
 | zip 처리 | multer(업로드) + unzipper(해제) | |
-| DOM 동결 | `single-file-core` (npm) | 직접 구현 금지 — CSS 인라인/폰트/이미지 처리 재발명은 S1 최대 리스크 |
+| DOM 캡처 | `single-file-core` (npm) | 직접 구현 금지 — CSS 인라인/폰트/이미지 처리 재발명은 S1 최대 리스크 |
 | 뷰어 | 프레임워크 없는 vanilla TS → 인라인 단일 번들 | 산출물에 통째로 인라인되므로 의존성 최소화 |
 | 테스트 | vitest (unit) + Playwright (E2E 1본) | E2E는 DoD 시나리오 그대로 자동화 |
 
@@ -124,10 +124,10 @@ export interface Scene {
   stateNote?: string;            // "모달 열림 상태" 등
   order: number;                 // 패널·뷰어 정렬 기준
   annoNumberSeq: number;         // 장면 내 다음 어노테이션 번호. 현재 남은 최대 번호+1 — 끝 번호 삭제 시 감소 가능
-  snapshotAsset?: string;        // asset store 키. 동결 성공 시에만 존재
+  snapshotAsset?: string;        // asset store 키. 캡처 성공 시에만 존재
   frozenAt?: string;
-  captureWidth?: number;         // 동결 시점 뷰포트 레이아웃 폭(px) — 뷰어가 스냅샷 iframe 기준 폭으로 사용, 반응형 캡처 레이아웃 재현 (킥오프 §11 8차)
-  captureHeight?: number;        // 동결 시점 뷰포트 높이(px) — 100vh류 페이지는 scrollHeight 측정 불가, 캡처 높이로 렌더해야 잘리지 않음 (킥오프 §11 8차)
+  captureWidth?: number;         // 캡처 시점 뷰포트 레이아웃 폭(px) — 뷰어가 스냅샷 iframe 기준 폭으로 사용, 반응형 캡처 레이아웃 재현 (킥오프 §11 8차)
+  captureHeight?: number;        // 캡처 시점 뷰포트 높이(px) — 100vh류 페이지는 scrollHeight 측정 불가, 캡처 높이로 렌더해야 잘리지 않음 (킥오프 §11 8차)
   maskedSnapshotAsset?: string;  // [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존
   maskedAt?: string;             // [S2] 마스킹본 생성 시각 (ISO 8601)
 }
@@ -157,7 +157,7 @@ export interface Anchor {
 - `Scene.code`·`sceneCodeSeq`·`annoNumberSeq`는 킥오프 스펙 §5 대비 **추가 필드** (필드 추가 자유 조항). 표시 코드 체계는 [output-standard.md](./output-standard.md) §1 참조. `sceneCodeSeq`는 장면 코드 영구 결번을 위해 단조 증가한다. `annoNumberSeq`는 어노테이션 추가 시 현재 장면의 남은 최대 번호에서 다시 계산하며, 최고 번호 삭제 시 감소할 수 있다(킥오프 §11 12차)
 - **`data-spec-id`(코어 가이드의 1순위 앵커)는 서비스 모델에서 제외** — 서비스는 목업 소스를 수정하지 않으므로 소스 반영이 불가능. selector+text+attrs 다중 시그니처가 1순위다. (코어 가이드 §4와의 의도적 차이 — "목업 무수정" 제1 기준 우선)
 - 저장 파일: `data/projects/{projectId}/spec.json` = `SpecProject` 직렬화 그대로. **이 파일을 그대로 내려주는 것이 export/import(백업)이다.**
-- 장면 스냅샷(동결 DOM)은 수 MB → JSON이 아니라 asset store(디스크)에 두고 `snapshotAsset` 키로 참조.
+- 장면 스냅샷(캡처 DOM)은 수 MB → JSON이 아니라 asset store(디스크)에 두고 `snapshotAsset` 키로 참조.
 
 ### 2.2 후속 확장 예정 필드 (구현 금지, 방향만 기록)
 
@@ -223,8 +223,8 @@ Project.settings?: { llmDraftEnabled: boolean };
      `Content-Length` 재계산
 - **WebSocket 업그레이드 미지원** (S2 절단) — 스테이징 URL이 대상이라는 전제. WS 필수
   목업은 콘솔 안내 문구로 한계 명시 (detailed-spec §2.3).
-- **동결 시 오리진 밖(외부 CDN) 리소스**는 CORS로 인라인 실패 가능 — 실패 리소스는
-  스냅샷에서 제거(네트워크 0건 원칙이 시각적 완전성보다 우선), 동결 배지에 실패 수 표기.
+- **캡처 시 오리진 밖(외부 CDN) 리소스**는 CORS로 인라인 실패 가능 — 실패 리소스는
+  스냅샷에서 제거(네트워크 0건 원칙이 시각적 완전성보다 우선), 캡처 배지에 실패 수 표기.
 - 보안 요건은 §7.2
 
 ---
@@ -267,15 +267,15 @@ resolve(anchor):
 
 ---
 
-## 5. 장면 동결 (sdk/freeze)
+## 5. 장면 캡처 (sdk/freeze)
 
 - **`single-file-core`를 SDK에 번들**하여 클라이언트(사용자 브라우저)에서 실행. 서버 헤드리스 재현 금지 결정의 구현.
 - 옵션:
-  - 스크립트 제거 (결과에 `<script>` 0개 — **검증 로직으로 강제**, 위반 시 동결 실패 처리)
+  - 스크립트 제거 (결과에 `<script>` 0개 — **검증 로직으로 강제**, 위반 시 캡처 실패 처리)
   - CSS 인라인화
-  - 이미지 data URI화 (동결 후처리로 큰 래스터는 WebP 재인코딩·2048px 상한 — §11 9차)
+  - 이미지 data URI화 (캡처 후처리로 큰 래스터는 WebP 재인코딩·2048px 상한 — §11 9차)
   - **폰트 차단**(`blockFonts`) — 웹폰트 임베드 없이 시스템 폰트로 렌더 (킥오프 §11 11차). CJK 웹폰트 비대화 방지 + 폰트 처리 크래시 표면 감소. 파생: `removeUnusedFonts`·`removeAlternativeFonts` off
-  - **비디오·오디오 콘텐츠 미임베드** — 비디오는 `blockVideos`(포스터+링크 대체), 오디오·비디오 포스터는 single-file 옵션으로 못 막으므로 동결 직전 `neutralizeMedia`가 `src`/`srcset`/`poster`를 임시 제거(요소=레이아웃 영역은 유지). 킥오프 §11 11차
+  - **비디오·오디오 콘텐츠 미임베드** — 비디오는 `blockVideos`(포스터+링크 대체), 오디오·비디오 포스터는 single-file 옵션으로 못 막으므로 캡처 직전 `neutralizeMedia`가 `src`/`srcset`/`poster`를 임시 제거(요소=레이아웃 영역은 유지). 킥오프 §11 11차
   - `<canvas>` → `toDataURL()` 이미지 치환
   - SDK 자신 제외: `data-mockspec-root` 마킹 요소 제외 옵션
 - 결과 HTML은 `POST /api/projects/:id/assets`로 업로드 → 응답 asset 키를 `Scene.snapshotAsset`에 기록
@@ -300,7 +300,7 @@ resolve(anchor):
 | `GET /projects/:id` | spec.json 반환 | SDK 초기 로드 |
 | `PUT /projects/:id` | SpecProject **전체 교체** | 500ms 디바운스 저장의 대상. `version`·`id` 불일치 시 400 |
 | `DELETE /projects/:id` | 프로젝트 삭제 | 확인은 콘솔 UI 책임 |
-| `POST /projects/:id/assets` | 동결 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재동결·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
+| `POST /projects/:id/assets` | 캡처 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재캡처·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
 | `POST /projects/:id/export` | 산출물 HTML 조립 (§8) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec §3.12). [T29] 성공 시 이력 메타 기록 (§6.3) |
 | `POST /projects/:id/token` | [S2.5] 경로 D 토큰 재발급·폐기 | 경로 D 프로젝트 한정. 재발급 시 구 토큰 즉시 무효 (pathD 킥오프 §6) |
@@ -342,7 +342,7 @@ resolve(anchor):
 | 업로드 크기 | 200MB 하드 리밋 (multer limits) |
 | 접근 제어 | 사내망 전제 + 비추측성 프로젝트 ID. 편집 URL을 아는 사람만 접근 |
 | 스냅샷 무해화 | `<script>` 0개 검증 (§5) — 뷰어 srcdoc 렌더 시 실행 위험 제거 |
-| SDK 데이터 경계 | SDK가 서버로 보내는 것은 spec 데이터 + 명시적 동결 스냅샷뿐. 텔레메트리로 DOM을 흘리지 않는다 — **코드 리뷰 기준으로 강제** |
+| SDK 데이터 경계 | SDK가 서버로 보내는 것은 spec 데이터 + 명시적 캡처 스냅샷뿐. 텔레메트리로 DOM을 흘리지 않는다 — **코드 리뷰 기준으로 강제** |
 
 ### 7.2 S2 (프록시 경로를 여는 순간 필수 — 킥오프 s2 §4)
 
@@ -381,7 +381,7 @@ resolve(anchor):
   <style>/* viewer CSS 인라인 */</style></head>
 <body>
   <script type="application/json" id="spec-data">{ SpecProject JSON }</script>
-  <script type="text/plain" data-snapshot="{sceneId}">{ 동결 HTML, base64 }</script>
+  <script type="text/plain" data-snapshot="{sceneId}">{ 캡처 HTML, base64 }</script>
   <!-- 장면 수만큼 반복 -->
   <div id="app"></div>
   <script>/* viewer JS 번들 인라인 */</script>
@@ -430,7 +430,7 @@ fixtures 사양은 implementation-decisions ID-12 (의존성 0의 Todo SPA, 라�
 | T3 | Spec API + 파일 저장 | §6 전체 엔드포인트 vitest 통과 (왕복 무손실) |
 | T4 | SDK: FAB·패널·모드 전환 | 편집/미리보기 토글, Shadow DOM 격리, 미리보기에서 목업 정상 조작 |
 | T5 | SDK: 어노테이션·앵커·마커 | 부착 시퀀스 동작, 라우트 복귀 시 마커 복원, 텍스트 변경 후 재탐색 성공 1케이스 |
-| T6 | SDK: 장면 등록 + 동결 | 스냅샷 업로드 확인, 단독 오픈 시 레이아웃·구조가 원본과 동일(폰트 시스템 대체·미디어 영역만, §11 11차)(수동) + `<script>` 0개(자동) |
+| T6 | SDK: 장면 등록 + 캡처 | 스냅샷 업로드 확인, 단독 오픈 시 레이아웃·구조가 원본과 동일(폰트 시스템 대체·미디어 영역만, §11 11차)(수동) + `<script>` 0개(자동) |
 | T7 | SDK: 저장·오프라인 큐 | 서버 중단 상태 편집 → 재기동 후 자동 반영 |
 | T8 | 뷰어 + export 조립 | §8 사양 HTML이 file://로 열림, 마커·패널·상호 하이라이트 동작 |
 | T9 | 콘솔 페이지 | 업로드→편집 열기→export가 콘솔만으로 가능 |
@@ -457,7 +457,7 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 | T20 | 저장 경로 토큰 인증 | 경로 D 프로젝트 저장이 토큰 없으면 401, 타 프로젝트 토큰 거부 |
 | T21 | 콘솔 온보딩 3번째 선택지 | 경로 D 프로젝트 생성 → 토큰·설치 안내 노출 |
 | T22 | 확장 스캐폴드 + content script SDK 주입 | unpacked 로드 → 페이지에 FAB·패널 동작 |
-| T23 | 확장 팝업(바인딩) + background 저장 | 임의 사이트에서 편집·동결·저장 성공 |
+| T23 | 확장 팝업(바인딩) + background 저장 | 임의 사이트에서 편집·캡처·저장 성공 |
 | T24 | E2E: 로그인 뒤 화면 시나리오 | pathD 킥오프 §7 DoD |
 | T25 | docs/ 최종 동기화 + 실사용 판정 기록 | 판정 기록으로 S2.5 종료 |
 
@@ -498,7 +498,7 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 |------|------|
 | 신규 레포 | 기존 Draftify 코드 이식 금지. 계승은 "규범으로 관리한다"는 원칙과 실패의 교훈뿐 — ID 체계는 [output-standard.md](./output-standard.md)에서 신규 설계 |
 | LLM | 기본 미사용. 유일한 LLM 기능(S3 초안 제안)은 옵트인 — 기본 OFF, OFF 시 호출 경로 자체 비활성 |
-| 동결 위치 | 클라이언트 브라우저에서만. 서버 헤드리스 재현 금지 |
+| 캡처 위치 | 클라이언트 브라우저에서만. 서버 헤드리스 재현 금지 |
 | 장면 생성 | 사람이 선언. 자동 생성 금지 (라우트 감지는 제안만) |
 | 앵커 1순위 | selector+text+attrs 다중 시그니처 (`data-spec-id`는 서비스 모델에서 제외) |
 | 산출물 | 단독 HTML 단일 형식. PPT 없음. file:// 동작 + 네트워크 0건 |

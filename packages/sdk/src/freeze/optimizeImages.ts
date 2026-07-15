@@ -2,12 +2,12 @@
  * 스냅샷 이미지 최적화 (실사용 13차 — 킥오프 §11 9차).
  *
  * single-file은 이미지를 원본 그대로 data URI로 임베드한다 — 고해상도 포스터·배경이 많은
- * 페이지는 장면 하나가 수십 MB가 되어 저장·내보내기가 실용성을 잃는다. 동결 직후 HTML
+ * 페이지는 장면 하나가 수십 MB가 되어 저장·내보내기가 실용성을 잃는다. 캡처 직후 HTML
  * 문자열에서 큰 래스터 이미지를 WebP로 재인코딩(+긴 변 상한 다운스케일)해 치환한다.
  *
  * - 대상: data:image/png·jpeg·webp·bmp — GIF(애니메이션 소실)·SVG(벡터·텍스트)는 건드리지 않음
  * - MIN_BYTES 미만은 스킵(아이콘류 보존), 재인코딩 결과가 더 크면 원본 유지
- * - 실패는 이미지 단위로 무시(원본 유지) — 최적화는 best-effort, 동결을 깨지 않는다
+ * - 실패는 이미지 단위로 무시(원본 유지) — 최적화는 best-effort, 캡처를 깨지 않는다
  * - OffscreenCanvas·createImageBitmap·WebP 인코딩은 Chrome/Edge 전용이지만 편집 환경은
  *   Chrome/Edge 한정(ID-02)이라 문제없다. 뷰어(산출물)는 표준 <img>로 렌더만 한다.
  */
@@ -65,7 +65,7 @@ const defaultEncoder: ImageEncoder = async (bytes, mime) => {
 };
 
 /**
- * 동결 HTML의 큰 이미지 data URI를 재인코딩본으로 치환한다.
+ * 캡처 HTML의 큰 이미지 data URI를 재인코딩본으로 치환한다.
  * 같은 URI의 중복 등장(groupDuplicateImages 미적용분 포함)은 한 번만 인코딩해 전부 치환.
  */
 export async function optimizeSnapshotImages(

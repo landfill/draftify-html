@@ -3,7 +3,7 @@ import type { SpecProject, Scene, Annotation, Anchor } from "@mockspec/shared";
 
 /**
  * 편집 상태 (인메모리). 서버 저장 시 SpecProject에 다시 합쳐 전체 문서 PUT으로 보낸다.
- * 장면 동결(snapshotAsset·frozenAt)은 setSceneSnapshot으로 기록한다.
+ * 장면 캡처(snapshotAsset·frozenAt)은 setSceneSnapshot으로 기록한다.
  */
 export interface EditorDoc {
   sceneCodeSeq: number;
@@ -50,7 +50,7 @@ export function sceneCode(seq: number): string {
   return `SCR-${String(seq).padStart(3, "0")}`;
 }
 
-/** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 동결은 App이 등록 직후 트리거. */
+/** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 캡처는 App이 등록 직후 트리거. */
 export function createScene(
   doc: EditorDoc,
   fields: { title: string; route: string; stateNote?: string },
@@ -118,7 +118,7 @@ export function addAnnotation(
   };
 }
 
-/** 동결 성공 시 장면에 snapshotAsset·frozenAt·캡처 뷰포트 크기 기록 (재동결이면 덮어쓴다). */
+/** 캡처 성공 시 장면에 snapshotAsset·frozenAt·캡처 뷰포트 크기 기록 (재캡처면 덮어쓴다). */
 export function setSceneSnapshot(
   doc: EditorDoc,
   sceneId: string,

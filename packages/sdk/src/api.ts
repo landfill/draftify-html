@@ -137,7 +137,7 @@ export async function flushPendingProject(projectId: string): Promise<SpecProjec
 }
 
 /**
- * 동결 HTML을 asset store에 업로드하고 asset 키를 반환한다.
+ * 캡처 HTML을 asset store에 업로드하고 asset 키를 반환한다.
  * (POST /__mockspec/api/projects/:id/assets, field: snapshot — technical-spec §6)
  */
 export async function uploadSnapshot(projectId: string, html: string): Promise<string> {

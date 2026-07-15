@@ -28,7 +28,7 @@ const uploadZip = multer({
   limits: { fileSize: 200 * 1024 * 1024 },
 });
 
-/** 동결 스냅샷 50MB 제한 (ID-11 — 장면 하나가 50MB면 산출물이 성립 불가). */
+/** 캡처 스냅샷 50MB 제한 (ID-11 — 장면 하나가 50MB면 산출물이 성립 불가). */
 const uploadAsset = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },

@@ -4,7 +4,7 @@ import { FreezeError } from "./verify.js";
 import { freezeDocument, neutralizeDataScripts, neutralizeMedia } from "./freeze.js";
 
 /**
- * 동결 폴백 로직(실사용에서 발견된 single-file 정규식 오류 대응).
+ * 캡처 폴백 로직(실사용에서 발견된 single-file 정규식 오류 대응).
  * getPageData를 목킹해 우리 래퍼의 재시도 규칙만 검증한다 — 실제 single-file 실행은
  * 실 Chrome 검증(스크래치)이 담당.
  */
@@ -96,7 +96,7 @@ describe("neutralizeMedia (킥오프 §11 11차 — 오디오·비디오 포스�
     expect(sv.getAttribute("poster")).toBe("/sp.jpg");
   });
 
-  it("우리 패널(data-mockspec-root)의 shadow DOM은 건드리지 않는다 (동결에서 통째 제외되므로)", () => {
+  it("우리 패널(data-mockspec-root)의 shadow DOM은 건드리지 않는다 (캡처에서 통째 제외되므로)", () => {
     document.body.innerHTML = `<div id="panel" data-mockspec-root></div>`;
     const shadow = document.getElementById("panel")!.attachShadow({ mode: "open" });
     shadow.innerHTML = `<audio id="pa" src="/panel.mp3"></audio>`;
@@ -161,10 +161,10 @@ describe("neutralizeDataScripts (비실행 데이터 <script> 제거 — m.hanat
     expect(shadow.getElementById("sd")).not.toBeNull();
   });
 
-  it("복원 기준 노드(nextSibling)가 동결 중 사라져도 예외 없이 부모 끝에 복원한다 (라이브 페이지 DOM 변동 — 리뷰 반영)", () => {
+  it("복원 기준 노드(nextSibling)가 캡처 중 사라져도 예외 없이 부모 끝에 복원한다 (라이브 페이지 DOM 변동 — 리뷰 반영)", () => {
     document.body.innerHTML = `
       <script type="application/ld+json" id="ld">{}</script>
-      <div id="gone">동결 중 페이지가 지울 노드</div>
+      <div id="gone">캡처 중 페이지가 지울 노드</div>
       <p id="stay">본문</p>`;
     const restore = neutralizeDataScripts();
     document.getElementById("gone")!.remove(); // 라이브 페이지의 자체 DOM 변동 시뮬레이션

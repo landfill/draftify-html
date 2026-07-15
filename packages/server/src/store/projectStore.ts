@@ -89,7 +89,7 @@ function referencedAssets(spec: SpecProject): Set<string> {
 /**
  * 문서 전체 교체(PUT). 저장 시 updatedAt을 서버 시각으로 갱신하고,
  * 이전 spec 대비 더 이상 참조되지 않는 asset을 즉시 삭제한다 (ID-11 — 별도 GC 없이
- * 재동결·장면 삭제 두 규칙을 한 곳에서 강제). 검증(version·id)은 라우트 책임.
+ * 재캡처·장면 삭제 두 규칙을 한 곳에서 강제). 검증(version·id)은 라우트 책임.
  */
 export async function replaceSpec(prev: SpecProject, next: SpecProject): Promise<SpecProject> {
   const saved: SpecProject = { ...next, updatedAt: new Date().toISOString() };

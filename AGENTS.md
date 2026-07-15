@@ -42,7 +42,7 @@
 
 1. **의도는 사람이 입력한다** — 크롤링·LLM으로 추론하지 않는다. LLM 초안 제안은 옵트인이며 기본 OFF, OFF 시 호출 코드 경로 자체가 비활성
 2. **사용자는 목업을 수정하지 않는다** — SDK 주입은 서비스가 대신한다 (`data-spec-id` 같은 소스 오염 금지)
-3. **편집은 라이브, 산출물은 동결** — 동결은 클라이언트 브라우저에서만, 서버 헤드리스 재현 금지
+3. **편집은 라이브, 산출물은 캡처** — 캡처는 클라이언트 브라우저에서만, 서버 헤드리스 재현 금지
 4. **산출물은 단독 HTML 하나** — file://로 열리고 네트워크 요청 0건
 
 추가로 구현 전반의 판단 기준: **구현이 단순하고 범용적일 것** (`implementation-decisions.md` 서문).
@@ -76,7 +76,7 @@
 - **모노레포**: npm workspaces (turbo/nx 도입 금지). Node 20+, TypeScript strict 전 패키지 공통
 - **패키지**: `shared`(타입 계약, 유일 소스) → `sdk`(Preact+Shadow DOM, Vite IIFE 단일 `sdk.js`) / `server`(Express 5) / `viewer`(vanilla TS)
 - **저장**: 파일 기반 JSON (프로젝트당 1파일) + 디스크 asset store. 모든 상태는 `data/`(gitignore) 아래에만
-- **동결**: `single-file-core`(npm) 래핑. 직접 구현 금지
+- **캡처**: `single-file-core`(npm) 래핑. 직접 구현 금지
 - **테스트**: vitest(unit·API) + Playwright(E2E 1본 = S1 DoD)
 - **오리진 하드코딩 금지** (ID-01): 클라이언트는 상대 경로만, 서버는 Host 헤더 파싱 + `PORT` env
 - **지원 브라우저** (ID-02): 편집 환경은 Chrome/Edge 최신 한정. 뷰어는 표준 API만

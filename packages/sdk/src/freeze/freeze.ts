@@ -3,9 +3,9 @@ import { countScripts, FreezeError } from "./verify.js";
 import { optimizeSnapshotImages } from "./optimizeImages.js";
 
 /**
- * 장면 동결 (technical-spec §5, 킥오프 §7).
+ * 장면 캡처 (technical-spec §5, 킥오프 §7).
  * single-file-core를 클라이언트(사용자 브라우저)에서 실행해 현재 DOM을 단독 HTML
- * 문자열로 굳힌다. "동결은 클라이언트에서만, 서버 헤드리스 재현 금지" 결정의 구현.
+ * 문자열로 굳힌다. "캡처는 클라이언트에서만, 서버 헤드리스 재현 금지" 결정의 구현.
  * <script> 0개 검증(verify.ts)은 single-file-core를 로드하지 않는 순수 모듈로 분리.
  */
 
@@ -16,7 +16,7 @@ export { countScripts, FreezeError } from "./verify.js";
  * - blockScripts: 모든 <script> 제거 (핵심 무해화 — §7.1, 아래 검증으로 이중 강제)
  * - blockFonts: 웹폰트를 임베드하지 않고 시스템 폰트로 렌더 (킥오프 §11 11차)
  * - blockVideos/blockAudios: 미디어 콘텐츠 미임베드, 레이아웃 영역만 유지 (킥오프 §11 11차)
- * - saveFilenameTemplateData:false: 동결 후 옵션 JSON <script>가 재삽입되는 것 방지
+ * - saveFilenameTemplateData:false: 캡처 후 옵션 JSON <script>가 재삽입되는 것 방지
  * - removedElementsSelector: SDK 자신(data-mockspec-root 호스트) 제외 (§5)
  * - loadDeferredImages:false: 이미 로드된 정적 목업 — 스크롤 조작/지연 불필요
  * - insertMetaCSP/insertSingleFileComment/saveFavicon:false: 스냅샷을 최소·무네트워크로
@@ -33,7 +33,7 @@ const FREEZE_OPTIONS: Record<string, unknown> = {
   removeAlternativeFonts: false,
   // 비디오는 콘텐츠 대신 포스터+링크로 대체(single-file 기본 동작) — 재생 미디어 미임베드,
   // 요소(레이아웃 영역)는 남아 와이어프레임 자리로 표시된다 (킥오프 §11 11차).
-  // 오디오·포스터는 single-file 옵션으로 못 막으므로 동결 직전 neutralizeMedia로 소스를 뗀다.
+  // 오디오·포스터는 single-file 옵션으로 못 막으므로 캡처 직전 neutralizeMedia로 소스를 뗀다.
   blockVideos: true,
   // removeFrames:true 필수 — single-file의 프레임 캡처는 확장 프로그램 메시징
   // (chrome.runtime.sendMessage)에 의존한다. 우리는 페이지에 주입된 SDK라 그 경로가
@@ -74,7 +74,7 @@ const SAFE_FALLBACK_OPTIONS: Record<string, unknown> = {
 };
 
 /**
- * 동결 직전 미디어 소스를 임시로 뗀다 (킥오프 §11 11차). 반환값을 호출해 복원한다.
+ * 캡처 직전 미디어 소스를 임시로 뗀다 (킥오프 §11 11차). 반환값을 호출해 복원한다.
  *
  * single-file은 오디오 소스와 비디오 poster를 그대로 임베드한다(blockVideos는 비디오
  * 재생 소스만 포스터+링크로 대체할 뿐 오디오·poster는 못 막는다). 재생 미디어·포스터는
@@ -98,7 +98,7 @@ export function neutralizeMedia(): () => void {
       }
     }
     // 열린 shadow DOM으로 재귀 — single-file은 open shadow root를 직렬화하므로 그 안의
-    // 미디어도 임베드된다(웹 컴포넌트 목업). 우리 패널(data-mockspec-root)은 동결에서
+    // 미디어도 임베드된다(웹 컴포넌트 목업). 우리 패널(data-mockspec-root)은 캡처에서
     // 통째 제외되므로 그 서브트리는 건너뛴다.
     for (const el of Array.from(root.querySelectorAll("*"))) {
       if (el.shadowRoot && !el.matches("[data-mockspec-root]")) strip(el.shadowRoot);
@@ -112,14 +112,14 @@ export function neutralizeMedia(): () => void {
 }
 
 /**
- * 동결 직전 비실행 데이터 <script>를 임시로 뗀다. 반환값을 호출해 복원한다.
+ * 캡처 직전 비실행 데이터 <script>를 임시로 뗀다. 반환값을 호출해 복원한다.
  *
  * single-file의 blockScripts는 **실행 스크립트만** 제거하고 데이터 블록
  * (ld+json SEO 스키마, JSON 템플릿 등 type이 JS가 아닌 script)은 남긴다.
  * 우리 검증(countScripts)은 §7.1대로 모든 <script>를 0개로 강제하므로, 그런 페이지는
- * 동결이 항상 FreezeError로 실패했다(실사용 — m.hanatour.com의 ld+json 1개).
- * 데이터 블록은 기획서 산출물에 불필요하므로 동결에서 제외한다. 검증 기준은 완화하지
- * 않는다 — 제거는 여기(동결 입력), 강제는 verify(동결 출력)로 역할이 나뉜다.
+ * 캡처가 항상 FreezeError로 실패했다(실사용 — m.hanatour.com의 ld+json 1개).
+ * 데이터 블록은 기획서 산출물에 불필요하므로 캡처에서 제외한다. 검증 기준은 완화하지
+ * 않는다 — 제거는 여기(캡처 입력), 강제는 verify(캡처 출력)로 역할이 나뉜다.
  * 라이브 DOM 조작이라 finally에서 원복한다 (neutralizeMedia와 동일 패턴).
  */
 export function neutralizeDataScripts(): () => void {
@@ -148,9 +148,9 @@ export function neutralizeDataScripts(): () => void {
     // 역순 복원 — 인접한 script 여러 개를 뗐어도 nextSibling 기준 위치가 맞는다
     for (let i = saved.length - 1; i >= 0; i--) {
       const { el, parent, next } = saved[i];
-      // 동결(getPageData)은 비동기라 그 사이 라이브 페이지가 스스로 DOM을 바꿀 수 있다.
+      // 캡처(getPageData)은 비동기라 그 사이 라이브 페이지가 스스로 DOM을 바꿀 수 있다.
       // 기준 노드(next)가 부모에서 사라졌으면 부모 끝에 붙인다 — 복원 실패(NotFoundError)가
-      // 성공한 동결을 깨지 않도록 (PR #14 리뷰 반영)
+      // 성공한 캡처를 깨지 않도록 (PR #14 리뷰 반영)
       const anchor = next && next.parentNode === parent ? next : null;
       parent.insertBefore(el, anchor);
     }
@@ -160,17 +160,17 @@ export function neutralizeDataScripts(): () => void {
 async function runFreeze(options: Record<string, unknown>): Promise<string> {
   const { content } = await getPageData({ ...options }, {});
   // 큰 이미지 WebP 재인코딩 — 고해상도 이미지가 많은 페이지의 수십 MB 스냅샷 방지
-  // (실사용 13차). best-effort: 실패한 이미지는 원본 유지, 동결을 깨지 않는다.
+  // (실사용 13차). best-effort: 실패한 이미지는 원본 유지, 캡처를 깨지 않는다.
   const optimized = await optimizeSnapshotImages(content);
   const scripts = countScripts(optimized);
   if (scripts > 0) {
-    throw new FreezeError(`동결 결과에 <script> ${scripts}개가 남아 폐기했습니다.`);
+    throw new FreezeError(`캡처 결과에 <script> ${scripts}개가 남아 폐기했습니다.`);
   }
   return optimized;
 }
 
 /**
- * 현재 문서를 동결해 단독 HTML 문자열을 반환한다.
+ * 현재 문서를 캡처해 단독 HTML 문자열을 반환한다.
  * 패널 도킹으로 <html>에 걸린 margin-right는 스냅샷에서 제거(원본 레이아웃 보존).
  * <script>가 하나라도 남으면 FreezeError → 호출부가 배지+재시도로 처리.
  *
@@ -191,7 +191,7 @@ export async function freezeDocument(): Promise<string> {
     } catch (err) {
       if (err instanceof FreezeError) throw err; // <script> 잔존 등 우리 규칙 위반은 재시도 무의미
       // single-file 내부 오류(정규식 등) → CSS 최소화 끈 폴백으로 1회 재시도
-      console.warn("[mockspec] 동결 1차 실패, 안전 옵션으로 재시도:", err);
+      console.warn("[mockspec] 캡처 1차 실패, 안전 옵션으로 재시도:", err);
       return await runFreeze(SAFE_FALLBACK_OPTIONS);
     }
   } finally {

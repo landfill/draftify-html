@@ -533,14 +533,14 @@ function renderMarkers(
 
   const docRoot = doc.documentElement;
   const docBody = doc.body;
-  // 기준 폭 = 동결 시점 뷰포트 폭(captureWidth) — 반응형 캡처가 그 폭으로 리플로우되어
+  // 기준 폭 = 캡처 시점 뷰포트 폭(captureWidth) — 반응형 캡처가 그 폭으로 리플로우되어
   // 캡처했던 레이아웃(데스크톱/모바일)이 그대로 재현된다. 구 스냅샷(필드 없음)은 중앙
   // 가용 폭으로 폴백: .ms-stage-wrap(max-content) 안의 iframe(width:100%)은 기본 300px로
   // 붕괴해 반응형 페이지가 모바일 레이아웃으로 보였다 (첫 레이아웃 폭이 measurement를 오염).
   const mainEl = iframe.closest(".ms-main");
   const fallbackWidth = mainEl instanceof HTMLElement ? mainEl.clientWidth - 32 /* 좌우 패딩 */ : 0;
   const baseWidth = Math.max(scene.captureWidth ?? fallbackWidth, 1);
-  // 기준 높이 = 동결 시점 뷰포트 높이. 100vh류(뷰포트 고정 높이) 페이지는 scrollHeight가
+  // 기준 높이 = 캡처 시점 뷰포트 높이. 100vh류(뷰포트 고정 높이) 페이지는 scrollHeight가
   // 항상 iframe 높이와 같아 콘텐츠 높이를 측정할 수 없다 — 최소값(480)으로 잠기면 캡처
   // 아래쪽이 잘린다(실사용: 메인 메뉴·박스오피스 소실). 캡처 높이로 먼저 리플로우한다.
   const baseHeight = Math.max(scene.captureHeight ?? 0, 480);
@@ -772,7 +772,7 @@ function renderStage(
   const snapshotHtml = snapshots.get(scene.id);
   if (!snapshotHtml) {
     const placeholder = child("div", "ms-empty");
-    placeholder.innerHTML = `<p class="ms-warning">스냅샷이 없는 화면입니다.</p><p>편집 화면에서 동결 후 다시 내보내세요.</p>`;
+    placeholder.innerHTML = `<p class="ms-warning">스냅샷이 없는 화면입니다.</p><p>편집 화면에서 캡처 후 다시 내보내세요.</p>`;
     main.append(placeholder);
     return main;
   }

@@ -17,7 +17,7 @@ export const mockupDir = (id: string): string => path.join(projectDir(id), "mock
 /** SpecProject 직렬화 파일. 이 파일을 그대로 내려주는 것이 export/import(백업). */
 export const specFile = (id: string): string => path.join(projectDir(id), "spec.json");
 
-/** 동결 스냅샷 등 asset store. */
+/** 캡처 스냅샷 등 asset store. */
 export const assetsDir = (id: string): string => path.join(projectDir(id), "assets");
 
 /**
