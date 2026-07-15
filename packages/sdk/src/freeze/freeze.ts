@@ -148,7 +148,11 @@ export function neutralizeDataScripts(): () => void {
     // 역순 복원 — 인접한 script 여러 개를 뗐어도 nextSibling 기준 위치가 맞는다
     for (let i = saved.length - 1; i >= 0; i--) {
       const { el, parent, next } = saved[i];
-      parent.insertBefore(el, next);
+      // 동결(getPageData)은 비동기라 그 사이 라이브 페이지가 스스로 DOM을 바꿀 수 있다.
+      // 기준 노드(next)가 부모에서 사라졌으면 부모 끝에 붙인다 — 복원 실패(NotFoundError)가
+      // 성공한 동결을 깨지 않도록 (PR #14 리뷰 반영)
+      const anchor = next && next.parentNode === parent ? next : null;
+      parent.insertBefore(el, anchor);
     }
   };
 }
