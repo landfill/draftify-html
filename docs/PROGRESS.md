@@ -67,11 +67,12 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-15 — 뷰어 소스의 NUL 바이트 제거 (흐름도 간선 병합 키 구분자 교체)
-- 브랜치: `chore/viewer-nul-free-flow-key` (main 미병합, 동의 대기).
+- 브랜치: `chore/viewer-nul-free-flow-key` → **PR #7로 main 병합 완료**(2026-07-15, rebase·CI green(verify 1m18s)·리뷰 피드백 0건(gemini "no review comments to address"), 로컬·원격 브랜치 삭제).
 - 배경: `packages/viewer/src/main.ts`의 `buildFlowEdges`가 병렬 전이 병합 Map 키 구분자로 **리터럴 NUL 문자(`\x00`)** 를 사용 — 기능은 정상이나 NUL 바이트 하나 때문에 grep·git diff·GitHub이 파일 전체를 **바이너리로 취급**해, 이 세션에서 "policyRefs 뱃지 코드가 없다"는 오판(실제로는 구현됨, FR-EXP-07 P0 충족)이 발생했고 앞으로의 리뷰·검색도 같은 함정을 밟는 상태였다.
 - 완료: 구분자를 `|`로 교체 + 근거 주석(장면 ID 알파벳 `scn_`+nanoid `A-Za-z0-9_-` 밖이라 충돌 없음). 저장소 전체 NUL 스캔(git ls-files 전량, Python) — 해당 파일 1건뿐임을 확인 후 제거, 스캔 재실행 0건.
 - 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**(전이·흐름도 spec 포함). 키 포맷은 함수 내부 전용이라 외부 계약·데이터 마이그레이션 없음. 산출물 뷰어 코드지만 렌더 결과 불변(간선 병합 결과 동일).
-- 다음 할 일: 사용자 검토 → main 병합 동의 → 병합. 이후 잔여는 전부 실수요 대기(스크린샷 fallback·옵션 S·정책정의서 섹션 통합) 또는 S3.
+- 이 세션의 판정 기록: **PRD 로드맵 확정 범위(S1~S2.5 + 착수 확정 P1) 구현 완료** — 모든 P0 충족(FR-EXP-07 뱃지 표시는 viewer main.ts에 구현되어 있음 — NUL 때문에 grep이 놓쳤던 것). 잔여 미구현은 전부 의도된 게이팅: 스크린샷 fallback(FR-EDT-12, 실수요 대기 — 동결 실패 페이지 아직 0건 확인)·옵션 S·정책정의서 섹션 통합(FR-EXP-07 P1부)·S3(LLM 초안·경로 C·SSO).
+- 다음 할 일: 실수요 신호 발생 시 해당 항목 착수. 당장 착수할 작업 없음.
 - 막힌 지점: 없음.
 
 ### 2026-07-14 — README 가독성 개선 + 구조도 정정
