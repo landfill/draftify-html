@@ -66,6 +66,14 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-15 — README에 경로 D 화면 소개 절 신설 (스크린샷 4장)
+- 브랜치: `docs/readme-pathd-screenshots` (main 미병합, 동의 대기).
+- 배경(사용자 요청): README에 경로 D(내 화면에서 편집) 사용 흐름을 화면으로 소개.
+- 완료: `docs/images/`에 실사용 스크린샷 4장 추가(`pathD-1-console-connect-code` 콘솔 등록·연결 코드 발급 / `pathD-2-extension-popup` 확장 연결 / `pathD-3-live-edit` 실 화면 위 편집 / `pathD-4-export-viewer` 산출물, 합계 ~1.2MB). README에 "화면으로 보는 경로 D" 절 신설(4단계 캡션+이미지, 가이드 §3 링크), 세 경로 표의 D 행에 절 앵커 추가, 서두 "경로 A만 다룬다" 문구를 실제 구성에 맞게 동기화.
+- 검증: 문서·이미지만 변경(코드 무변경). 앵커는 GitHub slug 규칙 확인.
+- 다음 할 일: 사용자 검토 → main 병합 동의 → 병합.
+- 막힌 지점: 없음.
+
 ### 2026-07-15 — 뷰어 소스의 NUL 바이트 제거 (흐름도 간선 병합 키 구분자 교체)
 - 브랜치: `chore/viewer-nul-free-flow-key` → **PR #7로 main 병합 완료**(2026-07-15, rebase·CI green(verify 1m18s)·리뷰 피드백 0건(gemini "no review comments to address"), 로컬·원격 브랜치 삭제).
 - 배경: `packages/viewer/src/main.ts`의 `buildFlowEdges`가 병렬 전이 병합 Map 키 구분자로 **리터럴 NUL 문자(`\x00`)** 를 사용 — 기능은 정상이나 NUL 바이트 하나 때문에 grep·git diff·GitHub이 파일 전체를 **바이너리로 취급**해, 이 세션에서 "policyRefs 뱃지 코드가 없다"는 오판(실제로는 구현됨, FR-EXP-07 P0 충족)이 발생했고 앞으로의 리뷰·검색도 같은 함정을 밟는 상태였다.
