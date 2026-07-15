@@ -264,7 +264,8 @@ export function buildFlowEdges(project: SpecProject): FlowEdge[] {
     const t = a.transition;
     if (!t || t.toSceneId === a.sceneId) continue;
     if (!sceneIds.has(a.sceneId) || !sceneIds.has(t.toSceneId)) continue;
-    const key = `${a.sceneId} ${t.toSceneId}`;
+    // "|"는 장면 ID 알파벳(scn_ + nanoid: A-Za-z0-9_-) 밖이라 복합 키 충돌 없음
+    const key = `${a.sceneId}|${t.toSceneId}`;
     const entry = merged.get(key) ?? { from: a.sceneId, to: t.toSceneId, conditions: [] };
     const condition = t.condition?.trim();
     if (condition) entry.conditions.push(condition);
