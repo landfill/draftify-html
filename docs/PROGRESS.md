@@ -67,22 +67,22 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-15 — 동결 실패 수정: 비실행 데이터 <script>(ld+json) 무해화
-- 브랜치: `fix/freeze-data-scripts` (main 병합 대기 — 사용자 검토·동의 필요).
+- 브랜치: `fix/freeze-data-scripts` → **PR #14로 main 병합 완료**(2026-07-15, rebase·CI green·리뷰 1건 반영(gemini high + codex P2 동일 지적 — 복원 기준 노드(nextSibling)가 동결 중 라이브 페이지 DOM 변동으로 사라지면 insertBefore가 NotFoundError로 성공한 동결을 깨는 문제 → 기준 소실 시 부모 끝에 복원 + 회귀 테스트 1건, **188 passed**), 로컬·원격 브랜치 삭제).
 - 배경(실사용): 경로 D로 `m.hanatour.com` 연결 시 "동결 실패 — 재시도". 실 Chromium 재현으로 원인 확정 — 페이지의 SSR SEO 스키마 `<script type="application/ld+json">` 1개를 single-file `blockScripts`가 **실행 스크립트가 아니라서 남기고**, 우리 검증(countScripts, §7.1 모든 script 0개)이 FreezeError로 폐기. FreezeError는 설계상 폴백 재시도 없음. **S1 최초 커밋(da85f1a)의 옵션으로도 동일 재현 — 잠재해 있던 갭이며 최근 커밋(#9·#10 뷰어 CSS, PR #5·#6)의 회귀 아님.** 기존 실사용 페이지에 ld+json이 없어 드러나지 않았을 뿐.
 - 완료: `neutralizeDataScripts()` 신설(freeze.ts) — 동결 직전 비실행 type의 script(ld+json·JSON·템플릿 등)를 라이브 DOM에서 임시 제거, finally에서 nextSibling 기준 원위치 복원(neutralizeMedia와 동일 패턴). 열린 shadow DOM 재귀 + 패널(data-mockspec-root) 제외 동일. 실행 계열(빈 type·JS MIME·module)은 blockScripts 담당이라 손대지 않음. **검증 기준(모든 script 0개)은 완화하지 않음** — 제거는 동결 입력, 강제는 verify 출력으로 역할 분리.
 - 검증: 신규 단위 테스트 3건(데이터/실행 분리·인접 복원 순서·shadow 재귀+패널 제외). `npm run typecheck`·`npm run build` 통과, `npm test` **187 passed**(+3), `npm run test:e2e` **4본 통과**. **실 Chromium 재검증: m.hanatour.com 동결 성공(11.2MB, script 0개 검증 통과)** — 수정 전 동일 하니스에서 FreezeError 재현됐던 페이지.
 - 주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 실패했던 프로젝트(prj_j2zq93bwfk)는 재동결만 하면 됨.
-- 다음 할 일: 사용자 검토 → push·PR → CI green → main 병합 동의 → 병합. 별도 대기 중: `fix/viewer-font-size-header`(#9·#10, 커밋 완료·push 대기).
+- 다음 할 일: 실패했던 프로젝트(prj_j2zq93bwfk)에서 서버 재기동 후 재동결로 실사용 확인.
 - 막힌 지점: 없음.
 
 ### 2026-07-15 — 산출물 뷰어 폰트 밀도 정합 + 헤더 배경 밴드 (이슈 #9·#10)
-- 브랜치: `fix/viewer-font-size-header` (main 병합 대기 — 사용자 검토·동의 필요).
+- 브랜치: `fix/viewer-font-size-header` → **PR #15로 main 병합 완료**(2026-07-15, rebase·CI green·리뷰 2건 반영(gemini medium — ① `:root` 13px → **81.25%**(기본 16px 기준 동일 13px, 사용자 브라우저 글꼴 설정 존중) ② 헤더 메타 `#d2e3fc` → **#fff**(그라디언트 밝은 쪽 대비 3.44:1 → WCAG AA 4.5:1+), 실 Chromium 재실측 확인), 로컬·원격 브랜치 삭제, **이슈 #9·#10 자동 닫힘**).
 - 배경: 이슈 우선순위 합의(#9+#10 묶음 → #8 → #11, #12·#13은 트리거 대기). 둘 다 `VIEWER_CSS`(packages/server/src/routes/export.ts) 영역이라 한 브랜치로 처리.
 - 완료(#9): `:root`에 `font-size: 13px` 명시(미지정 시 브라우저 기본 16px 상속이 원인). `.ms-scene-button`·`.ms-annotation-title`·`.ms-description`을 12px로 — 편집 모드 패널(기준 13px, ann 제목·디스크립션 12px)과 동일 밀도. 헤더 `.ms-title`(18px)·스테이지 타이틀(16px)은 명시값이라 불변(이슈의 "별도 판단" 항목).
 - 완료(#10): `.ms-header`에 파란 그라디언트 밴드(`linear-gradient(135deg,#174ea6,#1a73e8)`) + 흰 제목·연파랑 메타. 네트워크 0건 제약대로 CSS만 사용. `.ms-meta`는 중앙 스테이지(route)에서도 쓰여 밝은 색은 `.ms-header .ms-meta`로 한정(스테이지 쪽 회색 유지 실측 확인).
 - 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**(최초 실패는 Playwright chromium-1228 바이너리 미설치 — `npx playwright install chromium` 후 전부 통과, 코드 무관). 실 Chromium 렌더 실측: root 13px, 장면 타이틀·ann 제목·디스크립션 12px, 스테이지 meta 13px·회색 유지, 헤더 그라디언트·흰 글자 적용. 12줄 디스크립션 밀도 스크린샷 확인.
 - 주의: 뷰어 CSS 변경 — 기존 산출물엔 미반영, **재-export 필요**(재동결 불필요). 서버 재기동(빌드 반영) 후 적용.
-- 다음 할 일: 사용자 검토 → push·PR 개설 → CI green → main 병합 동의 → 병합 → 이슈 #9·#10 닫기. 이후 #8 착수.
+- 다음 할 일: 합의된 이슈 순서대로 #8(편집 모드 scrollIntoView) 착수 → #11(콘솔 UI, 방향 합의 선행).
 - 막힌 지점: 없음.
 
 ### 2026-07-15 — 실사용 개선 이슈 4건 GitHub 등록 (#8~#11)
