@@ -67,7 +67,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-15 — README에 경로 D 화면 소개 절 신설 (스크린샷 4장)
-- 브랜치: `docs/readme-pathd-screenshots` (main 미병합, 동의 대기).
+- 브랜치: `docs/readme-pathd-screenshots` → **main 병합 완료**(2026-07-15, fast-forward — 문서·이미지만이라 사용자 지시로 CI 없이 직행, 브랜치 삭제). **공개 저장소이므로 콘솔 스크린샷의 연결 코드(실 토큰) 값은 병합 전 가림 처리** — 가림 전 이미지는 원격에 푸시된 적 없음.
 - 배경(사용자 요청): README에 경로 D(내 화면에서 편집) 사용 흐름을 화면으로 소개.
 - 완료: `docs/images/`에 실사용 스크린샷 4장 추가(`pathD-1-console-connect-code` 콘솔 등록·연결 코드 발급 / `pathD-2-extension-popup` 확장 연결 / `pathD-3-live-edit` 실 화면 위 편집 / `pathD-4-export-viewer` 산출물, 합계 ~1.2MB). README에 "화면으로 보는 경로 D" 절 신설(4단계 캡션+이미지, 가이드 §3 링크), 세 경로 표의 D 행에 절 앵커 추가, 서두 "경로 A만 다룬다" 문구를 실제 구성에 맞게 동기화.
 - 검증: 문서·이미지만 변경(코드 무변경). 앵커는 GitHub slug 규칙 확인.
