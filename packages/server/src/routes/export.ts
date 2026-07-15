@@ -11,6 +11,8 @@ const VIEWER_CSS = `
 :root {
   color-scheme: light;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* 편집 모드 패널(13px)과 같은 밀도 — 미지정 시 브라우저 기본 16px이 상속돼 과대해진다 (#9) */
+  font-size: 13px;
   color: #202124;
   background: #f7f8f9;
 }
@@ -22,12 +24,17 @@ button, input, textarea { font: inherit; }
    패널은 항상 보이고, 세로 스크롤은 3컬럼 각자 내부에서 일어난다 (긴 스냅샷은 중앙만 스크롤) */
 .ms-shell { height: 100vh; display: flex; flex-direction: column; }
 .ms-layout { flex: 1; }
+/* 문서 헤더 밴드 — 첫 화면에서 "기획서 문서"임이 드러나도록 본문과 대비 (#10).
+   산출물은 네트워크 0건이라 이미지 없이 CSS 그라디언트만 사용 */
 .ms-header {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 14px 18px; background: #fff; border-bottom: 1px solid #dfe3e7;
+  padding: 14px 18px; background: linear-gradient(135deg, #174ea6, #1a73e8);
+  border-bottom: 1px solid #174ea6; color: #fff;
 }
 .ms-title { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 700; }
 .ms-meta { color: #5f6368; font-size: 13px; white-space: nowrap; }
+/* .ms-meta는 중앙 스테이지(route)에서도 쓰인다 — 밝은 색은 헤더 안으로 한정 */
+.ms-header .ms-meta { color: #d2e3fc; }
 /* 행을 minmax(0,1fr)로 고정 — auto 행은 콘텐츠 높이로 커져 셸을 넘치므로 내부 스크롤이 안 생긴다 */
 .ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); min-height: 0; }
 .ms-layout--collapsed { grid-template-columns: 40px minmax(0, 1fr) 300px; }
@@ -47,6 +54,7 @@ button, input, textarea { font: inherit; }
 .ms-scene-button {
   display: block; width: calc(100% - 16px); margin: 0 8px 6px; padding: 10px 10px;
   text-align: left; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #202124; cursor: pointer;
+  font-size: 12px;
 }
 .ms-scene-button:hover { background: #f1f3f4; }
 .ms-scene-button.is-active { border-color: #1a73e8; background: #e8f0fe; }
@@ -86,8 +94,8 @@ button, input, textarea { font: inherit; }
   width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
   border-radius: 999px; background: #1a73e8; color: #fff; font-weight: 700; font-size: 12px; flex: 0 0 auto;
 }
-.ms-annotation-title { font-weight: 700; overflow-wrap: anywhere; }
-.ms-description { color: #3c4043; line-height: 1.5; overflow-wrap: anywhere; }
+.ms-annotation-title { font-weight: 700; font-size: 12px; overflow-wrap: anywhere; }
+.ms-description { color: #3c4043; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .ms-description p { margin: 0 0 8px; }
 .ms-description p:last-child { margin-bottom: 0; }
 .ms-policy { display: inline-block; margin: 8px 6px 0 0; padding: 3px 6px; border-radius: 4px; background: #f1f3f4; color: #3c4043; font-size: 12px; }
