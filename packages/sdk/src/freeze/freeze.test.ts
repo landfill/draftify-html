@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { countScripts, FreezeError } from "./verify.js";
 
 /**
- * 동결 자체(single-file-core 실행)는 실제 브라우저 DOM/네트워크가 필요하므로
+ * 캡처 자체(single-file-core 실행)는 실제 브라우저 DOM/네트워크가 필요하므로
  * 실 Chrome 검증으로 확인한다. 여기서는 무해화의 제1 방어선인 <script> 검증기만 단위 검증.
  * (verify.ts는 single-file-core를 로드하지 않아 node/happy-dom에서 그대로 테스트 가능)
  */

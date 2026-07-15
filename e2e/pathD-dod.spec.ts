@@ -9,7 +9,7 @@ import { test, expect, chromium, type BrowserContext, type APIRequestContext } f
  * 1. 로그인 fixture(폼 + 쿠키로 게이트된 보호 화면)를 로컬 HTTP 서버로 기동
  * 2. 확장을 unpacked 로드하고 팝업 storage로 오리진↔프로젝트(토큰) 바인딩
  * 3. 사용자가 직접 로그인(서버가 대신 하지 않음) → 보호 화면 진입 → 확장이 SDK 주입
- * 4. 장면 등록·어노테이션·설명 → 동결·저장(토큰 인증, background 릴레이)
+ * 4. 장면 등록·어노테이션·설명 → 캡처·저장(토큰 인증, background 릴레이)
  * 5. 콘솔에서 마스킹 규칙 적용 → export
  * 6. 새 컨텍스트 file:// 오픈 → 마커 위치(≤2px)·설명 일치·마스킹 원문 0회·네트워크 0건
  * 7. 보안 회귀: 토큰 없는 저장 요청 401
@@ -147,7 +147,7 @@ test("경로 D DoD: 로그인 뒤 보호 화면을 확장으로 편집 → 마�
   // 프로젝트 로드가 브리지(GET)로 성공했는지 — "불러오기 실패"가 아니어야 한다
   await expect(page.locator(".save")).not.toContainText("실패");
 
-  // ── 4. 장면 등록 + 어노테이션 + 동결·저장(토큰 인증 릴레이) ───────────
+  // ── 4. 장면 등록 + 어노테이션 + 캡처·저장(토큰 인증 릴레이) ───────────
   await page.getByRole("button", { name: "+ 현재 화면 등록" }).click();
   await expect(page.locator(".frz--ok")).toHaveCount(1, { timeout: 30_000 });
 

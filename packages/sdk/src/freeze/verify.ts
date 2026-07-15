@@ -1,9 +1,9 @@
 /**
- * 동결 무해화 검증 — single-file-core에 의존하지 않는 순수 파트(단위 검증 대상).
- * freeze.ts가 실제 동결 후 이 검증기로 <script> 0개를 강제한다 (§7.1).
+ * 캡처 무해화 검증 — single-file-core에 의존하지 않는 순수 파트(단위 검증 대상).
+ * freeze.ts가 실제 캡처 후 이 검증기로 <script> 0개를 강제한다 (§7.1).
  */
 
-/** 동결 실패 (배지 + 재시도로 이어짐 — detailed-spec §3.7). */
+/** 캡처 실패 (배지 + 재시도로 이어짐 — detailed-spec §3.7). */
 export class FreezeError extends Error {
   override name = "FreezeError";
 }

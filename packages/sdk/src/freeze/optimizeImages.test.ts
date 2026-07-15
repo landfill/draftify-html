@@ -38,7 +38,7 @@ describe("optimizeSnapshotImages", () => {
     expect(out).toBe(html);
   });
 
-  it("인코딩 실패나 이득 없음(결과가 더 큼)이면 원본을 유지한다 — 동결을 깨지 않는다", async () => {
+  it("인코딩 실패나 이득 없음(결과가 더 큼)이면 원본을 유지한다 — 캡처를 깨지 않는다", async () => {
     const failing = vi.fn<ImageEncoder>(async () => {
       throw new Error("디코드 실패");
     });

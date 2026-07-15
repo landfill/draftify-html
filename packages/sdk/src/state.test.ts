@@ -47,7 +47,7 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     expect(projectContentSignature(saved)).toBe(projectContentSignature(project));
   });
 
-  it("동결 기록에 캡처 뷰포트 크기가 함께 저장된다 — 뷰어의 반응형(폭)·100vh류(높이) 재현 기준", () => {
+  it("캡처 기록에 캡처 뷰포트 크기가 함께 저장된다 — 뷰어의 반응형(폭)·100vh류(높이) 재현 기준", () => {
     const doc = docFromProject(project);
     const frozen = setSceneSnapshot(doc, "scn_one", "asset_snap0001", "2026-07-12T00:00:00.000Z", {
       width: 1440,

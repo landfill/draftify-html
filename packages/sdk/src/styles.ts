@@ -123,7 +123,7 @@ export const STYLES = /* css */ `
 }
 .scene__del:hover, .ann__del:hover { color: #d9480f; }
 
-/* 동결 상태 (장면 항목 하단) */
+/* 캡처 상태 (장면 항목 하단) */
 .scene__frz { margin: 3px 0 0 2px; font-size: 11px; }
 .frz { display: inline-flex; align-items: center; gap: 5px; }
 .frz--busy { color: #7a7a7a; }

@@ -92,18 +92,18 @@ export interface Scene {
   order: number;
   /** 장면 내 다음 어노테이션 번호. 현재 남은 최대 번호+1 — 끝 번호 삭제 시 감소 가능 */
   annoNumberSeq: number;
-  /** asset store 키. 동결 성공 시에만 존재 */
+  /** asset store 키. 캡처 성공 시에만 존재 */
   snapshotAsset?: string;
   /** ISO 8601 */
   frozenAt?: string;
   /**
-   * 동결 시점 뷰포트 레이아웃 폭(px, documentElement.clientWidth). 뷰어가 스냅샷 iframe의
+   * 캡처 시점 뷰포트 레이아웃 폭(px, documentElement.clientWidth). 뷰어가 스냅샷 iframe의
    * 기준 폭으로 사용 — 반응형 페이지가 캡처 당시 레이아웃(데스크톱/모바일)으로 재현되게.
    * 없으면(구 스냅샷) 뷰어는 중앙 가용 폭으로 폴백.
    */
   captureWidth?: number;
   /**
-   * 동결 시점 뷰포트 높이(px, documentElement.clientHeight). 100vh류(뷰포트 고정 높이)
+   * 캡처 시점 뷰포트 높이(px, documentElement.clientHeight). 100vh류(뷰포트 고정 높이)
    * 페이지는 scrollHeight가 항상 뷰포트와 같아 콘텐츠 높이를 측정할 수 없다 — 캡처 당시
    * 높이로 렌더해야 잘리지 않는다. 없으면 뷰어는 최소 480px 폴백.
    */

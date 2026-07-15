@@ -39,7 +39,7 @@ async function expectSaved(page: Page): Promise<void> {
 }
 
 test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// 오프라인 검증", async ({ page, browser }, testInfo) => {
-  // 동결 실패 등으로 confirm이 뜨면 명시적으로 실패시키기보다 진행 후 검증에서 잡는다
+  // 캡처 실패 등으로 confirm이 뜨면 명시적으로 실패시키기보다 진행 후 검증에서 잡는다
   page.on("dialog", (dialog) => void dialog.accept());
 
   // ── 1. 콘솔에서 zip 업로드 ─────────────────────────────────────────
@@ -62,7 +62,7 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
   const registerScene = page.getByRole("button", { name: "+ 현재 화면 등록" });
   await expect(registerScene).toBeEnabled(); // 프로젝트 로드 완료
   await registerScene.click();
-  await expect(page.locator(".frz--ok")).toHaveCount(1); // ✓ 동결됨 (등록 즉시 자동 동결)
+  await expect(page.locator(".frz--ok")).toHaveCount(1); // ✓ 캡처됨 (등록 즉시 자동 캡처)
 
   for (const spec of SCENE1) await attachAnnotation(page, spec);
   await expectSaved(page);

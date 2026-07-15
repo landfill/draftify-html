@@ -20,8 +20,8 @@ import {
 import { useMarkers } from "./useMarkers.js";
 
 /**
- * SDK 편집기: 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 동결 + 저장.
- * 장면 등록 시 현재 DOM을 즉시 동결(single-file-core)해 스냅샷을 업로드한다.
+ * SDK 편집기: 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 캡처 + 저장.
+ * 장면 등록 시 현재 DOM을 즉시 캡처(single-file-core)해 스냅샷을 업로드한다.
  * 편집 상태는 500ms 디바운스로 전체 SpecProject PUT, 실패 시 최신본 1개를 localStorage에 둔다.
  */
 
@@ -57,7 +57,7 @@ export function App({ projectId }: { projectId: string }) {
   const [needScene, setNeedScene] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
-  // 동결 진행/실패 상태 (성공은 scene.snapshotAsset로 표현). sceneId → 값.
+  // 캡처 진행/실패 상태 (성공은 scene.snapshotAsset로 표현). sceneId → 값.
   const [freezing, setFreezing] = useState<Record<string, boolean>>({});
   const [freezeErr, setFreezeErr] = useState<Record<string, string>>({});
   const [drag, setDrag] = useState<MarkerDrag | null>(null);
@@ -374,8 +374,8 @@ export function App({ projectId }: { projectId: string }) {
     el?.focus();
   }, [selectedAnn]);
 
-  // 장면 동결: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
-  // 등록 직후 자동 실행 + 각 장면의 재동결 버튼에서 재호출.
+  // 장면 캡처: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
+  // 등록 직후 자동 실행 + 각 장면의 재캡처 버튼에서 재호출.
   const runFreeze = async (sceneId: string) => {
     setFreezing((f) => ({ ...f, [sceneId]: true }));
     setFreezeErr((e) => { const { [sceneId]: _drop, ...rest } = e; return rest; });
@@ -383,16 +383,16 @@ export function App({ projectId }: { projectId: string }) {
       const html = await freezeDocument();
       const assetKey = await uploadSnapshot(projectId, html);
       // 캡처 시점 뷰포트 크기 — 뷰어가 이 크기로 렌더해 반응형(폭)·100vh류(높이) 페이지도
-      // 캡처했던 레이아웃 그대로 재현된다 (동결이 도킹 마진을 제거하므로 전체 폭이 기준).
+      // 캡처했던 레이아웃 그대로 재현된다 (캡처가 도킹 마진을 제거하므로 전체 폭이 기준).
       const capture = {
         width: document.documentElement.clientWidth || window.innerWidth,
         height: document.documentElement.clientHeight || window.innerHeight,
       };
       setDoc((d) => setSceneSnapshot(d, sceneId, assetKey, new Date().toISOString(), capture));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "동결 실패";
+      const msg = err instanceof Error ? err.message : "캡처 실패";
       setFreezeErr((e) => ({ ...e, [sceneId]: msg }));
-      console.warn("[mockspec] 동결 실패:", err);
+      console.warn("[mockspec] 캡처 실패:", err);
     } finally {
       setFreezing((f) => { const { [sceneId]: _drop, ...rest } = f; return rest; });
     }
@@ -437,7 +437,7 @@ export function App({ projectId }: { projectId: string }) {
     setDoc(nd);
     setCurrentSceneId(scene.id);
     setNeedScene(false);
-    void runFreeze(scene.id); // 등록 즉시 자동 동결
+    void runFreeze(scene.id); // 등록 즉시 자동 캡처
   };
 
   const removeScene = (id: string) => {
@@ -521,7 +521,7 @@ export function App({ projectId }: { projectId: string }) {
                     onInput={(e) => setDoc(updateSceneTitle(doc, s.id, (e.target as HTMLInputElement).value))}
                   />
                   <button
-                    class="scene__refreeze" title="다시 동결"
+                    class="scene__refreeze" title="다시 캡처"
                     disabled={freezing[s.id]}
                     onClick={() => void runFreeze(s.id)}
                   >⟳</button>
@@ -529,15 +529,15 @@ export function App({ projectId }: { projectId: string }) {
                 </div>
                 <div class="scene__frz">
                   {freezing[s.id] ? (
-                    <span class="frz frz--busy"><span class="spin" /> 동결 중…</span>
+                    <span class="frz frz--busy"><span class="spin" /> 캡처 중…</span>
                   ) : freezeErr[s.id] ? (
                     <button class="frz frz--err" title={freezeErr[s.id]} onClick={() => void runFreeze(s.id)}>
-                      동결 실패 — 재시도
+                      캡처 실패 — 재시도
                     </button>
                   ) : s.snapshotAsset ? (
-                    <span class="frz frz--ok">✓ 동결됨 {s.frozenAt ? new Date(s.frozenAt).toLocaleTimeString() : ""}</span>
+                    <span class="frz frz--ok">✓ 캡처됨 {s.frozenAt ? new Date(s.frozenAt).toLocaleTimeString() : ""}</span>
                   ) : (
-                    <span class="frz frz--none">아직 동결 안 됨</span>
+                    <span class="frz frz--none">아직 캡처 안 됨</span>
                   )}
                 </div>
               </li>
