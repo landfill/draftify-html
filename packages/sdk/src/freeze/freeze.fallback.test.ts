@@ -160,4 +160,18 @@ describe("neutralizeDataScripts (비실행 데이터 <script> 제거 — m.hanat
     restore();
     expect(shadow.getElementById("sd")).not.toBeNull();
   });
+
+  it("복원 기준 노드(nextSibling)가 동결 중 사라져도 예외 없이 부모 끝에 복원한다 (라이브 페이지 DOM 변동 — 리뷰 반영)", () => {
+    document.body.innerHTML = `
+      <script type="application/ld+json" id="ld">{}</script>
+      <div id="gone">동결 중 페이지가 지울 노드</div>
+      <p id="stay">본문</p>`;
+    const restore = neutralizeDataScripts();
+    document.getElementById("gone")!.remove(); // 라이브 페이지의 자체 DOM 변동 시뮬레이션
+
+    expect(restore).not.toThrow();
+    const ld = document.getElementById("ld")!;
+    expect(ld).not.toBeNull();
+    expect(ld.parentNode).toBe(document.body); // 기준을 잃었으면 부모 끝으로
+  });
 });
