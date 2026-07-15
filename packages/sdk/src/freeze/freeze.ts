@@ -111,6 +111,48 @@ export function neutralizeMedia(): () => void {
   };
 }
 
+/**
+ * 동결 직전 비실행 데이터 <script>를 임시로 뗀다. 반환값을 호출해 복원한다.
+ *
+ * single-file의 blockScripts는 **실행 스크립트만** 제거하고 데이터 블록
+ * (ld+json SEO 스키마, JSON 템플릿 등 type이 JS가 아닌 script)은 남긴다.
+ * 우리 검증(countScripts)은 §7.1대로 모든 <script>를 0개로 강제하므로, 그런 페이지는
+ * 동결이 항상 FreezeError로 실패했다(실사용 — m.hanatour.com의 ld+json 1개).
+ * 데이터 블록은 기획서 산출물에 불필요하므로 동결에서 제외한다. 검증 기준은 완화하지
+ * 않는다 — 제거는 여기(동결 입력), 강제는 verify(동결 출력)로 역할이 나뉜다.
+ * 라이브 DOM 조작이라 finally에서 원복한다 (neutralizeMedia와 동일 패턴).
+ */
+export function neutralizeDataScripts(): () => void {
+  const saved: Array<{ el: Element; parent: Node; next: Node | null }> = [];
+  // 실행 계열 type(빈 값·JS MIME·module 등)은 blockScripts가 제거하므로 건드리지 않는다
+  const isExecutableType = (type: string): boolean => {
+    const t = type.trim().toLowerCase();
+    return t === "" || t === "module" || /(?:java|ecma)script/.test(t);
+  };
+
+  const strip = (root: ParentNode): void => {
+    for (const el of Array.from(root.querySelectorAll("script"))) {
+      if (isExecutableType(el.getAttribute("type") ?? "")) continue;
+      if (!el.parentNode) continue;
+      saved.push({ el, parent: el.parentNode, next: el.nextSibling });
+      el.remove();
+    }
+    // 열린 shadow DOM으로 재귀 — single-file이 직렬화하는 범위와 맞춘다 (neutralizeMedia 참조)
+    for (const el of Array.from(root.querySelectorAll("*"))) {
+      if (el.shadowRoot && !el.matches("[data-mockspec-root]")) strip(el.shadowRoot);
+    }
+  };
+  strip(document);
+
+  return () => {
+    // 역순 복원 — 인접한 script 여러 개를 뗐어도 nextSibling 기준 위치가 맞는다
+    for (let i = saved.length - 1; i >= 0; i--) {
+      const { el, parent, next } = saved[i];
+      parent.insertBefore(el, next);
+    }
+  };
+}
+
 async function runFreeze(options: Record<string, unknown>): Promise<string> {
   const { content } = await getPageData({ ...options }, {});
   // 큰 이미지 WebP 재인코딩 — 고해상도 이미지가 많은 페이지의 수십 MB 스냅샷 방지
@@ -138,6 +180,7 @@ export async function freezeDocument(): Promise<string> {
   html.style.transition = "none";
   html.style.marginRight = "";
   const restoreMedia = neutralizeMedia();
+  const restoreDataScripts = neutralizeDataScripts();
   try {
     try {
       return await runFreeze(FREEZE_OPTIONS);
@@ -148,6 +191,7 @@ export async function freezeDocument(): Promise<string> {
       return await runFreeze(SAFE_FALLBACK_OPTIONS);
     }
   } finally {
+    restoreDataScripts();
     restoreMedia();
     html.style.marginRight = prevMargin;
     html.style.transition = prevTransition;

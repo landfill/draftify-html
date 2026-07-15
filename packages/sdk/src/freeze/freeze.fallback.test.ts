@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FreezeError } from "./verify.js";
-import { freezeDocument, neutralizeMedia } from "./freeze.js";
+import { freezeDocument, neutralizeDataScripts, neutralizeMedia } from "./freeze.js";
 
 /**
  * 동결 폴백 로직(실사용에서 발견된 single-file 정규식 오류 대응).
@@ -104,5 +104,60 @@ describe("neutralizeMedia (킥오프 §11 11차 — 오디오·비디오 포스�
     const restore = neutralizeMedia();
     expect(shadow.getElementById("pa")!.getAttribute("src")).toBe("/panel.mp3"); // 손대지 않음
     restore();
+  });
+});
+
+describe("neutralizeDataScripts (비실행 데이터 <script> 제거 — m.hanatour.com ld+json 실사용)", () => {
+  it("데이터 script(ld+json 등)는 떼고, 실행 script는 남기며(blockScripts 담당), 복원 시 원위치", () => {
+    document.head.innerHTML = `
+      <script type="application/ld+json" id="ld">{"@context":"https://schema.org"}</script>
+      <meta id="after-ld" name="x" content="y">`;
+    document.body.innerHTML = `
+      <script id="js1">x()</script>
+      <script id="js2" type="text/javascript">y()</script>
+      <script id="mod" type="module">z()</script>
+      <script id="tpl" type="text/x-template"><p>tpl</p></script>`;
+    const restore = neutralizeDataScripts();
+
+    expect(document.getElementById("ld")).toBeNull();
+    expect(document.getElementById("tpl")).toBeNull();
+    // 실행 계열은 single-file blockScripts가 제거하므로 여기서는 손대지 않는다
+    expect(document.getElementById("js1")).not.toBeNull();
+    expect(document.getElementById("js2")).not.toBeNull();
+    expect(document.getElementById("mod")).not.toBeNull();
+
+    restore();
+    const ld = document.getElementById("ld")!;
+    expect(ld.textContent).toContain("schema.org");
+    // 원위치 복원 — 떼기 전의 nextSibling(meta) 앞으로 돌아온다
+    expect(ld.nextElementSibling?.id).toBe("after-ld");
+  });
+
+  it("인접한 데이터 script 여러 개도 순서 그대로 복원한다", () => {
+    document.body.innerHTML = `
+      <script type="application/json" id="d1">1</script>
+      <script type="application/ld+json" id="d2">2</script>
+      <p id="p">본문</p>`;
+    const restore = neutralizeDataScripts();
+    expect(document.querySelectorAll("script")).toHaveLength(0);
+
+    restore();
+    const ids = Array.from(document.body.children).map((el) => el.id);
+    expect(ids).toEqual(["d1", "d2", "p"]);
+  });
+
+  it("열린 shadow DOM 내부 데이터 script도 제거·복원하고, 패널(data-mockspec-root)은 건너뛴다", () => {
+    document.body.innerHTML = `<div id="host"></div><div id="panel" data-mockspec-root></div>`;
+    const shadow = document.getElementById("host")!.attachShadow({ mode: "open" });
+    shadow.innerHTML = `<script type="application/ld+json" id="sd">{}</script><p>내용</p>`;
+    const panelShadow = document.getElementById("panel")!.attachShadow({ mode: "open" });
+    panelShadow.innerHTML = `<script type="application/json" id="pd">{}</script>`;
+
+    const restore = neutralizeDataScripts();
+    expect(shadow.getElementById("sd")).toBeNull();
+    expect(panelShadow.getElementById("pd")).not.toBeNull(); // 패널은 손대지 않음
+
+    restore();
+    expect(shadow.getElementById("sd")).not.toBeNull();
   });
 });

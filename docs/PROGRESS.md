@@ -66,6 +66,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-15 — 동결 실패 수정: 비실행 데이터 <script>(ld+json) 무해화
+- 브랜치: `fix/freeze-data-scripts` (main 병합 대기 — 사용자 검토·동의 필요).
+- 배경(실사용): 경로 D로 `m.hanatour.com` 연결 시 "동결 실패 — 재시도". 실 Chromium 재현으로 원인 확정 — 페이지의 SSR SEO 스키마 `<script type="application/ld+json">` 1개를 single-file `blockScripts`가 **실행 스크립트가 아니라서 남기고**, 우리 검증(countScripts, §7.1 모든 script 0개)이 FreezeError로 폐기. FreezeError는 설계상 폴백 재시도 없음. **S1 최초 커밋(da85f1a)의 옵션으로도 동일 재현 — 잠재해 있던 갭이며 최근 커밋(#9·#10 뷰어 CSS, PR #5·#6)의 회귀 아님.** 기존 실사용 페이지에 ld+json이 없어 드러나지 않았을 뿐.
+- 완료: `neutralizeDataScripts()` 신설(freeze.ts) — 동결 직전 비실행 type의 script(ld+json·JSON·템플릿 등)를 라이브 DOM에서 임시 제거, finally에서 nextSibling 기준 원위치 복원(neutralizeMedia와 동일 패턴). 열린 shadow DOM 재귀 + 패널(data-mockspec-root) 제외 동일. 실행 계열(빈 type·JS MIME·module)은 blockScripts 담당이라 손대지 않음. **검증 기준(모든 script 0개)은 완화하지 않음** — 제거는 동결 입력, 강제는 verify 출력으로 역할 분리.
+- 검증: 신규 단위 테스트 3건(데이터/실행 분리·인접 복원 순서·shadow 재귀+패널 제외). `npm run typecheck`·`npm run build` 통과, `npm test` **187 passed**(+3), `npm run test:e2e` **4본 통과**. **실 Chromium 재검증: m.hanatour.com 동결 성공(11.2MB, script 0개 검증 통과)** — 수정 전 동일 하니스에서 FreezeError 재현됐던 페이지.
+- 주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 실패했던 프로젝트(prj_j2zq93bwfk)는 재동결만 하면 됨.
+- 다음 할 일: 사용자 검토 → push·PR → CI green → main 병합 동의 → 병합. 별도 대기 중: `fix/viewer-font-size-header`(#9·#10, 커밋 완료·push 대기).
+- 막힌 지점: 없음.
+
 ### 2026-07-15 — 실사용 개선 이슈 4건 GitHub 등록 (#8~#11)
 - 배경(사용자 실사용 피드백): 편집·산출물·콘솔에서 발견한 UX 약점을 이슈로 외부화.
 - 등록: **#8** 편집 모드 — 넓은 화면(1920px+)에서 뷰포트 밖 마커 조정 시 스크롤 왕복 강요(하단→우측→상단), 해결 후보는 패널 선택 시 앵커 요소 scrollIntoView / **#9** 산출물 뷰어 — 화면 타이틀·디스크립션 폰트가 편집 모드(12~13px) 대비 과대(16px, `:root` font-size 미지정으로 브라우저 기본 상속 — 실측 확인) / **#10** 산출물 뷰어 — 상단 타이틀 헤더 배경 처리로 문서 정체성 인식 개선(#9와 같은 VIEWER_CSS 영역) / **#11** 콘솔 UI 디자인 개선(방향 합의 후 착수).
