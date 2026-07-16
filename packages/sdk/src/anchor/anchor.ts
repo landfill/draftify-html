@@ -195,7 +195,7 @@ function refind(anchor: Anchor, doc: Document): Element | null {
   return best;
 }
 
-export type ResolveMode = "selector" | "refind" | "rect-fallback";
+export type ResolveMode = "selector" | "refind" | "selector-mismatch" | "rect-fallback";
 
 export interface ResolveResult {
   el: Element | null;
@@ -205,13 +205,17 @@ export interface ResolveResult {
 }
 
 /**
- * 재해석 (ID-07): selector → 시그니처 검증 → 실패 시 재탐색(+selector 자동 갱신) → rect fallback.
+ * 재해석 (ID-07): selector → 시그니처 검증 → 실패 시 재탐색(+selector 자동 갱신)
+ * → selector 유일 해석(서명 불일치, 위치 불확실 표시 — 킥오프 §11 15차) → rect fallback.
  * 마커를 조용히 사라지게 두지 않는다: 실패 시 el=null, mode="rect-fallback"로 위치 불확실 표시.
  */
 export function resolveAnchor(anchor: Anchor, doc: Document): ResolveResult {
   let bySelector: Element | null = null;
+  let selectorUnique = false;
   try {
-    bySelector = doc.querySelector(anchor.selector);
+    const matched = doc.querySelectorAll(anchor.selector);
+    bySelector = matched[0] ?? null;
+    selectorUnique = matched.length === 1;
   } catch {
     bySelector = null;
   }
@@ -222,6 +226,13 @@ export function resolveAnchor(anchor: Anchor, doc: Document): ResolveResult {
   const found = refind(anchor, doc);
   if (found) {
     return { el: found, mode: "refind", selector: generateSelector(found) };
+  }
+
+  // 동적 텍스트(타이머·랜덤 문구)로 서명만 불일치한 경우: 유일 해석되는 selector의
+  // 요소가 마지막 rect(다른 레이아웃에서 측정됐을 수 있음)보다 신뢰할 만하다.
+  // 서명 불일치 상태이므로 selector 갱신·저장은 하지 않는다.
+  if (bySelector && selectorUnique) {
+    return { el: bySelector, mode: "selector-mismatch", selector: anchor.selector };
   }
 
   return { el: null, mode: "rect-fallback", selector: anchor.selector };

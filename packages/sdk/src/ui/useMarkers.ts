@@ -2,7 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import { contentScrollSize, resolveAnchor } from "../anchor/anchor.js";
 import { annotationsOfScene, type EditorDoc } from "../state.js";
 
-/** 마커 1개의 뷰포트 좌표 (요소 좌상단). uncertain=위치 불확실(rect fallback). */
+/** 마커 1개의 뷰포트 좌표 (요소 좌상단). uncertain=위치 불확실(서명 불일치·rect fallback). */
 export interface MarkerPos {
   annId: string;
   number: number;
@@ -44,7 +44,8 @@ export function useMarkers(
             onSelectorUpdate(a.id, res.selector); // 갱신된 selector 저장
           }
           const r = res.el.getBoundingClientRect();
-          return { annId: a.id, number: a.number, x: r.left, y: r.top, uncertain: false };
+          // selector-mismatch: 요소는 찾았지만 서명 불일치 — 그 위치에 위치 불확실로 표시
+          return { annId: a.id, number: a.number, x: r.left, y: r.top, uncertain: res.mode === "selector-mismatch" };
         }
         // rect fallback: 문서 비율 → 뷰포트 좌표
         const x = a.anchor.rect.x * size.width - window.scrollX;

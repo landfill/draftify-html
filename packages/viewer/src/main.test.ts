@@ -102,6 +102,31 @@ describe("viewer anchor resolve", () => {
     expect(result.mode).toBe("rect-fallback");
     expect(result.el).toBeNull();
   });
+
+  it("동적 텍스트로 서명만 불일치 + selector 유일 해석 → selector-mismatch (킥오프 §11 15차)", () => {
+    document.body.innerHTML = `<div id="root"><span id="timer">13s</span></div>`;
+    const anchor: Anchor = {
+      selector: "#timer",
+      text: "12s", // 부착 시점 텍스트 — 캡처 시점에는 13s로 변함
+      rect: { x: 0.1, y: 0.1, w: 0.05, h: 0.03 },
+    };
+    const result = resolveAnchor(anchor, document);
+    expect(result.mode).toBe("selector-mismatch");
+    expect(result.el?.textContent).toBe("13s"); // rect가 아니라 요소 위치
+    expect(result.selector).toBe("#timer");     // selector 갱신 안 함
+  });
+
+  it("서명 불일치인데 selector가 비유일하면 rect fallback", () => {
+    document.body.innerHTML = `<div id="root"><button>동일</button><button>동일</button></div>`;
+    const anchor: Anchor = {
+      selector: "#root button",
+      text: "사라진 텍스트",
+      rect: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 },
+    };
+    const result = resolveAnchor(anchor, document);
+    expect(result.mode).toBe("rect-fallback");
+    expect(result.el).toBeNull();
+  });
 });
 
 describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
