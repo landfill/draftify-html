@@ -219,7 +219,8 @@ test("경로 D DoD: 로그인 뒤 보호 화면을 확장으로 편집 → 마�
         );
         if (!el || !marker) return null;
         const rect = el.getBoundingClientRect();
-        return { dx: Math.abs(parseFloat(marker.style.left) - rect.right), dy: Math.abs(parseFloat(marker.style.top) - rect.top) };
+        // 뷰어는 마커 잘림 방지로 좌표를 14px 안쪽으로 클램프한다 — 동일 규칙 적용
+        return { dx: Math.abs(parseFloat(marker.style.left) - Math.max(14, rect.left)), dy: Math.abs(parseFloat(marker.style.top) - Math.max(14, rect.top)) };
       },
       { selector: a.target, num: String(i + 1) }
     );

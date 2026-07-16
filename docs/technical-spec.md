@@ -140,7 +140,7 @@ export interface Annotation {
   title: string;
   description: string;           // 마크다운 허용 (뷰어에서 렌더)
   policyRefs?: string[];         // "POL-014" 등. S1은 저장·표시만
-  markerOffset?: { dx: number; dy: number }; // 마커 표시 오프셋(px) — 기본 위치(요소 우상단)에서 드래그로 옮긴 상대값 (킥오프 §11 4차 개정)
+  markerOffset?: { dx: number; dy: number }; // 마커 표시 오프셋(px) — 기본 위치(요소 좌상단, 킥오프 §11 14차 개정)에서 드래그로 옮긴 상대값 (킥오프 §11 4차 개정)
   transition?: { toSceneId: string; condition?: string }; // 흐름도 원천 데이터 — "이 요소 조작 시 → 장면 X" (2026-07-12 §2.2 예정 필드에서 승격, FR-EDT-10)
 }
 
@@ -263,6 +263,7 @@ resolve(anchor):
 ```
 
 - 트리거: `MutationObserver` + `ResizeObserver`, **300ms 디바운스** (React 리렌더 폭주 대응)
+- 마커 기본 위치: 해석 결과 요소의 **좌상단**(`rect.left`, `rect.top`) + `markerOffset` (킥오프 §11 14차 개정 — 종전 우상단). rect fallback 좌표도 동일 규칙(`x·콘텐츠폭`, `y·콘텐츠높이`)
 - 뷰어에서도 동일 로직 사용 (스냅샷 DOM은 정적이지만 srcdoc 로드 시 1회 resolve 필요)
 
 ---

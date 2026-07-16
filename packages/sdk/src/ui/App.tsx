@@ -432,18 +432,18 @@ export function App({ projectId }: { projectId: string }) {
     return base;
   };
 
-  /** 마커의 문서 좌표 (기본 위치 = 요소 우상단 + 드래그 오프셋). 렌더(useMarkers)와 동일 기준. */
+  /** 마커의 문서 좌표 (기본 위치 = 요소 좌상단 + 드래그 오프셋). 렌더(useMarkers)와 동일 기준. */
   const markerDocPoint = (ann: Annotation): { x: number; y: number; el: Element | null } => {
     const res = resolveAnchor(ann.anchor, document);
     let x: number, y: number;
     if (res.el) {
       const r = res.el.getBoundingClientRect();
-      x = r.right + window.scrollX;
+      x = r.left + window.scrollX;
       y = r.top + window.scrollY;
     } else {
       // rect fallback (앵커 미해석): 저장된 문서 비율 좌표
       const size = contentScrollSize(document);
-      x = (ann.anchor.rect.x + ann.anchor.rect.w) * size.width;
+      x = ann.anchor.rect.x * size.width;
       y = ann.anchor.rect.y * size.height;
     }
     const off = ann.markerOffset ?? { dx: 0, dy: 0 };
@@ -535,7 +535,7 @@ export function App({ projectId }: { projectId: string }) {
     checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(ann.id, true), 700);
   };
 
-  // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(우상단)는
+  // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(좌상단)는
   // 오른쪽 가장자리 요소에서 패널에 가릴 수 있다 — 가려질 때만 추종해 불필요한 이동을 피한다.
   const followMarkerIfHidden = (ann: Annotation) => {
     const { x, y } = markerDocPoint(ann);
@@ -653,7 +653,7 @@ export function App({ projectId }: { projectId: string }) {
         <div class="hl" style={{ top: hover.top, left: hover.left, width: hover.width, height: hover.height }} />
       )}
       {/* 마커: 미리보기·편집 양쪽에서 현재 장면 소속만 렌더 (ID-09).
-          위치 = 기본(요소 우상단) + markerOffset. 편집 모드에선 드래그로 오프셋 조정 (§3.5) */}
+          위치 = 기본(요소 좌상단) + markerOffset. 편집 모드에선 드래그로 오프셋 조정 (§3.5) */}
       {markers.map((m) => {
         const off = markerOffsetOf(m.annId);
         return (

@@ -292,10 +292,10 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(document.querySelectorAll<HTMLElement>(".ann")[0]!.classList.contains("ann--sel")).toBe(true);
   });
 
-  it("생성 직후 마커(요소 우상단)가 패널 가시영역 밖이면 스크롤 추종한다", async () => {
+  it("생성 직후 마커(요소 좌상단)가 패널 가시영역 밖이면 스크롤 추종한다", async () => {
     await mountWithOpenPanel();
 
-    // 오른쪽 가장자리 요소 흉내: 우상단(right)이 innerWidth-360(패널 경계) 밖
+    // 오른쪽 가장자리 요소 흉내: 좌상단(left)이 innerWidth-360(패널 경계) 밖
     const target = document.getElementById("target")!;
     target.getBoundingClientRect = () => ({
       left: 1900, right: 2000, top: 10, bottom: 40, width: 100, height: 30, x: 1900, y: 10,
@@ -309,7 +309,7 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(scrollTo).toHaveBeenCalledOnce();
     // 스페이서 도달 목표가 마커+여유까지 확장된다
     const spacer = document.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]")!;
-    expect(Number(spacer.getAttribute("data-reach"))).toBeGreaterThanOrEqual(2000 + 48);
+    expect(Number(spacer.getAttribute("data-reach"))).toBeGreaterThanOrEqual(1900 + 48);
 
     // 가시영역 안 요소(#other, rect 0)는 생성 시 추종하지 않는다
     intoView.mockClear();
@@ -329,7 +329,7 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
     vi.spyOn(window, "scrollTo").mockImplementation(() => {}); // 스크롤 무효(fixed-body) 흉내
 
-    await act(async () => { clickMockup("target"); }); // 생성 추종 발동 (마커 1000 > usable 664)
+    await act(async () => { clickMockup("target"); }); // 생성 추종 발동 (마커 900 > usable 664)
     // 정착 대기(700ms) → 신선한 좌표로 window 보정 1회 → 재정착(700ms) 후에도
     // 가려져 있고 패널 겹침 대역이면 항목에 안내 노출
     await act(async () => { await vi.advanceTimersByTimeAsync(1400); });

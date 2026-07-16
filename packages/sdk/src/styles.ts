@@ -91,7 +91,7 @@ export const STYLES = /* css */ `
   border-radius: 3px; transition: all .04s linear;
 }
 
-/* 숫자 마커 (요소 우상단, viewport 좌표) */
+/* 숫자 마커 (요소 좌상단, viewport 좌표) */
 .marker {
   position: fixed; z-index: 2147482500; transform: translate(-50%, -50%);
   min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
