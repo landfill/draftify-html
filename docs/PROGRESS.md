@@ -18,6 +18,7 @@
 **동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
 **어노테이션 끝 번호 재사용(킥오프 §11 12차) — 중간 결번 유지 + 신규는 현재 최대 번호+1. PR #6로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 피드백 없음·브랜치 삭제).**
 **PR-Agent Gemini 코드 리뷰 워크플로 — PR #20로 main 병합 완료 (2026-07-16, CI·PR-Agent green·리뷰 피드백 반영·브랜치 삭제).**
+**콘솔 UI 디자인 개선(이슈 #11, 1~7차 피드백) — PR #21로 main 병합 완료 (2026-07-16, CI green·리뷰 5건(Gemini 4·Codex 1) 반영·브랜치 삭제).**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -66,6 +67,11 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-16 — PR #21 main 병합 완료 (이슈 #11 콘솔 UI 디자인 개선)
+- 사용자 동의 후 **PR #21 main 병합**(\`977aafb\`, merge commit·CI verify green·PR-Agent green·리뷰 5건 전부 반영). 로컬·원격 브랜치 삭제(prune 확인).
+- 다음 할 일: main에서 서버 기동(localhost:4000) 후 콘솔 새 UI 실사용 확인. 이슈 #11 종료 검토.
+- 막힌 지점: 없음.
 
 ### 2026-07-16 — PR #21 Codex P2 반영: 웹폰트 @import 철회 (ID-01 계약 우선)
 - 브랜치: \`feat/console-ui-redesign\` (PR #21). Codex P2 지적 수용(사용자 결정): 직전 Gemini 리뷰 ①로 넣은 jsdelivr Pretendard \`@import\`가 콘솔 테스트 계약 "외부 참조 없이 상대 /api 경로만 (ID-01)"(console.test.ts)과 충돌 — 기존 정규식이 \`src=\`/\`href=\`만 스캔해 CSS \`@import\`를 못 잡았다.
