@@ -12,43 +12,51 @@ import { WORKING_NAME } from "@mockspec/shared";
 const CONSOLE_CSS = `
 :root {
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1e293b;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  font-family: Pretendard, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
   min-height: 100vh;
 }
 * { box-sizing: border-box; }
 body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 12px; }
 button, input { font: inherit; }
-.c-shell { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
-.c-title { margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; }
+
+.c-header {
+  display: flex; justify-content: space-between; align-items: center;
+  height: 48px; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px;
+}
+.c-logo { font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+.c-header-right { display: flex; gap: 20px; align-items: center; }
+.c-nav-link { font-size: 12px; color: #475569; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.c-nav-link:hover { color: #0f172a; }
+
+.c-shell { max-width: 1200px; margin: 0 auto; padding: 24px; }
 .c-card { 
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   border-radius: 8px; 
   padding: 16px 20px; 
   margin-bottom: 20px; 
 }
-.c-card h2 { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: #334155; border-bottom: 1px solid rgba(203, 213, 225, 0.5); padding-bottom: 8px; }
+.c-card h2 { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
 .c-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
 .c-row label { flex: 0 0 120px; font-size: 12px; font-weight: 600; color: #475569; text-align: right; }
 .c-row input[type="text"], .c-row input[type="file"] { 
   flex: 1 1 0; min-width: 200px; max-width: 300px;
   padding: 6px 10px; 
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(203, 213, 225, 0.8); 
+  background: #fff;
+  border: 1px solid #cbd5e1; 
   border-radius: 4px; 
   transition: all 0.2s ease;
   font-size: 12px;
 }
 .c-row input[type="text"]:focus, .c-row input[type="file"]:focus {
-  outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); background: #fff;
+  outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 .c-hint { margin: 4px 0 12px 128px; color: #64748b; font-size: 11px; line-height: 1.4; }
 .c-btn {
+
   padding: 6px 12px; border: none; border-radius: 4px;
   background: #4f46e5; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
 }
@@ -65,20 +73,20 @@ button, input { font: inherit; }
 .c-status a { color: #4f46e5; font-weight: 600; text-decoration: none; }
 .c-status a:hover { text-decoration: underline; }
 
-.c-list { display: flex; flex-direction: column; border: 1px solid rgba(203, 213, 225, 0.6); border-radius: 6px; overflow: hidden; background: rgba(255, 255, 255, 0.6); }
-.c-project { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid rgba(203, 213, 225, 0.4); transition: background 0.15s ease; }
+.c-list { display: flex; flex-direction: column; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #fff; }
+.c-project { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease; }
 .c-project:last-child { border-bottom: none; }
-.c-project:hover { background: #fff; }
+.c-project:hover { background: #f8fafc; }
 .c-project-info { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0; }
 .c-project-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .c-project-name { font-weight: 700; font-size: 13px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-badge { padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 600; background: rgba(99, 102, 241, 0.1); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.2); }
-.c-id-code { padding: 2px 6px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.08); border-radius: 4px; font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #64748b; user-select: all; }
+.c-id-code { padding: 2px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #64748b; user-select: all; }
 .c-project-meta { color: #64748b; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-project-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .c-empty { color: #64748b; padding: 24px 16px; text-align: center; font-size: 12px; }
 
-.c-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid rgba(203, 213, 225, 0.6); }
+.c-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
 .c-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-weight: 600; font-size: 13px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s ease; margin-bottom: -1px; }
 .c-tab:hover { color: #334155; }
 .c-tab[aria-selected="true"] { color: #4f46e5; border-bottom-color: #4f46e5; }
@@ -733,9 +741,18 @@ export const CONSOLE_HTML = `<!doctype html>
   <style>${CONSOLE_CSS}</style>
 </head>
 <body>
+  <header class="c-header">
+    <div class="c-header-left">
+      <span class="c-logo">${WORKING_NAME}</span>
+    </div>
+    <div class="c-header-right">
+      <a href="#" class="c-nav-link">사용 가이드</a>
+      <a href="#" class="c-nav-link">DOCS</a>
+      <a href="#" class="c-nav-link">FAQ</a>
+      <a href="#" class="c-nav-link">EN</a>
+    </div>
+  </header>
   <div class="c-shell">
-    <h1 class="c-title">${WORKING_NAME}</h1>
-
     <section class="c-card">
       <h2>새 프로젝트 시작</h2>
       <div class="c-tabs" role="tablist">
