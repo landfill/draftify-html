@@ -17,6 +17,7 @@
 **작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건 반영·브랜치 삭제).**
 **동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
 **어노테이션 끝 번호 재사용(킥오프 §11 12차) — 중간 결번 유지 + 신규는 현재 최대 번호+1. PR #6로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 피드백 없음·브랜치 삭제).**
+**PR-Agent Gemini 코드 리뷰 워크플로 — PR #20로 main 병합 완료 (2026-07-16, CI·PR-Agent green·리뷰 피드백 반영·브랜치 삭제).**
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -67,8 +68,8 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-16 — PR-Agent Gemini 코드 리뷰 워크플로 도입 (핵심 외부 리뷰 자동화)
-- 브랜치: `feat/ci-pr-agent-gemini` — PR #20 오픈 후 리뷰 피드백 3차 반영까지 완료.
-- 배경(사용자 요청): The-PR-Agent/pr-agent GitHub Action을 Gemini API key로 붙여 이 프로젝트 PR의 자동 코드 리뷰를 얻고 싶다. 검토만 한 뒤 도입 여부 확정 → 도입 진행(본 세션). 이미 축적된 Gemini Code Assist·codex 리뷰 외부 봇과 **자동 모드 OFF·댓글 명령 수동 트리거**로 얹어 비용·노이즈를 평소 0으로 유지. 모델은 신형 Gemini 3.5 Flash(주) + 3.1 Flash-Lite(폴백/가벼운 작업)로 사용자 결정.
+- 브랜치: `feat/ci-pr-agent-gemini` — **PR #20 main 병합 완료** (`d9be4bc`), 로컬·원격 브랜치 삭제.
+- 배경(사용자 요청): The-PR-Agent/pr-agent GitHub Action을 Gemini API key로 붙여 이 프로젝트 PR의 자동 코드 리뷰를 얻고 싶다. 검토만 한 뒤 도입 여부 확정 → 도입 진행(본 세션). CodeRabbit·Codex·Gemini Code Assist 외부 봇과 병행. 사용자 결정으로 **자동 리뷰 ON**(`auto_review` + push `handle_push_trigger`), `/describe`·`/improve`는 수동. 모델은 Gemini 3.5 Flash(주) + 3.1 Flash-Lite(폴백/가벼운 작업).
 - 완료(신규 2파일, 회귀 0, 후속 피드백 반영 포함):
   - `.github/workflows/pr-agent.yml` — `uses: the-pr-agent/pr-agent@main` + `config.model: "gemini/gemini-3.5-flash"`(GA 코딩/agent 최적화) + `config.fallback_models: '["gemini/gemini-3.1-flash-lite"]'`(폴백) + `GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}`(시크릿 참조 — 평문 키는 절대 yml에 넣지 않음, 공개 리포라 유출→Google 자동 폐기). 최종 트리거는 `pull_request(opened/reopened/ready_for_review/synchronize)` + `issue_comment`. 자동 모드는 사용자 결정에 따라 `auto_review: "true"`로 켰고, `/describe`·`/improve`는 계속 수동. Codex P2 후속: `synchronize`만 yml에 넣으면 PR-Agent가 내부적으로 스킵(`Skipping action: synchronize`)하므로 `handle_push_trigger: "true"` + `push_commands: '["/review"]'` 추가 — push 후에도 자동 리뷰가 실제 실행됨. 리뷰 피드백 반영으로 `issue_comment` 실행의 concurrency 그룹을 `github.event.pull_request.number || github.event.issue.number || github.ref` 기반으로 바꿔, 다른 PR의 수동 `/review`가 서로 취소되지 않게 수정. 기존 `ci.yml`과는 여전히 독립 그룹이라 상호 취소 없음. `permissions: pull-requests·issues·contents write`. `pull_request` 이벤트라 fork PR에서도 시크릿 미노출(공식 권장 보안 프로파일).
   - `.pr_agent.toml` — 모델 작업별 분배 + 프로젝트 특화 리뷰 튜닝. `[config] model_weak = "gemini/gemini-3.1-flash-lite"` — `/describe`·`/ask`·라인 질문·changelog 가벼운 작업은 비용 효율형 3.1 Flash-Lite로 분산(미설정 시 주 모델 3.5 Flash로 치러져 비용/속도 손해). `model_reasoning`은 미설정(3.5 Flash가 충분히 강해 `/improve` 자기반성에 재사용). `[pr_reviewer].extra_instructions`에 4개 설계 제1원칙(PRD §1.3) 위반을 최우선 검출하라는 가이드 삽입: LLM 추론 코드 경로·`data-spec-id` 1순위 혼입·서버 헤드리스 캡처·산출물 네트워크 0건 위반. 그 외 앵커 다중 시그니처·번호 규칙·SSRF 3겹·`<script>` 0개 검증·AGENTS.md 규약(브랜치 접두 등)·한국어 산출물·용어("화면"/"화면 이동")도 검출 대상. `[pr_code_suggestions]`는 임계치 7(노이즈 절감), 제안 4개 상한이며, CodeRabbit 지적대로 미지원 `[best_practices]` 섹션은 제거하고 `extra_instructions`를 `[pr_code_suggestions]`에 병합해 `/improve` 경로에도 실제 적용되게 정리.
@@ -79,8 +80,8 @@
 - 트리거 사용법: Secret 등록 후 PR을 열거나 새 커밋을 push하면 자동 리뷰가 1회 실행되고, 필요시 댓글로 `/review` `/describe` `/improve`를 추가로 써서 수동 호출도 가능하다.
 - 주의: 자동 리뷰를 켠 상태라 무료 키의 일일 한도는 PR 수·push 수에 비례해 빨리 소진될 수 있다. 한도가 막히면 GitHub Secret `GEMINI_API_KEY`만 유료 키로 교체하면 된다(워크플로 파일 수정 불필요).
 - PR-Agent 자동 리뷰 후속 피드백 판단(4차): ① `issue_comment`가 일반 이슈에도 반응해 Actions 분 낭비 가능 → `github.event.pull_request || github.event.issue.pull_request` 가드 수용. ② `GOOGLE_AI_STUDIO.GEMINI_API_KEY`를 `GEMINI_API_KEY`로 바꾸라는 지적은 **기각** — PR-Agent 공식 문서가 GitHub Action env에 점(`.`) 구분 키를 명시하고, 실제 push 트리거 리뷰도 성공해 문제 없음.
-- 다음 할 일: PR #20 CI green 확인 → 사용자 main 병합 동의 대기.
-- 막힌 지점: 없음. 단, GitHub Secret 등록/교체는 오직 사용자만 할 수 있음(에이전트 접근 불가).
+- 다음 할 일: 이후 PR에서 자동 Gemini 리뷰가 main 기준으로 동작하는지 관찰. 무료 키 한도 소진 시 GitHub Secret `GEMINI_API_KEY`만 유료 키로 교체. Codex P2(외부인 댓글 가드·fork PR 자동 리뷰)는 필요 시 후속 PR.
+- 막힌 지점: 없음.
 
 ### 2026-07-16 — PR #19 b34f20b 이후 추가 리뷰 P2 대응·CI green
 - 완료: 중단된 로컬 작업 트리를 복구하고 PR #19의 최신 리뷰 스레드를 대조했다. `b34f20b` 후속 Codex P2(추종 정착 700ms 대기 중 패널을 닫거나 화면·선택이 바뀌어도 이전 어노테이션 보정 `scrollTo`가 뒤늦게 발동)에 대해 ① 패널 열림·현재 화면 변경 시 대기 타이머 해제 ② 예약 당시 어노테이션과 현재 선택이 다르면 콜백 무효화를 적용했다. 패널 닫기·선택 변경 회귀 테스트 2건으로 두 경로를 고정하고 커밋 `6e1ea53`으로 PR #19에 push했다.
