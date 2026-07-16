@@ -77,6 +77,7 @@ export function App({ projectId }: { projectId: string }) {
   const modeRef = useRef(mode); modeRef.current = mode;
   const dragRef = useRef(drag); dragRef.current = drag;
   const peekRef = useRef(peek); peekRef.current = peek;
+  const selectedAnnRef = useRef(selectedAnn); selectedAnnRef.current = selectedAnn;
   const suppressClickRef = useRef(false);
   // 방금 생성한 어노테이션 id — title 자동 포커스는 "생성 시 1회"에만 한다.
   // (실사용: 앞 번호 칸을 편집 중인데 재렌더로 포커스가 마지막 칸으로 튀는 버그 방지)
@@ -371,6 +372,8 @@ export function App({ projectId }: { projectId: string }) {
     setSelectedAnn(null);
     setHiddenMarkerAnn(null);
     setPeek(false); // 선택이 사라지면 패널이 비켜줄 이유도 사라진다
+    // 대기 중인 정착 재확인도 무효 — 닫힌 뒤 뒤늦은 scrollTo로 화면이 튀지 않게 (PR #19 리뷰)
+    window.clearTimeout(checkTimerRef.current);
   }, [currentSceneId, open]);
 
   const clearEmptyAnns = (sceneId: string) => {
@@ -471,6 +474,9 @@ export function App({ projectId }: { projectId: string }) {
   // 안내는 **패널 겹침일 때만** — 뷰포트 밖(상하·왼쪽·오른쪽 너머) 마커는 패널을
   // 접어도 안 드러나므로 [패널 접고 마커 보기]를 권하지 않는다 (codex P2).
   const recheckMarkerHidden = (annId: string, retry: boolean) => {
+    // 선택이 이미 다른 곳으로 갔으면(마커 클릭 등 추종 없는 선택 변경 포함) 무효 —
+    // 옛 어노테이션 기준의 보정 scrollTo·안내가 뒤늦게 발동하지 않는다 (PR #19 리뷰)
+    if (selectedAnnRef.current !== annId) return;
     const ann = docRef.current.annotations.find((a) => a.id === annId);
     if (!ann) { setHiddenMarkerAnn(null); return; }
     const { x, y, el } = markerDocPoint(ann);
