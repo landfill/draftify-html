@@ -65,6 +65,10 @@ export function App({ projectId }: { projectId: string }) {
   const [drag, setDrag] = useState<MarkerDrag | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
+  // 패널 비켜주기(peek, 이슈 #8): 패널이 얇은 탭으로 접혀 마커 가림을 해소한다
+  const [peek, setPeek] = useState(false);
+  // 추종 후에도 마커가 패널에 가려 있는 선택 항목 — 안내·[패널 접고 마커 보기] 노출 대상
+  const [hiddenMarkerAnn, setHiddenMarkerAnn] = useState<string | null>(null);
 
   // 옵저버/전역 리스너가 최신 상태를 읽도록 ref 래핑
   const projectRef = useRef(project); projectRef.current = project;
@@ -72,6 +76,7 @@ export function App({ projectId }: { projectId: string }) {
   const sceneRef = useRef(currentSceneId); sceneRef.current = currentSceneId;
   const modeRef = useRef(mode); modeRef.current = mode;
   const dragRef = useRef(drag); dragRef.current = drag;
+  const peekRef = useRef(peek); peekRef.current = peek;
   const suppressClickRef = useRef(false);
   // 방금 생성한 어노테이션 id — title 자동 포커스는 "생성 시 1회"에만 한다.
   // (실사용: 앞 번호 칸을 편집 중인데 재렌더로 포커스가 마지막 칸으로 튀는 버그 방지)
@@ -230,17 +235,19 @@ export function App({ projectId }: { projectId: string }) {
     return () => window.clearTimeout(timer);
   }, [currentProjectSnapshot, doc, loadError, project]);
 
-  // 패널 도킹 시 목업 레이아웃 360px 축소
+  // 패널 도킹 시 목업 레이아웃 360px 축소 (peek 중에는 패널이 접혀 있으니 원폭 복귀)
   useEffect(() => {
     const el = document.documentElement;
     const prev = el.style.marginRight;
     el.style.transition = "margin-right .15s ease";
-    el.style.marginRight = open ? "360px" : "";
-    return () => {
-      el.style.marginRight = prev;
-      resetScrollSpacer(); // 패널이 닫히면 페이지 원 스크롤 범위로 복귀
-      resetPageShift();    // 시프트된 페이지도 원위치로
-    };
+    el.style.marginRight = open && !peek ? "360px" : "";
+    return () => { el.style.marginRight = prev; };
+  }, [open, peek]);
+
+  // 패널이 닫히면 페이지 원 스크롤 범위로 복귀 (스페이서는 open 수명에만 종속)
+  useEffect(() => {
+    if (!open) return;
+    return () => resetScrollSpacer();
   }, [open]);
 
   // 스크롤 스페이서 (이슈 #8): 도킹 margin-right는 고정폭 페이지의 스크롤 범위를
@@ -314,6 +321,9 @@ export function App({ projectId }: { projectId: string }) {
         const existing = annotationsOfScene(docRef.current, scene)
           .find((a) => resolveAnchor(a.anchor, document).el === target);
         if (existing) {
+          // peek 중이었어도 선택 항목을 보려면 패널이 돌아와야 한다. followMarkerIfHidden이
+          // 복귀 후 패널 폭 기준으로 판단하도록 ref를 즉시 갱신한다 (setState는 비동기).
+          peekRef.current = false; setPeek(false);
           setSelectedAnn(existing.id);
           followMarkerIfHidden(existing); // 요소는 클릭했지만 마커는 패널에 가릴 수 있다
           return;
@@ -322,6 +332,7 @@ export function App({ projectId }: { projectId: string }) {
 
       const anchor = generateAnchor(target);            // ID-06
       const { doc: nd, annotation } = addAnnotation(docRef.current, scene, anchor);
+      peekRef.current = false; setPeek(false);           // 제목 입력을 위해 패널 복귀
       setDoc(nd);
       newAnnRef.current = annotation.id;                 // 이 항목만 title 자동 포커스 대상
       setSelectedAnn(annotation.id);                    // 패널 항목 열고 포커스
@@ -351,33 +362,9 @@ export function App({ projectId }: { projectId: string }) {
   // 장면 전환·패널 닫기 시 선택 해제 (다른 장면 소속 선택이 남지 않도록)
   useEffect(() => {
     setSelectedAnn(null);
-    resetPageShift(); // 선택이 사라지면 시프트 근거도 사라진다
+    setHiddenMarkerAnn(null);
+    setPeek(false); // 선택이 사라지면 패널이 비켜줄 이유도 사라진다
   }, [currentSceneId, open]);
-
-  // 시프트는 마커를 보여주기 위한 **일시 상태**다 (실사용: 유지되면 fixed-body 앱에서는
-  // 화면 앞쪽으로 돌아올 방법이 없다 — 창 스크롤 불가). 사용자가 목업을 만지거나(pointerup)
-  // 스크롤을 시도하면(wheel) 즉시 원복해 시야를 돌려준다. 마커·패널 조작(isOwn)은 예외 —
-  // 드래그로 마커를 조정하는 동안은 유지. pointerdown이 아니라 pointerup인 이유: 누름과
-  // 원복 사이에 페이지가 움직이면 click 대상이 어긋나고, 편집 모드의 부착 클릭이 원복된
-  // 좌표로 앵커 rect를 재면 정확해진다 (click은 pointerup 뒤에 온다).
-  useEffect(() => {
-    if (!open) return;
-    const dismiss = (e: Event) => {
-      // 마커 드래그 종료의 pointerup은 마커 밖에서 끝나도 시프트를 풀지 않는다 (조정 직후 유지)
-      if (!pageShiftRef.current || dragRef.current || isOwn(e.target)) return;
-      resetPageShift();
-    };
-    document.addEventListener("pointerup", dismiss, true);
-    document.addEventListener("wheel", dismiss, { capture: true, passive: true });
-    return () => {
-      document.removeEventListener("pointerup", dismiss, true);
-      document.removeEventListener("wheel", dismiss, true);
-    };
-  }, [open]);
-
-  // 모드 전환(편집↔미리보기) 시에도 원복 — 미리보기는 목업을 조작하는 모드라 시프트된
-  // 시야가 방해다
-  useEffect(() => { resetPageShift(); }, [mode]);
 
   const clearEmptyAnns = (sceneId: string) => {
     const count = annotationsOfScene(doc, sceneId).filter(isEmptyAnnotation).length;
@@ -453,66 +440,36 @@ export function App({ projectId }: { projectId: string }) {
     return { x: x + off.dx, y: y + off.dy, el: res.el };
   };
 
-  /** 마커가 패널을 제외한 가시영역 안에 있는가 (인자는 문서 좌표). */
+  /** 마커가 패널을 제외한 가시영역 안에 있는가 (인자는 문서 좌표). peek 중엔 전체 폭. */
   const markerInView = (x: number, y: number): boolean => {
     const vx = x - window.scrollX;
     const vy = y - window.scrollY;
-    return vx >= 0 && vx <= window.innerWidth - PANEL_W && vy >= 0 && vy <= window.innerHeight;
+    const panelW = peekRef.current ? 0 : PANEL_W;
+    return vx >= 0 && vx <= window.innerWidth - panelW && vy >= 0 && vy <= window.innerHeight;
   };
 
-  // 페이지 시프트 (이슈 #8 잔여): 창 스크롤이 무효한 페이지에서는 — body 자체가
+  // 패널 비켜주기(peek, 이슈 #8): 창 스크롤이 무효한 페이지 — body 자체가
   // position:fixed(+overflow:hidden)인 Nexacro류 사내 시스템, 내부 커스텀 스크롤 —
-  // 스페이서·scrollTo·scrollIntoView 어느 것도 패널에 가린 마커를 못 드러낸다.
-  // 추종 스크롤이 정착한 뒤에도 마커가 가시영역 밖이면 마커의 fixed 조상(없으면
-  // <html> 마진)을 잔여량만큼 밀어 드러내고, 다음 추종·선택 해제·패널 닫기·캡처
-  // 시작 시 원복한다. 패널·마커는 자체 fixed(뷰포트 기준)라 시프트에 안 딸려간다.
-  const pageShiftRef = useRef<{ el: HTMLElement; kind: "fixed" | "root"; prevLeft: string; prevTop: string } | null>(null);
-  const shiftTimerRef = useRef<number | undefined>(undefined);
+  // 에서는 스페이서·scrollTo·scrollIntoView 어느 것도 패널에 가린 마커를 못 드러낸다.
+  // 페이지를 움직이는 대신 가림의 원인인 **패널이 얇은 탭으로 접혀 비켜준다** —
+  // 페이지 무이동·좌표 계약 무변경, 복귀 수단(탭)이 눈에 보인다. 추종 정착 후에도
+  // 마커가 가려져 있으면 항목에 안내와 [패널 접고 마커 보기] 버튼을 노출한다.
+  const checkTimerRef = useRef<number | undefined>(undefined);
 
-  const resetPageShift = () => {
-    window.clearTimeout(shiftTimerRef.current);
-    const s = pageShiftRef.current;
-    if (!s) return;
-    if (s.kind === "fixed") { s.el.style.left = s.prevLeft; s.el.style.top = s.prevTop; }
-    else { s.el.style.marginLeft = s.prevLeft; s.el.style.marginTop = s.prevTop; }
-    pageShiftRef.current = null;
-  };
-
-  const fixedAncestorOf = (el: Element | null): HTMLElement | null => {
-    let cur: Element | null = el;
-    while (cur && cur !== document.documentElement) {
-      if (cur instanceof HTMLElement && getComputedStyle(cur).position === "fixed") return cur;
-      cur = cur.parentElement;
-    }
-    return null;
-  };
-
-  const applyShiftIfStillHidden = (annId: string) => {
+  const recheckMarkerHidden = (annId: string) => {
     const ann = docRef.current.annotations.find((a) => a.id === annId);
-    if (!ann) return;
+    if (!ann) { setHiddenMarkerAnn(null); return; }
     const { x, y, el } = markerDocPoint(ann);
-    // rect fallback(el 없음) 마커는 비율 좌표 렌더라 페이지를 밀어도 안 움직인다 — 시프트 무의미
-    if (!el || markerInView(x, y)) return;
-    const vx = x - window.scrollX;
-    const vy = y - window.scrollY;
-    const maxX = window.innerWidth - PANEL_W - MARKER_CLEARANCE;
-    const maxY = window.innerHeight - MARKER_CLEARANCE;
-    const dx = vx > maxX ? vx - maxX : vx < MARKER_CLEARANCE ? vx - MARKER_CLEARANCE : 0;
-    const dy = vy > maxY ? vy - maxY : vy < MARKER_CLEARANCE ? vy - MARKER_CLEARANCE : 0;
-    if (!dx && !dy) return;
-    const fixedRoot = fixedAncestorOf(el);
-    if (fixedRoot) {
-      const cs = getComputedStyle(fixedRoot);
-      pageShiftRef.current = { el: fixedRoot, kind: "fixed", prevLeft: fixedRoot.style.left, prevTop: fixedRoot.style.top };
-      if (dx) fixedRoot.style.left = `${(parseFloat(cs.left) || 0) - dx}px`;
-      if (dy) fixedRoot.style.top = `${(parseFloat(cs.top) || 0) - dy}px`;
-    } else {
-      const html = document.documentElement;
-      const cs = getComputedStyle(html);
-      pageShiftRef.current = { el: html, kind: "root", prevLeft: html.style.marginLeft, prevTop: html.style.marginTop };
-      if (dx) html.style.marginLeft = `${(parseFloat(cs.marginLeft) || 0) - dx}px`;
-      if (dy) html.style.marginTop = `${(parseFloat(cs.marginTop) || 0) - dy}px`;
-    }
+    // rect fallback(el 없음) 마커는 위치 자체가 불확실 표시 대상이라 안내에서 제외
+    setHiddenMarkerAnn(el && !markerInView(x, y) ? annId : null);
+  };
+
+  const restorePanel = () => {
+    setPeek(false);
+    // 패널이 돌아오면(도킹 복원 후) 같은 항목이 다시 가려지는지 재확인해 안내를 되살린다
+    const annId = selectedAnn;
+    window.clearTimeout(checkTimerRef.current);
+    if (annId) checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(annId), 300);
   };
 
   // 어노테이션 선택·생성 시 마커를 가시영역으로 스크롤 (이슈 #8).
@@ -521,17 +478,20 @@ export function App({ projectId }: { projectId: string }) {
   // 내부 overflow 컨테이너는 scrollIntoView가 처리하고, window 스크롤 목표는 곧바로
   // 뒤이은 scrollTo가 이어받는다 (같은 smooth 대상이라 마지막 호출이 이긴다).
   const scrollMarkerIntoView = (ann: Annotation) => {
-    resetPageShift(); // 이전 시프트를 원복한 위치 기준으로 새로 판단
     const { x, y, el } = markerDocPoint(ann);
     ensureScrollSpacer(x); // 마커+여유까지 스크롤 도달 보장
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    const panelW = peekRef.current ? 0 : PANEL_W;
     window.scrollTo({
-      left: x - (window.innerWidth - PANEL_W) / 2,
+      left: x - (window.innerWidth - panelW) / 2,
       top: y - window.innerHeight / 2,
       behavior: "smooth",
     });
-    // smooth 스크롤 정착 후 재확인 — 창 스크롤이 무효한 페이지면 시프트로 마저 드러낸다
-    shiftTimerRef.current = window.setTimeout(() => applyShiftIfStillHidden(ann.id), 700);
+    // smooth 스크롤 정착 후 재확인 — 창 스크롤이 무효한 페이지면 여전히 가려져 있고,
+    // 그때는 [패널 접고 마커 보기] 안내를 노출한다
+    window.clearTimeout(checkTimerRef.current);
+    setHiddenMarkerAnn(null);
+    checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(ann.id), 700);
   };
 
   // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(우상단)는
@@ -566,7 +526,6 @@ export function App({ projectId }: { projectId: string }) {
   // 장면 캡처: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
   // 등록 직후 자동 실행 + 각 장면의 재캡처 버튼에서 재호출.
   const runFreeze = async (sceneId: string) => {
-    resetPageShift(); // 시프트가 스냅샷에 박제되지 않게 캡처 전 원복
     setFreezing((f) => ({ ...f, [sceneId]: true }));
     setFreezeErr((e) => { const { [sceneId]: _drop, ...rest } = e; return rest; });
     try {
@@ -671,7 +630,13 @@ export function App({ projectId }: { projectId: string }) {
         );
       })}
 
-      <div class="panel" role="complementary" aria-label="mockspec 편집 패널">
+      {peek && (
+        <button
+          class="panel-tab" title="패널 펼치기"
+          onClick={restorePanel}
+        >❮</button>
+      )}
+      <div class={`panel${peek ? " panel--peek" : ""}`} role="complementary" aria-label="mockspec 편집 패널">
         <div class="panel__head">
           <span class="panel__title">mockspec</span>
           <span class="panel__pid">{projectId}</span>
@@ -767,6 +732,12 @@ export function App({ projectId }: { projectId: string }) {
                 />
                 <button class="ann__del" title="삭제" onClick={() => setDoc(deleteAnnotation(doc, a.id))}>×</button>
               </div>
+              {hiddenMarkerAnn === a.id && selectedAnn === a.id && !peek && (
+                <div class="ann__hidden">
+                  마커가 패널에 가려져 있습니다
+                  <button class="btn" onClick={() => setPeek(true)}>패널 접고 마커 보기</button>
+                </div>
+              )}
               <textarea
                 class="ann__desc" placeholder="설명 (마크다운)"
                 value={a.description}
