@@ -1,0 +1,57 @@
+# PR-Agent Gemini 코드 리뷰 (검토 합의 2026-07-16)
+#
+# 기존 ci.yml(타입체크·빌드·테스트·E2E)과 독립. 같은 PR 이벤트에서 2본 병렬 실행되나
+# 서로 의존/충돌하지 않는다:
+#  - concurrency 그룹을 prefix로 분리(ci- vs pr-agent-) — 어느 한쪽이 다른 쪽을 취소하지 않음
+#  - GITHUB_TOKEN은 GitHub Actions가 자동 주입(발급 불필요). Gemini 키만 Secrets에 등록
+#  - on: pull_request(안전한 이벤트 — fork PR에서 시크릿 미노출). pull_request_target 미사용
+#  - 자동 트리거(auto_review)는 ON. PR 오픈/재오픈/ready에서 자동 리뷰
+#  - push(synchronize)는 yml types만으로는 부족 — PR-Agent 쪽 handle_push_trigger + push_commands 필요
+#  - issue_comment는 /review /describe /improve 수동 명령도 계속 받는다(봇 댓글은 sender.type=Bot 가드로 제외)
+#
+# 사전 의무 작업(이 파일 외 1건): GitHub 리포 Settings → Secrets and variables → Actions
+#   → New repository secret → "GEMINI_API_KEY" 이름으로 Google AI Studio 발급 키 붙여넣기
+#   키 없으면 PR-Agent 첫 실행이 401로 실패함. 문의: Google AI Studio https://aistudio.google.com/
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+  issue_comment:
+
+# CI(ci.yml, group=ci-*)와 별도 취소 풀. PR 번호 기준으로 같은 PR의 이전 실행만 취소
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr_agent_job:
+    # 봇 댓글 무시 + 일반 이슈 댓글은 스킵(PR-Agent는 PR 전용 — Actions 분 낭비 방지)
+    if: ${{ github.event.sender.type != 'Bot' && (github.event.pull_request || github.event.issue.pull_request) }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    steps:
+      - name: PR Agent action step
+        uses: the-pr-agent/pr-agent@main
+        env:
+          # GitHub가 자동 주입 — 별도 발급·등록 불필요
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Google Gemini(Google AI Studio). OPENAI_KEY 불필요.
+          # 모델명은 "gemini/" 접두 필수(provider prefix).
+          # 주 모델: gemini-3.5-flash — 코딩·agent 작업 최적화, GA 안정형(Google AI 문서 + PR-Agent PR #2432 등록).
+          # 폴백: gemini-3.1-flash-lite — 고용량 단순 작업용, 과금 안정성(3.5-flash 호출 실패 시에만).
+          config.model: "gemini/gemini-3.5-flash"
+          config.fallback_models: '["gemini/gemini-3.1-flash-lite"]'
+          # PR-Agent 공식 GitHub Action env 형식(점 구분). Dynaconf가 GOOGLE_AI_STUDIO.GEMINI_API_KEY로 매핑.
+          GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # 자동 리뷰 ON — PR open/reopen/ready 때 리뷰를 단다.
+          # push(synchronize)는 PR-Agent 내부 설정이 별도 필요(기본값 false → "Skipping action: synchronize").
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "false"
+          github_action_config.auto_improve: "false"
+          github_action_config.handle_push_trigger: "true"
+          github_action_config.push_commands: '["/review"]'
+          # issue_comment 트리거는 /review /describe /improve 수동 명령용으로 유지.
