@@ -339,7 +339,13 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
       // dx = 1000 - (1024 - 360 - 48) = 384
       expect(document.body.style.left).toBe("-384px");
 
-      // 패널 닫기 → 시프트 원복
+      // 시프트는 일시 상태: 사용자가 스크롤을 시도하면(wheel, 목업 쪽) 즉시 원복
+      await act(async () => {
+        document.getElementById("other")!.dispatchEvent(new Event("wheel", { bubbles: true }));
+      });
+      expect(document.body.style.left).toBe("0px");
+
+      // 패널 닫기도 원복 유지 (재시프트 없음)
       await act(async () => { document.querySelector<HTMLButtonElement>(".panel__close")!.click(); });
       expect(document.body.style.left).toBe("0px");
     } finally {
