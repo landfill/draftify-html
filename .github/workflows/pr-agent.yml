@@ -26,8 +26,8 @@ concurrency:
 
 jobs:
   pr_agent_job:
-    # 봇이 단 댓글은 무시(자기 호출 루프 방지 — 공식 ready-to-use YAML과 동일)
-    if: ${{ github.event.sender.type != 'Bot' }}
+    # 봇 댓글 무시 + 일반 이슈 댓글은 스킵(PR-Agent는 PR 전용 — Actions 분 낭비 방지)
+    if: ${{ github.event.sender.type != 'Bot' && (github.event.pull_request || github.event.issue.pull_request) }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -45,6 +45,7 @@ jobs:
           # 폴백: gemini-3.1-flash-lite — 고용량 단순 작업용, 과금 안정성(3.5-flash 호출 실패 시에만).
           config.model: "gemini/gemini-3.5-flash"
           config.fallback_models: '["gemini/gemini-3.1-flash-lite"]'
+          # PR-Agent 공식 GitHub Action env 형식(점 구분). Dynaconf가 GOOGLE_AI_STUDIO.GEMINI_API_KEY로 매핑.
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # 자동 리뷰 ON — PR open/reopen/ready 때 리뷰를 단다.
           # push(synchronize)는 PR-Agent 내부 설정이 별도 필요(기본값 false → "Skipping action: synchronize").

@@ -78,7 +78,8 @@
 - 남은 사용자 의무 작업(1건, 본 PR과 병행해야만 첫 실행이 성공): GitHub 리포 Settings → Secrets and variables → Actions → **New repository secret → "GEMINI_API_KEY" 이름으로 Google AI Studio 발급 키 붙여넣기**. 키 없으면 PR-Agent가 401로 실패. `GITHUB_TOKEN`은 GitHub Actions가 자동 주입하므로 별도 발급 불필요.
 - 트리거 사용법: Secret 등록 후 PR을 열거나 새 커밋을 push하면 자동 리뷰가 1회 실행되고, 필요시 댓글로 `/review` `/describe` `/improve`를 추가로 써서 수동 호출도 가능하다.
 - 주의: 자동 리뷰를 켠 상태라 무료 키의 일일 한도는 PR 수·push 수에 비례해 빨리 소진될 수 있다. 한도가 막히면 GitHub Secret `GEMINI_API_KEY`만 유료 키로 교체하면 된다(워크플로 파일 수정 불필요).
-- 다음 할 일: push 후 PR #20 Actions 로그에서 `Skipping action: synchronize` 미발생·Gemini 리뷰 댓글 생성 확인 → CI green → 사용자 main 병합 동의 대기.
+- PR-Agent 자동 리뷰 후속 피드백 판단(4차): ① `issue_comment`가 일반 이슈에도 반응해 Actions 분 낭비 가능 → `github.event.pull_request || github.event.issue.pull_request` 가드 수용. ② `GOOGLE_AI_STUDIO.GEMINI_API_KEY`를 `GEMINI_API_KEY`로 바꾸라는 지적은 **기각** — PR-Agent 공식 문서가 GitHub Action env에 점(`.`) 구분 키를 명시하고, 실제 push 트리거 리뷰도 성공해 문제 없음.
+- 다음 할 일: PR #20 CI green 확인 → 사용자 main 병합 동의 대기.
 - 막힌 지점: 없음. 단, GitHub Secret 등록/교체는 오직 사용자만 할 수 있음(에이전트 접근 불가).
 
 ### 2026-07-16 — PR #19 b34f20b 이후 추가 리뷰 P2 대응·CI green
