@@ -66,6 +66,12 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — PR #19 b34f20b 이후 추가 리뷰 P2 대응 복구·검증
+- 완료: 중단된 로컬 작업 트리를 복구하고 PR #19의 최신 리뷰 스레드를 대조했다. `b34f20b` 후속 Codex P2(추종 정착 700ms 대기 중 패널을 닫거나 화면·선택이 바뀌어도 이전 어노테이션 보정 `scrollTo`가 뒤늦게 발동)에 대해 ① 패널 열림·현재 화면 변경 시 대기 타이머 해제 ② 예약 당시 어노테이션과 현재 선택이 다르면 콜백 무효화를 적용했다. 패널 닫기·선택 변경 회귀 테스트 2건으로 두 경로를 고정했다.
+- 검증: SDK 타깃 테스트 19 passed, `npm run typecheck`·`npm run build` 통과, `npm test` **196 passed**, `npm run test:e2e` **4본 통과**, `git diff --check` 통과. 샌드박스 내 첫 전체 테스트는 로컬 `listen` EPERM으로 실패했고 권한 허용 재실행에서 전부 통과했다(코드 실패 아님). 기존 single-file-core IIFE `import.meta` 빌드 경고는 불변.
+- 다음 할 일: 사용자 요청 시 현재 로컬 변경을 Lore 프로토콜로 커밋·push → PR #19 CI·리뷰 재확인 → **main 병합은 사용자 동의 후**. 병합 후 서버 재기동·확장 새로고침으로 실 화면 peek UX 확인, 이후 #17 착수.
+- 막힌 지점: 코드·검증 블로커 없음. 커밋·push는 AGENTS.md §6에 따라 사용자 요청 대기.
+
 ### 2026-07-16 — PR #19 오픈 + CI green + 리뷰 7건 반영
 - **PR #19** (이슈 #8 대응 브랜치) push·오픈, CI verify green(1m10s)·CodeRabbit pass. 리뷰 지적 7건(gemini 1·codex 1·coderabbit 5) 전부 반영: ① checkTimer 언마운트 정리(gemini) ② **peek 안내를 패널 겹침 대역으로 한정**(codex P2 — 뷰포트 밖 마커에 접어도 소용없는 [패널 접고 마커 보기]가 뜨던 것 제거, fixed-body 하니스에서 "안내 없음" 확인) ③ contentScrollSize가 스페이서 설치 후 콘텐츠 변화를 못 따라가던 것 — body가 static이면 실시간 body.scrollWidth 사용(coderabbit) ④ 도킹 effect가 패널 닫힘 상태에서도 페이지 인라인 margin/transition을 덮어쓰던 것 — 도킹 중일 때만 적용+양쪽 원복(coderabbit) ⑤ 가시성 판정에 마커 반폭(12px, 패널 쪽 경계만 — 상·좌는 중심 기준 유지해 상단 요소 클릭마다 불필요 스크롤 방지)(coderabbit) ⑥ 내부 컨테이너 스크롤 후 문서 좌표 변동 — 정착 후 신선한 좌표로 window 목표 1회 보정 재시도(coderabbit) ⑦ peek 시 숨은 패널 inert + 포커스를 탭으로 이동(coderabbit a11y).
 - 검증: typecheck·build 통과, vitest **194 passed**(재시도 체인 타이밍 반영), fixed-body 하니스 4 PASS + 뷰포트 밖 안내 미노출 확인, 일반 페이지 하니스 6 PASS, E2E 4본 통과.

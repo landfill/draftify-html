@@ -356,6 +356,43 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(document.querySelector(".panel")!.classList.contains("panel--peek")).toBe(false);
   });
 
+  it("정착 재확인 대기 중 패널을 닫으면 뒤늦은 보정 scrollTo가 발동하지 않는다", async () => {
+    await mountWithOpenPanel();
+    const target = document.getElementById("target")!;
+    target.getBoundingClientRect = () => ({
+      left: 900, right: 1000, top: 10, bottom: 40, width: 100, height: 30, x: 900, y: 10,
+      toJSON: () => ({}),
+    } as DOMRect);
+    vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+
+    await act(async () => { clickMockup("target"); }); // 추종 발동 → 700ms 재확인 예약
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+
+    // 재확인이 발동하기 전에 패널을 닫는다
+    await act(async () => { document.querySelector<HTMLButtonElement>(".panel__close")!.click(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    expect(scrollTo).toHaveBeenCalledTimes(1); // 뒤늦은 보정 scrollTo 없음
+  });
+
+  it("정착 재확인 대기 중 선택이 바뀌면 이전 어노테이션 보정을 무효화한다", async () => {
+    await mountWithOpenPanel();
+    const target = document.getElementById("target")!;
+    target.getBoundingClientRect = () => ({
+      left: 900, right: 1000, top: 10, bottom: 40, width: 100, height: 30, x: 900, y: 10,
+      toJSON: () => ({}),
+    } as DOMRect);
+    vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+
+    await act(async () => { clickMockup("target"); }); // 1번 추종 → 700ms 재확인 예약
+    await act(async () => { clickMockup("other"); });  // 가시영역 안 2번으로 선택만 변경
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    expect(scrollTo).toHaveBeenCalledTimes(1); // 이전 1번의 뒤늦은 보정 없음
+  });
+
   it("스크롤 스페이서: 패널 선택 시 생성(캡처 제외 마킹 포함), 패널 닫기 시 제거된다", async () => {
     await mountWithOpenPanel();
     await act(async () => { clickMockup("target"); });
