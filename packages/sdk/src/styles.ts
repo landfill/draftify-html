@@ -21,7 +21,26 @@ export const STYLES = /* css */ `
   box-shadow: -4px 0 18px rgba(0,0,0,.10);
   display: flex; flex-direction: column;
   font-family: system-ui, sans-serif; font-size: 13px;
+  transition: transform .18s ease;
 }
+/* 패널 비켜주기(peek) — 마커가 패널에 가릴 때 화면 밖으로 접힌다 (이슈 #8).
+   unmount가 아니라 transform이라 입력 중이던 내용·스크롤 위치가 보존된다 */
+.panel--peek { transform: translateX(100%); }
+.panel-tab {
+  position: fixed; right: 0; top: 40%; z-index: 2147483000;
+  width: 26px; height: 88px; border: 1px solid #d5d5d5; border-right: none;
+  border-radius: 10px 0 0 10px; background: rgba(255,255,255,.94); color: #2f6feb;
+  font-size: 13px; cursor: pointer; box-shadow: -2px 2px 10px rgba(0,0,0,.15);
+  font-family: system-ui, sans-serif;
+}
+.panel-tab:hover { background: #eef3ff; }
+/* 선택 항목의 마커가 패널 뒤에 있을 때의 안내 (이슈 #8) */
+.ann__hidden {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 6px; padding: 6px 8px; border-radius: 6px;
+  background: #fff4e5; color: #b5560a; font-size: 11px; line-height: 1.4;
+}
+.ann__hidden .btn { flex: 0 0 auto; }
 /* head·seg 아래 내용의 스크롤 영역 — 어노테이션이 늘어나도 끝까지 접근 가능해야 한다 */
 .panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 /* 패널 하단 고정 — 내보내기 (§3.9) */
