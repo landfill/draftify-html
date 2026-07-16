@@ -1,6 +1,6 @@
 import type { Anchor, Annotation, Scene, SpecProject } from "@mockspec/shared";
 
-type ResolveMode = "selector" | "refind" | "rect-fallback";
+type ResolveMode = "selector" | "refind" | "selector-mismatch" | "rect-fallback";
 
 interface ResolveResult {
   el: Element | null;
@@ -210,8 +210,11 @@ function refind(anchor: Anchor, doc: Document): Element | null {
 
 export function resolveAnchor(anchor: Anchor, doc: Document): ResolveResult {
   let bySelector: Element | null = null;
+  let selectorUnique = false;
   try {
-    bySelector = doc.querySelector(anchor.selector);
+    const matched = doc.querySelectorAll(anchor.selector);
+    bySelector = matched[0] ?? null;
+    selectorUnique = matched.length === 1;
   } catch {
     bySelector = null;
   }
@@ -221,6 +224,12 @@ export function resolveAnchor(anchor: Anchor, doc: Document): ResolveResult {
 
   const found = refind(anchor, doc);
   if (found) return { el: found, mode: "refind", selector: generateSelector(found) };
+
+  // 동적 텍스트로 서명만 불일치한 경우: 유일 해석되는 selector의 요소가
+  // 마지막 rect(다른 레이아웃에서 측정됐을 수 있음)보다 신뢰할 만하다 (킥오프 §11 15차).
+  if (bySelector && selectorUnique) {
+    return { el: bySelector, mode: "selector-mismatch", selector: anchor.selector };
+  }
 
   return { el: null, mode: "rect-fallback", selector: anchor.selector };
 }
@@ -607,7 +616,8 @@ function renderMarkers(
     left += annotation.markerOffset?.dx ?? 0;
     top += annotation.markerOffset?.dy ?? 0;
 
-    const marker = child("button", `ms-marker${resolved.mode === "rect-fallback" ? " is-uncertain" : ""}`);
+    const uncertain = resolved.mode === "rect-fallback" || resolved.mode === "selector-mismatch";
+    const marker = child("button", `ms-marker${uncertain ? " is-uncertain" : ""}`);
     marker.type = "button";
     marker.dataset.annotationId = annotation.id;
     marker.style.left = `${Math.max(14, left)}px`;
@@ -615,7 +625,9 @@ function renderMarkers(
     marker.title =
       resolved.mode === "rect-fallback"
         ? "요소를 찾지 못해 마지막 위치에 표시됨"
-        : annotation.title || "(제목 없음)";
+        : resolved.mode === "selector-mismatch"
+          ? "요소 내용이 변경되어 위치가 불확실함"
+          : annotation.title || "(제목 없음)";
     setText(marker, String(annotation.number));
     marker.addEventListener("click", () => {
       state.activeAnnotationId = annotation.id;

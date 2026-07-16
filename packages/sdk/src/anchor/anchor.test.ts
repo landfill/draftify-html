@@ -86,4 +86,30 @@ describe("resolveAnchor (ID-07)", () => {
     expect(r.mode).toBe("rect-fallback");
     expect(r.el).toBeNull();
   });
+
+  it("동적 텍스트로 서명만 불일치 + selector 유일 해석 → selector-mismatch로 요소 위치 사용 (킥오프 §11 15차)", () => {
+    // 부착 시점: 타이머가 "12s"인 요소에 앵커 생성
+    setBody(`<div id="root"><span id="timer">12s</span></div>`);
+    const anchor = generateAnchor(document.getElementById("timer")!);
+    expect(anchor.text).toBe("12s");
+
+    // 캡처 시점: 타이머가 흘러 "13s" — 재탐색(text)도 실패하는 상황
+    document.getElementById("timer")!.textContent = "13s";
+    const r = resolveAnchor(anchor, document);
+    expect(r.mode).toBe("selector-mismatch");
+    expect((r.el as HTMLElement).id).toBe("timer"); // rect가 아니라 요소 위치
+    expect(r.selector).toBe(anchor.selector);       // selector 갱신·저장 안 함 (원본 유지)
+  });
+
+  it("서명 불일치인데 selector가 비유일하면 selector-mismatch 없이 rect-fallback", () => {
+    setBody(`<div id="root"><button>동일</button><button>동일</button></div>`);
+    const anchor: Anchor = {
+      selector: "#root button", // 2개 요소에 해석 — 어느 쪽인지 특정 불가
+      text: "사라진 텍스트",
+      rect: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 },
+    };
+    const r = resolveAnchor(anchor, document);
+    expect(r.mode).toBe("rect-fallback");
+    expect(r.el).toBeNull();
+  });
 });
