@@ -18,7 +18,7 @@ const CONSOLE_CSS = `
   min-height: 100vh;
 }
 * { box-sizing: border-box; }
-body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 12px; }
+body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 11px; }
 button, input { font: inherit; }
 
 .c-header {
@@ -27,7 +27,7 @@ button, input { font: inherit; }
 }
 .c-logo { font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
 .c-header-right { display: flex; gap: 20px; align-items: center; }
-.c-nav-link { font-size: 12px; color: #475569; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.c-nav-link { font-size: 11px; color: #475569; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .c-nav-link:hover { color: #0f172a; }
 
 .c-shell { max-width: 1200px; margin: 0 auto; padding: 24px; }
@@ -39,9 +39,9 @@ button, input { font: inherit; }
   padding: 16px 20px; 
   margin-bottom: 20px; 
 }
-.c-card h2 { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+.c-card h2 { margin: 0 0 16px; font-size: 15px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
 .c-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
-.c-row label { flex: 0 0 120px; font-size: 12px; font-weight: 600; color: #475569; text-align: right; }
+.c-row label { flex: 0 0 120px; font-size: 11px; font-weight: 600; color: #475569; text-align: right; }
 .c-row input[type="text"], .c-row input[type="file"] { 
   flex: 1 1 0; min-width: 200px; max-width: 300px;
   padding: 6px 10px; 
@@ -49,16 +49,15 @@ button, input { font: inherit; }
   border: 1px solid #cbd5e1; 
   border-radius: 4px; 
   transition: all 0.2s ease;
-  font-size: 12px;
+  font-size: 11px;
 }
 .c-row input[type="text"]:focus, .c-row input[type="file"]:focus {
   outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
-.c-hint { margin: 4px 0 12px 128px; color: #64748b; font-size: 11px; line-height: 1.4; }
+.c-hint { margin: 4px 0 12px 128px; color: #64748b; font-size: 10.5px; line-height: 1.4; }
 .c-btn {
-
   padding: 6px 12px; border: none; border-radius: 4px;
-  background: #4f46e5; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+  background: #4f46e5; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
 }
 .c-btn:hover:not(:disabled) { background: #4338ca; }
 .c-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -78,16 +77,16 @@ button, input { font: inherit; }
 .c-project:last-child { border-bottom: none; }
 .c-project:hover { background: #f8fafc; }
 .c-project-info { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0; }
-.c-project-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.c-project-name { font-weight: 700; font-size: 13px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.c-badge { padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 600; background: rgba(99, 102, 241, 0.1); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.2); }
-.c-id-code { padding: 2px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #64748b; user-select: all; }
-.c-project-meta { color: #64748b; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-project-name-row { display: grid; grid-template-columns: 200px 80px auto; align-items: center; gap: 12px; }
+.c-project-name { font-weight: 700; font-size: 12px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-badge { justify-self: start; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: rgba(99, 102, 241, 0.1); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.2); }
+.c-id-code { justify-self: start; padding: 2px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #64748b; user-select: all; }
+.c-project-meta { color: #64748b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-project-actions { display: flex; gap: 6px; flex: 0 0 auto; }
-.c-empty { color: #64748b; padding: 24px 16px; text-align: center; font-size: 12px; }
+.c-empty { color: #64748b; padding: 24px 16px; text-align: center; font-size: 11px; }
 
 .c-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
-.c-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-weight: 600; font-size: 13px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s ease; margin-bottom: -1px; }
+.c-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-weight: 600; font-size: 12px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s ease; margin-bottom: -1px; }
 .c-tab:hover { color: #334155; }
 .c-tab[aria-selected="true"] { color: #4f46e5; border-bottom-color: #4f46e5; }
 .c-tabpanel { display: none; }
