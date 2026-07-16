@@ -10,7 +10,13 @@ import { WORKING_NAME } from "@mockspec/shared";
  */
 
 const CONSOLE_CSS = `
+/* Pretendard 웹폰트 (dynamic subset — 화면에 쓰인 글자 범위만 내려받음).
+   CDN 미도달(폐쇄망 등) 시 아래 font-family 폴백 체인으로 자연 대체된다. */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css");
+
 :root {
+  --c-label-w: 120px;
+  --c-row-gap: 10px;
   color-scheme: light;
   font-family: Pretendard, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #0f172a;
@@ -44,8 +50,8 @@ button, input { font: inherit; }
 .c-count { display: inline-block; min-width: 20px; padding: 0 7px; border-radius: 999px; background: #e2e8f0; color: #475569; font-size: 10.5px; font-weight: 600; line-height: 19px; text-align: center; }
 .c-count:empty { display: none; }
 .c-card-flush { padding: 6px 32px; }
-.c-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.c-row label { flex: 0 0 120px; font-size: 11.5px; font-weight: 500; color: #475569; text-align: right; }
+.c-row { display: flex; gap: var(--c-row-gap); align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.c-row label { flex: 0 0 var(--c-label-w); font-size: 11.5px; font-weight: 500; color: #475569; text-align: right; }
 .c-row input[type="text"], .c-row input[type="file"] {
   flex: 1 1 0; min-width: 240px; max-width: 400px;
   padding: 7px 10px;
@@ -58,7 +64,7 @@ button, input { font: inherit; }
 .c-row input[type="text"]:focus, .c-row input[type="file"]:focus {
   outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
-.c-hint { margin: 6px 0 18px 130px; color: #64748b; font-size: 11px; line-height: 1.55; max-width: 640px; }
+.c-hint { margin: 6px 0 18px calc(var(--c-label-w) + var(--c-row-gap)); color: #64748b; font-size: 11px; line-height: 1.55; max-width: 640px; }
 .c-btn {
   padding: 6px 12px; border: none; border-radius: 6px; text-decoration: none; display: inline-block;
   background: #4f46e5; color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
@@ -69,7 +75,7 @@ button, input { font: inherit; }
 .c-btn.c-btn-ghost:hover:not(:disabled) { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
 .c-btn.c-btn-danger { background: #fff; color: #e11d48; border: 1px solid #fecdd3; font-weight: 500; }
 .c-btn.c-btn-danger:hover:not(:disabled) { background: #fff1f2; border-color: #fda4af; }
-form > .c-btn[type="submit"] { margin-left: 130px; }
+form > .c-btn[type="submit"] { margin-left: calc(var(--c-label-w) + var(--c-row-gap)); }
 .c-status { margin: 14px 0 0; font-size: 11.5px; line-height: 1.5; padding: 8px 12px; border-radius: 6px; display: none; }
 .c-status:not(:empty) { display: block; }
 .c-status.is-error { color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; }
@@ -380,7 +386,11 @@ function renderProject(project) {
     "화면 " + project.scenes.length + " · 어노테이션 " + project.annotations.length +
     " · " + formatDate(project.updatedAt) + " 수정";
   if (project.exportCount > 0) {
-    metaText += " · 내보내기 " + project.exportCount + "회 (" + formatDate(project.lastExportAt) + ")";
+    metaText += " · 내보내기 " + project.exportCount + "회";
+    // lastExportAt 부재 시 "(undefined)" 노출 방지 — 값이 있을 때만 괄호 표기
+    if (project.lastExportAt) {
+      metaText += " (" + formatDate(project.lastExportAt) + ")";
+    }
   }
   if (srcType === "proxy") metaText += " · " + project.mockupSource.originUrl;
   if (srcType === "snippet" && project.mockupSource.lastSeenOrigin) {
@@ -439,7 +449,7 @@ function renderProject(project) {
 async function renderList() {
   try {
     var projects = await loadProjects();
-    countEl.textContent = String(projects.length);
+    if (countEl) countEl.textContent = String(projects.length);
     listEl.textContent = "";
     if (projects.length === 0) {
       listEl.appendChild(el("div", "c-empty", "아직 프로젝트가 없습니다. 위에서 zip 업로드·URL 등록·확장 중 하나로 시작하세요."));

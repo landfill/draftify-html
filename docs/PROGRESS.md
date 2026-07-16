@@ -67,6 +67,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — PR #21 Gemini 리뷰 4건 반영
+- 브랜치: \`feat/console-ui-redesign\` (PR #21). Gemini 인라인 리뷰 4건(전부 medium) 반영 (\`packages/server/src/routes/console.ts\`):
+  - ① Pretendard 웹폰트 로드 — CSS 상단에 jsdelivr dynamic-subset \`@import\` 추가(쓰인 글자 범위만 다운로드, family명 "Pretendard" 유지). 폐쇄망 등 CDN 미도달 시 기존 font-family 폴백 체인으로 자연 대체. 산출물 네트워크 0건 원칙(PRD §1.3-4)은 산출물 HTML 대상이라 콘솔 페이지는 무관.
+  - ② 제출 버튼 \`margin-left: 130px\` 매직 넘버 — \`--c-label-w\`(120px)·\`--c-row-gap\`(10px) CSS 변수 도입, \`.c-row\`/\`.c-row label\`/제출 버튼/\`.c-hint\`(같은 130px 의존이라 함께) 전부 변수·\`calc()\`로 동기화.
+  - ③ \`lastExportAt\` 부재 시 "내보내기 1회 (undefined)" 노출 — 값이 있을 때만 괄호 날짜 표기.
+  - ④ \`renderList\`에서 \`#project-count\` 부재 시 TypeError로 목록 렌더 전체 실패 — \`if (countEl)\` 가드.
+- 검증: \`npm run typecheck\`·\`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: push 후 CI 재확인, 사용자 브라우저 검토 → main 병합은 사용자 동의 후.
+- 막힌 지점: 없음.
+
 ### 2026-07-16 — 이슈 #11 (4차): 데스크톱 타이포그래피 정상화 + 프로젝트 목록 정보 위계 재구성
 - 브랜치: \`feat/console-ui-redesign\` — 사용자 검토 및 main 병합 대기.
 - 배경(사용자 피드백 4차): 이전 반복(Gemini)에서 밀도를 올린다며 본문 11px·배지 10px로 과도 축소, 목록 제목줄을 고정 CSS Grid(200px/80px)로 벌려 이름·타입·ID가 띄엄띄엄 보이는 문제. "PC 화면 기준 폰트·레이아웃 정비 + 목록의 제목/노출 정보/불필요 정보 재정의" 요청.
