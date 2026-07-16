@@ -77,7 +77,8 @@
 - 결정(사용자): 방안 1 — 재해석에 2.5단계 추가. 재탐색 실패 시 selector가 **유일하게** 해석되면 그 요소를 rect보다 우선, 점선(위치 불확실) 유지, selector 갱신·저장 안 함. 방안 2(rect 좌표계 정합)는 편집 중 fallback이 반대로 어긋나는 트레이드오프로 범위 제외(필요 시 후속). **이슈 #22 등록.**
 - 완료(AGENTS §4 순서): 킥오프 §6.2 서술+§11 15차 개정 → detailed-spec §3.5 재해석 단계(3단계 신설) · technical-spec §4.3(2.5단계) → 구현: sdk `anchor.ts` `resolveAnchor`에 `selector-mismatch` 모드(querySelectorAll 유일성 가드), `useMarkers.ts` uncertain 반영, viewer `main.ts` 복제 구현 동일+점선 클래스·전용 툴팁("요소 내용이 변경되어 위치가 불확실함") → 테스트: sdk anchor·viewer unit에 selector-mismatch 2케이스씩(유일 해석 성공 / 비유일이면 rect-fallback 유지).
 - 검증: `npm test` **200 passed**(196+신규 4), `npm run test:e2e` **4본 통과**(빌드 포함). 실사용 프로젝트 실데이터 재계측(Chromium): 이탈했던 3건(타이머·명대사·보기)이 전부 **요소 위 점선(dx=0)**으로 부착 — 종전 −179~−180px 편차 해소. 정상 해석 항목(파랑) 동작 불변.
-- 다음 할 일: 사용자 검토 → 커밋 → PR #23(#17) 병합 후 rebase·push·PR 오픈 → CI green → 병합 동의 → #22 닫기.
+- 커밋 `7d8895c` → push → **PR #24 오픈**(base=#23 스택, #23 병합 시 main으로 자동 전환). PR #24 자체 리뷰 지적 0건(gemini "no feedback"·PR-Agent fully compliant·CodeRabbit은 비기본 base라 스킵). #23 리뷰 3건 반영(`bdfec28`) 후 rebase(`a271537`) — §11 15차 행을 14차 뒤 시간순으로 재배치, unit 201 passed·E2E 4본 green 재확인.
+- 다음 할 일: PR #23 병합 동의 → 병합 → PR #24 base 자동 전환 확인·CI green → 병합 동의 → #22 닫기.
 - 막힌 지점: 없음.
 
 ### 2026-07-16 — 이슈 #17: 마커 기본 부착 위치 우상단 → 좌상단 변경 (킥오프 §11 14차 개정)
@@ -90,6 +91,7 @@
 - 검증: `npm test` **196 passed**, `npm run test:e2e` **4본 통과**(빌드 포함). 첫 E2E의 s1 실패는 pathD 중단 잔재 프로젝트로 인한 연쇄(strict mode)였고 원인 수정 후 재실행 green.
 - 유의(이슈 본문 분석 그대로): 좌상단은 기본값 최적화이고 가시성 보장책은 기 구현된 스크롤 추종+peek. `markerOffset`은 상대값이라 기존 드래그 조정 마커는 자동 이행 불가 — 기존 산출물은 테스트용 폐기(사용자 승인).
 - 커밋 `00ac0d2` → push → **PR #23 오픈**. 사용자 실사용 확인: 편집 화면 좌상단 부착 정상. "산출물 일부 마커 좌편차" 보고는 조사 결과 본 변경과 무관한 기존 결함으로 판명 → 이슈 #22로 분리(위 로그).
+- **리뷰 3건 반영**(`bdfec28`): ① 편집기 마커 렌더·markerDocPoint에 뷰어와 동일한 문서 좌표 14px 클램프 — 좌상단 부착부터 문서 가장자리 요소의 마커가 잘리는 WYSIWYG 불일치(gemini 2건·codex P2, 같은 주제). 스크롤로 문서 안쪽이 보일 땐 발동 안 하도록 뷰포트 좌표 환산, 회귀 unit 1건 추가 ② E2E 3본 마커 좌표 검증에 iframe contentWindow.scrollX/scrollY 보정(coderabbit) ③ §11 13차·14차 행 순서 시간순 교정(coderabbit). 검증: unit 197 passed·E2E 4본 green.
 - 다음 할 일: PR #23 CI green → 병합 동의 → 병합 → 이슈 #17 닫기.
 - 막힌 지점: 없음.
 
