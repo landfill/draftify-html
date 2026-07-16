@@ -66,6 +66,14 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — 이슈 #8 3차: 시프트를 일시 상태로 — 해제 제스처(pointerup·wheel·모드 전환) (실사용 피드백)
+- 브랜치: `feat/panel-select-scroll-follow` 4번째 커밋 — push·PR은 사용자 검토 대기.
+- 배경(실사용, 투자회사관리 화면): 시프트가 마커를 드러낸 뒤 **선택이 유지되는 동안 계속 밀린 채 고착** — fixed-body 앱은 창 스크롤이 없어 화면 앞쪽(왼쪽)으로 돌아올 수단이 없었다. 미리보기 모드로 바꿔도 시프트가 남았다.
+- 완료(App.tsx): 시프트를 일시 상태로 재정의 — ① 사용자가 목업 쪽에서 **pointerup** 하거나 **wheel**(스크롤 시도)하면 즉시 원복. 마커·패널 조작(isOwn)과 마커 드래그 중(dragRef)은 예외라 조정 흐름은 안 끊긴다. ② **모드 전환 시 원복**(미리보기는 목업 조작 모드). ③ 해제 기준을 pointerdown이 아닌 pointerup으로 — 누름·원복 사이에 페이지가 움직이면 click 대상이 어긋나고, 편집 모드 부착 클릭의 앵커 rect가 원복된 좌표로 측정되어 정확해지는 부수효과(시프트 중 생성 어노테이션의 rect 왜곡 방지).
+- 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **194 passed**(기존 시프트 테스트에 wheel 원복 검증 추가). **실 Chromium fixed-body 하니스 6 PASS**(+2: wheel 즉시 원복, 미리보기 전환 원복 — 기존 시프트 노출·재선택·뷰포트 밖·패널 닫기 회귀 없음). 일반 스크롤 페이지 하니스 6 PASS, `npm run test:e2e` 4본 통과.
+- 다음 할 일: 실 Nexacro 화면에서 재확인(서버 재기동 + 확장 새로고침 필수) → push·PR → CI green → 병합 동의 → 병합.
+- 막힌 지점: 없음.
+
 ### 2026-07-16 — 이슈 #8 2차 강화: fixed-body(Nexacro) 페이지용 페이지 시프트 폴백 (실사용 스크린샷)
 - 브랜치: `feat/panel-select-scroll-follow` 3번째 커밋 — push·PR은 사용자 검토 대기.
 - 배경(실사용): 실제 Nexacro 화면(고객정보관리, prj_d3ehyrzl97)에서 어노테이션 6개 중 1·4·5·6 마커가 안 보임. 저장된 spec.json 분석 — 안 보이는 마커 전부 x가 **패널 대역(1110~1470px) 또는 뷰포트 밖(1569px)**. 캡처된 스냅샷에서 원인 확정: **`<body style="position:fixed;overflow:hidden">`** — Nexacro는 body 자체가 fixed라 ① 창 스크롤이 페이지를 못 움직임(스페이서·scrollTo 무효) ② 도킹 margin-right 무효 ③ 내부 스크롤은 커스텀(JS)이라 scrollIntoView 무효. 기존 수단 전부 무력.

@@ -354,6 +354,31 @@ export function App({ projectId }: { projectId: string }) {
     resetPageShift(); // 선택이 사라지면 시프트 근거도 사라진다
   }, [currentSceneId, open]);
 
+  // 시프트는 마커를 보여주기 위한 **일시 상태**다 (실사용: 유지되면 fixed-body 앱에서는
+  // 화면 앞쪽으로 돌아올 방법이 없다 — 창 스크롤 불가). 사용자가 목업을 만지거나(pointerup)
+  // 스크롤을 시도하면(wheel) 즉시 원복해 시야를 돌려준다. 마커·패널 조작(isOwn)은 예외 —
+  // 드래그로 마커를 조정하는 동안은 유지. pointerdown이 아니라 pointerup인 이유: 누름과
+  // 원복 사이에 페이지가 움직이면 click 대상이 어긋나고, 편집 모드의 부착 클릭이 원복된
+  // 좌표로 앵커 rect를 재면 정확해진다 (click은 pointerup 뒤에 온다).
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (e: Event) => {
+      // 마커 드래그 종료의 pointerup은 마커 밖에서 끝나도 시프트를 풀지 않는다 (조정 직후 유지)
+      if (!pageShiftRef.current || dragRef.current || isOwn(e.target)) return;
+      resetPageShift();
+    };
+    document.addEventListener("pointerup", dismiss, true);
+    document.addEventListener("wheel", dismiss, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("pointerup", dismiss, true);
+      document.removeEventListener("wheel", dismiss, true);
+    };
+  }, [open]);
+
+  // 모드 전환(편집↔미리보기) 시에도 원복 — 미리보기는 목업을 조작하는 모드라 시프트된
+  // 시야가 방해다
+  useEffect(() => { resetPageShift(); }, [mode]);
+
   const clearEmptyAnns = (sceneId: string) => {
     const count = annotationsOfScene(doc, sceneId).filter(isEmptyAnnotation).length;
     if (count === 0) return;
