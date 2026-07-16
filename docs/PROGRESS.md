@@ -68,6 +68,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-17 — PR #26·#27 main 병합 완료 (README 스크린샷 · PR-Agent concurrency 수정)
+- 사용자 동의 후 순서대로 병합: **PR #26**(`7d819cf`) — 병합 전 Codex P2 1건 반영(연결 코드 복사는 발급 세션 한정 명시, `b967699`) → **PR #27**(`1525a26`) — #26과 PROGRESS.md 충돌을 rebase로 해소(두 로그 항목 보존) 후 병합. 로컬·원격 브랜치 삭제.
+- 리뷰 기각 1건: Codex의 "PROGRESS 날짜를 07-16으로 고쳐라" — 커밋의 UTC 시각 기준 지적이며 로컬(KST) 실제 날짜는 2026-07-17이 맞음. AGENTS §3의 "실제 날짜"는 작업자 로컬 기준으로 유지.
+- 관찰: #27의 rebase 전 run에서 `pr_agent_job`이 3m23s 정상 완주(pass) — 수정 효과는 이후 PR들에서 봇 댓글 경합 시 취소가 없는지로 계속 확인.
+- 다음 할 일: 열린 이슈 — #18(타 화면 마커 잔존, 방향 논의 필요), #12·#13(실수요 대기).
+- 막힌 지점: 없음.
+
 ### 2026-07-17 — PR-Agent 자기-취소 버그 수정 (concurrency 그룹 이벤트별 분리)
 - 브랜치: `chore/pr-agent-concurrency-split`.
 - 배경(사용자 질문 "pr agent가 실패하는 이유"): PR #23·#25·#26에서 `pr_agent_job` 체크가 반복 fail. 실측 진단 — PR 오픈 직후 CodeRabbit 등 **봇 댓글이 `issue_comment` run을 유발**하고, 그 run이 같은 concurrency 그룹(`pr-agent-<PR번호>`)에 진입하면서 `cancel-in-progress`로 **진행 중이던 pull_request 리뷰 run을 취소**. 봇 가드(`if: sender.type != 'Bot'`)는 job 레벨이라 취소가 판정보다 먼저 일어남 → 취소시킨 run 자신은 skipped. 결과: 리뷰 미실행 + fail 체크.
