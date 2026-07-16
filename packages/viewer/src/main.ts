@@ -597,10 +597,10 @@ function renderMarkers(
     if (resolved.el) {
       const rect = resolved.el.getBoundingClientRect();
       const win = doc.defaultView;
-      left = rect.right + (win?.scrollX ?? 0);
+      left = rect.left + (win?.scrollX ?? 0);
       top = rect.top + (win?.scrollY ?? 0);
     } else {
-      left = (annotation.anchor.rect.x + annotation.anchor.rect.w) * docWidth;
+      left = annotation.anchor.rect.x * docWidth;
       top = annotation.anchor.rect.y * docHeight;
     }
     // 편집기에서 드래그로 옮긴 마커 오프셋(기본 위치 기준 상대값) 동일 적용 — SDK와 대칭

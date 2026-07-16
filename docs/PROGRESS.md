@@ -68,6 +68,18 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — 이슈 #17: 마커 기본 부착 위치 우상단 → 좌상단 변경 (킥오프 §11 14차 개정)
+- 브랜치: `feat/marker-top-left-default`.
+- AGENTS §4 절차 준수 — 규범 문서 먼저 개정 후 구현:
+  - **킥오프 §11 14차 개정** 추가(사유: Nexacro류 실사용에서 넓은 컨테이너 앵커의 우상단 마커가 패널 대역에 몰림, 실측상 좌상단은 전부 가시). §5 `markerOffset` 주석·§6.2 마커 드래그·기본 위치 절 동기화.
+  - docs 동기화: detailed-spec §3.3(부착 시퀀스)·§3.5(기본 위치, 스크롤 추종 기준) / technical-spec §2.2 주석·§4.3(기본 위치 항목 신설). output-standard는 마커 위치 규칙 언급이 없어 변경 없음(확인 완료).
+- 구현: shared `types.ts` 주석 / sdk `useMarkers.ts`(`r.right`→`r.left`, rect fallback `(x+w)·폭`→`x·폭`) / sdk `App.tsx` `markerDocPoint`(스크롤 추종 기준점) 동일 변경 + 주석 3곳 / `styles.ts` 주석 / viewer `main.ts` 복제 구현(`rect.right`→`rect.left`, fallback 동일).
+- 테스트: E2E 3본(s1·s2·pathD)의 마커 x 검증을 `rect.right`→`Math.max(14, rect.left)`로 — **뷰어는 마커 잘림 방지로 좌표를 14px 안쪽 클램프**(`.ms-stage-wrap overflow:hidden` + 28px 마커 중심 렌더)하는데, 좌상단 부착부터는 문서 왼쪽 가장자리 요소(body margin 8px)가 실제로 걸리므로 테스트가 동일 규칙을 반영(첫 실행에서 pathD dx=6 실측 — 14−8). y도 동일 클램프 반영. App.test.ts는 스페이서 reach 기대값(2048→1948)·주석 갱신.
+- 검증: `npm test` **196 passed**, `npm run test:e2e` **4본 통과**(빌드 포함). 첫 E2E의 s1 실패는 pathD 중단 잔재 프로젝트로 인한 연쇄(strict mode)였고 원인 수정 후 재실행 green.
+- 유의(이슈 본문 분석 그대로): 좌상단은 기본값 최적화이고 가시성 보장책은 기 구현된 스크롤 추종+peek. `markerOffset`은 상대값이라 기존 드래그 조정 마커는 자동 이행 불가 — 기존 산출물은 테스트용 폐기(사용자 승인).
+- 다음 할 일: 사용자 검토(실사용 화면에서 마커 가시성 개선 확인) → 커밋·push·PR → CI green → 병합 동의 → 병합 → 이슈 #17 닫기.
+- 막힌 지점: 없음.
+
 ### 2026-07-16 — PR #21 main 병합 완료 (이슈 #11 콘솔 UI 디자인 개선)
 - 사용자 동의 후 **PR #21 main 병합**(\`977aafb\`, merge commit·CI verify green·PR-Agent green·리뷰 5건 전부 반영). 로컬·원격 브랜치 삭제(prune 확인).
 - 다음 할 일: main에서 서버 기동(localhost:4000) 후 콘솔 새 UI 실사용 확인. 이슈 #11 종료 검토.

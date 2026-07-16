@@ -201,9 +201,12 @@ test("S2 DoD: 프록시 URL 등록 → 장면 2/어노테이션 4 → 마스킹 
             .find((m) => m.textContent === num);
           if (!el || !markerEl) return null;
           const rect = el.getBoundingClientRect();
+          const sx = iframe?.contentWindow?.scrollX ?? 0;
+          const sy = iframe?.contentWindow?.scrollY ?? 0;
+          // 뷰어와 동일 규칙: 문서 좌표(rect+scroll) 기준, 마커 잘림 방지 14px 클램프
           return {
-            dx: Math.abs(parseFloat(markerEl.style.left) - rect.right),
-            dy: Math.abs(parseFloat(markerEl.style.top) - rect.top),
+            dx: Math.abs(parseFloat(markerEl.style.left) - Math.max(14, rect.left + sx)),
+            dy: Math.abs(parseFloat(markerEl.style.top) - Math.max(14, rect.top + sy)),
           };
         },
         { selector: spec.target, num: number },

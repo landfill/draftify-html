@@ -105,7 +105,7 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
   await expect(sceneButtons.nth(0)).toContainText("SCR-001");
   await expect(sceneButtons.nth(1)).toContainText("SCR-002");
 
-  // 장면별 검증 헬퍼: 마커 2개가 "올바른 요소 위"(대상 우상단) + 설명 텍스트 일치
+  // 장면별 검증 헬퍼: 마커 2개가 "올바른 요소 위"(대상 좌상단) + 설명 텍스트 일치
   const verifyScene = async (specs: typeof SCENE1 | typeof SCENE2) => {
     const markers = viewer.locator(".ms-marker");
     await expect(markers).toHaveCount(2);
@@ -121,9 +121,12 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
             .find((m) => m.textContent === num);
           if (!el || !markerEl) return null;
           const rect = el.getBoundingClientRect();
+          const sx = iframe?.contentWindow?.scrollX ?? 0;
+          const sy = iframe?.contentWindow?.scrollY ?? 0;
+          // 뷰어와 동일 규칙: 문서 좌표(rect+scroll) 기준, 마커 잘림 방지 14px 클램프
           return {
-            dx: Math.abs(parseFloat(markerEl.style.left) - rect.right),
-            dy: Math.abs(parseFloat(markerEl.style.top) - rect.top),
+            dx: Math.abs(parseFloat(markerEl.style.left) - Math.max(14, rect.left + sx)),
+            dy: Math.abs(parseFloat(markerEl.style.top) - Math.max(14, rect.top + sy)),
           };
         },
         { selector: spec.target, num: number },
