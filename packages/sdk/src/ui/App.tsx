@@ -239,6 +239,7 @@ export function App({ projectId }: { projectId: string }) {
     return () => {
       el.style.marginRight = prev;
       resetScrollSpacer(); // 패널이 닫히면 페이지 원 스크롤 범위로 복귀
+      resetPageShift();    // 시프트된 페이지도 원위치로
     };
   }, [open]);
 
@@ -350,6 +351,7 @@ export function App({ projectId }: { projectId: string }) {
   // 장면 전환·패널 닫기 시 선택 해제 (다른 장면 소속 선택이 남지 않도록)
   useEffect(() => {
     setSelectedAnn(null);
+    resetPageShift(); // 선택이 사라지면 시프트 근거도 사라진다
   }, [currentSceneId, open]);
 
   const clearEmptyAnns = (sceneId: string) => {
@@ -433,12 +435,68 @@ export function App({ projectId }: { projectId: string }) {
     return vx >= 0 && vx <= window.innerWidth - PANEL_W && vy >= 0 && vy <= window.innerHeight;
   };
 
+  // 페이지 시프트 (이슈 #8 잔여): 창 스크롤이 무효한 페이지에서는 — body 자체가
+  // position:fixed(+overflow:hidden)인 Nexacro류 사내 시스템, 내부 커스텀 스크롤 —
+  // 스페이서·scrollTo·scrollIntoView 어느 것도 패널에 가린 마커를 못 드러낸다.
+  // 추종 스크롤이 정착한 뒤에도 마커가 가시영역 밖이면 마커의 fixed 조상(없으면
+  // <html> 마진)을 잔여량만큼 밀어 드러내고, 다음 추종·선택 해제·패널 닫기·캡처
+  // 시작 시 원복한다. 패널·마커는 자체 fixed(뷰포트 기준)라 시프트에 안 딸려간다.
+  const pageShiftRef = useRef<{ el: HTMLElement; kind: "fixed" | "root"; prevLeft: string; prevTop: string } | null>(null);
+  const shiftTimerRef = useRef<number | undefined>(undefined);
+
+  const resetPageShift = () => {
+    window.clearTimeout(shiftTimerRef.current);
+    const s = pageShiftRef.current;
+    if (!s) return;
+    if (s.kind === "fixed") { s.el.style.left = s.prevLeft; s.el.style.top = s.prevTop; }
+    else { s.el.style.marginLeft = s.prevLeft; s.el.style.marginTop = s.prevTop; }
+    pageShiftRef.current = null;
+  };
+
+  const fixedAncestorOf = (el: Element | null): HTMLElement | null => {
+    let cur: Element | null = el;
+    while (cur && cur !== document.documentElement) {
+      if (cur instanceof HTMLElement && getComputedStyle(cur).position === "fixed") return cur;
+      cur = cur.parentElement;
+    }
+    return null;
+  };
+
+  const applyShiftIfStillHidden = (annId: string) => {
+    const ann = docRef.current.annotations.find((a) => a.id === annId);
+    if (!ann) return;
+    const { x, y, el } = markerDocPoint(ann);
+    // rect fallback(el 없음) 마커는 비율 좌표 렌더라 페이지를 밀어도 안 움직인다 — 시프트 무의미
+    if (!el || markerInView(x, y)) return;
+    const vx = x - window.scrollX;
+    const vy = y - window.scrollY;
+    const maxX = window.innerWidth - PANEL_W - MARKER_CLEARANCE;
+    const maxY = window.innerHeight - MARKER_CLEARANCE;
+    const dx = vx > maxX ? vx - maxX : vx < MARKER_CLEARANCE ? vx - MARKER_CLEARANCE : 0;
+    const dy = vy > maxY ? vy - maxY : vy < MARKER_CLEARANCE ? vy - MARKER_CLEARANCE : 0;
+    if (!dx && !dy) return;
+    const fixedRoot = fixedAncestorOf(el);
+    if (fixedRoot) {
+      const cs = getComputedStyle(fixedRoot);
+      pageShiftRef.current = { el: fixedRoot, kind: "fixed", prevLeft: fixedRoot.style.left, prevTop: fixedRoot.style.top };
+      if (dx) fixedRoot.style.left = `${(parseFloat(cs.left) || 0) - dx}px`;
+      if (dy) fixedRoot.style.top = `${(parseFloat(cs.top) || 0) - dy}px`;
+    } else {
+      const html = document.documentElement;
+      const cs = getComputedStyle(html);
+      pageShiftRef.current = { el: html, kind: "root", prevLeft: html.style.marginLeft, prevTop: html.style.marginTop };
+      if (dx) html.style.marginLeft = `${(parseFloat(cs.marginLeft) || 0) - dx}px`;
+      if (dy) html.style.marginTop = `${(parseFloat(cs.marginTop) || 0) - dy}px`;
+    }
+  };
+
   // 어노테이션 선택·생성 시 마커를 가시영역으로 스크롤 (이슈 #8).
   // 스크롤 목표는 요소 중앙이 아니라 **마커 좌표**를 패널 제외 가시영역 중앙에 두는 것 —
   // 요소 중앙 기준이면 넓은 요소·오른쪽 끝 요소·드래그된 마커에서 마커가 패널에 가린다.
   // 내부 overflow 컨테이너는 scrollIntoView가 처리하고, window 스크롤 목표는 곧바로
   // 뒤이은 scrollTo가 이어받는다 (같은 smooth 대상이라 마지막 호출이 이긴다).
   const scrollMarkerIntoView = (ann: Annotation) => {
+    resetPageShift(); // 이전 시프트를 원복한 위치 기준으로 새로 판단
     const { x, y, el } = markerDocPoint(ann);
     ensureScrollSpacer(x); // 마커+여유까지 스크롤 도달 보장
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
@@ -447,6 +505,8 @@ export function App({ projectId }: { projectId: string }) {
       top: y - window.innerHeight / 2,
       behavior: "smooth",
     });
+    // smooth 스크롤 정착 후 재확인 — 창 스크롤이 무효한 페이지면 시프트로 마저 드러낸다
+    shiftTimerRef.current = window.setTimeout(() => applyShiftIfStillHidden(ann.id), 700);
   };
 
   // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(우상단)는
@@ -481,6 +541,7 @@ export function App({ projectId }: { projectId: string }) {
   // 장면 캡처: 현재 DOM을 single-file-core로 굳혀 스냅샷 업로드 (§5, §3.7).
   // 등록 직후 자동 실행 + 각 장면의 재캡처 버튼에서 재호출.
   const runFreeze = async (sceneId: string) => {
+    resetPageShift(); // 시프트가 스냅샷에 박제되지 않게 캡처 전 원복
     setFreezing((f) => ({ ...f, [sceneId]: true }));
     setFreezeErr((e) => { const { [sceneId]: _drop, ...rest } = e; return rest; });
     try {

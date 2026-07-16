@@ -319,6 +319,35 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
+  it("창 스크롤이 무효한 fixed-body 페이지는 추종 정착 후 페이지 시프트로 마커를 드러낸다", async () => {
+    await mountWithOpenPanel();
+    // Nexacro류: body 자체가 position:fixed(+overflow:hidden) — 창 스크롤로 페이지가 안 움직인다
+    document.body.style.position = "fixed";
+    document.body.style.left = "0px";
+    try {
+      const target = document.getElementById("target")!;
+      target.getBoundingClientRect = () => ({
+        left: 900, right: 1000, top: 10, bottom: 40, width: 100, height: 30, x: 900, y: 10,
+        toJSON: () => ({}),
+      } as DOMRect);
+      vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+      vi.spyOn(window, "scrollTo").mockImplementation(() => {}); // 스크롤 무효 흉내
+
+      await act(async () => { clickMockup("target"); }); // 생성 추종 발동 (마커 1000 > usable 664)
+      // 정착 대기(700ms) 후에도 마커가 그대로면 fixed 조상(body)을 잔여량만큼 시프트
+      await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+      // dx = 1000 - (1024 - 360 - 48) = 384
+      expect(document.body.style.left).toBe("-384px");
+
+      // 패널 닫기 → 시프트 원복
+      await act(async () => { document.querySelector<HTMLButtonElement>(".panel__close")!.click(); });
+      expect(document.body.style.left).toBe("0px");
+    } finally {
+      document.body.style.position = "";
+      document.body.style.left = "";
+    }
+  });
+
   it("스크롤 스페이서: 패널 선택 시 생성(캡처 제외 마킹 포함), 패널 닫기 시 제거된다", async () => {
     await mountWithOpenPanel();
     await act(async () => { clickMockup("target"); });
