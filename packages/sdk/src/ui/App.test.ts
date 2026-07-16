@@ -245,6 +245,113 @@ describe("어노테이션 부착 UX (킥오프 §11 4·5차 개정)", () => {
   });
 });
 
+describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
+  it("패널에서 다른 어노테이션을 선택하면 앵커 요소가 뷰포트 중앙으로 스크롤된다", async () => {
+    await mountWithOpenPanel();
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); }); // 마지막(2번)이 선택 상태
+
+    const scrolled: Element[] = [];
+    let lastOpts: ScrollIntoViewOptions | undefined;
+    vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(
+      function (this: Element, opts?: boolean | ScrollIntoViewOptions) {
+        scrolled.push(this);
+        lastOpts = typeof opts === "object" ? opts : undefined;
+      },
+    );
+
+    // 1번(#target 앵커) 제목 칸 클릭 → 선택 변경 + #target으로 스크롤
+    await act(async () => {
+      document.querySelectorAll<HTMLInputElement>("input.ann__title")[0]!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(scrolled).toEqual([document.getElementById("target")]);
+    expect(lastOpts).toEqual({ behavior: "smooth", block: "center", inline: "center" });
+
+    // 이미 선택된 항목의 설명 칸 클릭 → 편집 중 재정렬 방지, 스크롤 없음
+    await act(async () => {
+      document.querySelectorAll<HTMLTextAreaElement>("textarea.ann__desc")[0]!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it("마커 클릭 선택은 스크롤하지 않는다 — 이미 뷰포트 안이다", async () => {
+    await mountWithOpenPanel();
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); });
+
+    const spy = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    await act(async () => {
+      document.querySelectorAll<HTMLButtonElement>("button.marker")[0]!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(spy).not.toHaveBeenCalled();
+    // 선택 자체는 마커를 따라간다
+    expect(document.querySelectorAll<HTMLElement>(".ann")[0]!.classList.contains("ann--sel")).toBe(true);
+  });
+
+  it("스크롤 스페이서: 패널 선택 시 생성(캡처 제외 마킹 포함), 패널 닫기 시 제거된다", async () => {
+    await mountWithOpenPanel();
+    await act(async () => { clickMockup("target"); });
+    await act(async () => { clickMockup("other"); });
+    vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    expect(document.querySelector("[data-mockspec-scroll-spacer]")).toBeNull();
+
+    await act(async () => {
+      document.querySelectorAll<HTMLInputElement>("input.ann__title")[0]!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const spacer = document.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]");
+    expect(spacer).not.toBeNull();
+    expect(spacer!.hasAttribute("data-mockspec-root")).toBe(true); // 캡처 제외 (freeze §5)
+    expect(spacer!.hasAttribute("data-content-width")).toBe(true); // rect 분모 보정용 실측값
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".panel__close")!.click();
+    });
+    expect(document.querySelector("[data-mockspec-scroll-spacer]")).toBeNull();
+  });
+
+  it("앵커 미해석(rect fallback) 어노테이션은 저장된 rect 좌표로 window.scrollTo 한다", async () => {
+    const fallbackProject: SpecProject = {
+      ...project,
+      scenes: [{ ...project.scenes[0]!, annoNumberSeq: 2 }],
+      annotations: [{
+        id: "ann_gone12345",
+        sceneId: "scn_home",
+        number: 1,
+        // selector 미존재 + text/attrs 없음 → 재탐색 불가, rect fallback 확정
+        anchor: { selector: "#removed-element", rect: { x: 0.9, y: 0.1, w: 0.05, h: 0.02 } },
+        title: "사라진 요소",
+        description: "",
+      }],
+    };
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (!init?.method || init.method === "GET") return jsonResponse(fallbackProject);
+      return jsonResponse({ ...JSON.parse(String(init.body)), updatedAt: "2026-07-16T00:00:05.000Z" });
+    });
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".fab")!.click();
+      await flushPromises();
+    });
+
+    const intoView = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    await act(async () => {
+      document.querySelector<HTMLInputElement>("input.ann__title")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(intoView).not.toHaveBeenCalled();
+    expect(scrollTo).toHaveBeenCalledOnce();
+    expect((scrollTo.mock.calls[0]![0] as ScrollToOptions).behavior).toBe("smooth");
+  });
+});
+
 describe("전이 지정 UI (T27, §3.10)", () => {
   const twoSceneProject: SpecProject = {
     ...project,

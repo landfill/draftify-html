@@ -97,14 +97,34 @@ function collectAttrs(el: Element): Record<string, string> {
   return attrs;
 }
 
+/**
+ * rect 비율의 분모로 쓰는 문서 스크롤 크기 — 편집 패널의 스크롤 스페이서(이슈 #8,
+ * [data-mockspec-scroll-spacer])는 제외한다. 스페이서는 패널이 문서 오른쪽 끝을
+ * 가리지 않게 스크롤 범위만 늘리는 불가시 요소라 콘텐츠 크기가 아니고, 스냅샷(뷰어)
+ * 에는 캡처 제외로 존재하지 않는다 — 빼지 않으면 편집·산출물 간 분모가 어긋난다.
+ */
+export function contentScrollSize(doc: Document): { width: number; height: number } {
+  const root = doc.documentElement;
+  const height = root.scrollHeight;
+  const spacer = doc.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]");
+  if (spacer) {
+    // 스페이서 생성 시점의 실측 콘텐츠 폭. 이후 콘텐츠가 스페이서보다 더 자랐으면
+    // scrollWidth가 실제 콘텐츠 폭이므로 그쪽을 쓴다.
+    const stored = Number(spacer.getAttribute("data-content-width")) || 0;
+    if (root.scrollWidth > spacer.offsetWidth) return { width: root.scrollWidth, height };
+    return { width: Math.max(stored, root.clientWidth), height };
+  }
+  return { width: root.scrollWidth, height };
+}
+
 function documentRect(el: Element): Anchor["rect"] {
   const win = el.ownerDocument.defaultView;
-  const root = el.ownerDocument.documentElement;
   const r = el.getBoundingClientRect();
   const sx = win?.scrollX ?? 0;
   const sy = win?.scrollY ?? 0;
-  const sw = root.scrollWidth || 1;
-  const sh = root.scrollHeight || 1;
+  const size = contentScrollSize(el.ownerDocument);
+  const sw = size.width || 1;
+  const sh = size.height || 1;
   return { x: (r.left + sx) / sw, y: (r.top + sy) / sh, w: r.width / sw, h: r.height / sh };
 }
 
