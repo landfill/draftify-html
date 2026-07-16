@@ -108,11 +108,15 @@ export function contentScrollSize(doc: Document): { width: number; height: numbe
   const height = root.scrollHeight;
   const spacer = doc.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]");
   if (spacer) {
-    // 스페이서 생성 시점의 실측 콘텐츠 폭. 이후 콘텐츠가 스페이서보다 더 자랐으면
-    // scrollWidth가 실제 콘텐츠 폭이므로 그쪽을 쓴다.
-    const stored = Number(spacer.getAttribute("data-content-width")) || 0;
+    // 콘텐츠가 스페이서보다 더 자랐으면 scrollWidth가 실제 콘텐츠 폭이다.
     if (root.scrollWidth > spacer.offsetWidth) return { width: root.scrollWidth, height };
-    return { width: Math.max(stored, root.clientWidth), height };
+    // body가 static이면 스페이서(absolute, 컨테이닝 블록=뷰포트)는 body.scrollWidth에
+    // 안 잡히므로 실시간 측정이 가능하다 — 스페이서 설치 후 콘텐츠가 변해도 분모가
+    // 낡지 않는다. body가 positioned면 스페이서가 섞여 측정되므로 설치 시점 실측값 사용.
+    const live = doc.defaultView?.getComputedStyle(doc.body).position === "static"
+      ? doc.body.scrollWidth : 0;
+    const stored = Number(spacer.getAttribute("data-content-width")) || 0;
+    return { width: Math.max(live || stored, root.clientWidth), height };
   }
   return { width: root.scrollWidth, height };
 }

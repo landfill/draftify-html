@@ -235,13 +235,20 @@ export function App({ projectId }: { projectId: string }) {
     return () => window.clearTimeout(timer);
   }, [currentProjectSnapshot, doc, loadError, project]);
 
-  // 패널 도킹 시 목업 레이아웃 360px 축소 (peek 중에는 패널이 접혀 있으니 원폭 복귀)
+  // 패널 도킹 시 목업 레이아웃 360px 축소 (peek 중에는 패널이 접혀 있으니 원폭 복귀).
+  // 도킹 중일 때만 스타일을 건드리고 margin·transition 모두 원복한다 — 닫힘 상태에서
+  // 페이지 자신의 인라인 스타일을 덮어쓰지 않는다 (PR #19 리뷰 반영).
   useEffect(() => {
+    if (!open || peek) return;
     const el = document.documentElement;
-    const prev = el.style.marginRight;
+    const prevMargin = el.style.marginRight;
+    const prevTransition = el.style.transition;
     el.style.transition = "margin-right .15s ease";
-    el.style.marginRight = open && !peek ? "360px" : "";
-    return () => { el.style.marginRight = prev; };
+    el.style.marginRight = "360px";
+    return () => {
+      el.style.marginRight = prevMargin;
+      el.style.transition = prevTransition;
+    };
   }, [open, peek]);
 
   // 패널이 닫히면 페이지 원 스크롤 범위로 복귀 (스페이서는 open 수명에만 종속)
@@ -440,12 +447,14 @@ export function App({ projectId }: { projectId: string }) {
     return { x: x + off.dx, y: y + off.dy, el: res.el };
   };
 
-  /** 마커가 패널을 제외한 가시영역 안에 있는가 (인자는 문서 좌표). peek 중엔 전체 폭. */
+  /** 마커가 패널을 제외한 가시영역 안에 있는가 (인자는 문서 좌표). peek 중엔 전체 폭.
+   *  마커는 중심 기준 렌더(translate -50%)라 패널 쪽 경계만 반폭(12px) 여유를 본다 —
+   *  상·좌·하단은 중심 기준 유지 (상단 요소 클릭마다 불필요한 스크롤 방지). */
   const markerInView = (x: number, y: number): boolean => {
     const vx = x - window.scrollX;
     const vy = y - window.scrollY;
     const panelW = peekRef.current ? 0 : PANEL_W;
-    return vx >= 0 && vx <= window.innerWidth - panelW && vy >= 0 && vy <= window.innerHeight;
+    return vx >= 0 && vx + 12 <= window.innerWidth - panelW && vy >= 0 && vy <= window.innerHeight;
   };
 
   // 패널 비켜주기(peek, 이슈 #8): 창 스크롤이 무효한 페이지 — body 자체가
@@ -455,13 +464,32 @@ export function App({ projectId }: { projectId: string }) {
   // 페이지 무이동·좌표 계약 무변경, 복귀 수단(탭)이 눈에 보인다. 추종 정착 후에도
   // 마커가 가려져 있으면 항목에 안내와 [패널 접고 마커 보기] 버튼을 노출한다.
   const checkTimerRef = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(checkTimerRef.current), []); // 언마운트 시 정리
 
-  const recheckMarkerHidden = (annId: string) => {
+  // 추종 정착 후 재확인. retry=true면 내부 overflow 컨테이너 스크롤로 문서 좌표가
+  // 변했을 수 있어 신선한 좌표로 window 목표를 1회 보정한다 (PR #19 리뷰 반영).
+  // 안내는 **패널 겹침일 때만** — 뷰포트 밖(상하·왼쪽·오른쪽 너머) 마커는 패널을
+  // 접어도 안 드러나므로 [패널 접고 마커 보기]를 권하지 않는다 (codex P2).
+  const recheckMarkerHidden = (annId: string, retry: boolean) => {
     const ann = docRef.current.annotations.find((a) => a.id === annId);
     if (!ann) { setHiddenMarkerAnn(null); return; }
     const { x, y, el } = markerDocPoint(ann);
-    // rect fallback(el 없음) 마커는 위치 자체가 불확실 표시 대상이라 안내에서 제외
-    setHiddenMarkerAnn(el && !markerInView(x, y) ? annId : null);
+    if (!el || markerInView(x, y)) { setHiddenMarkerAnn(null); return; }
+    if (retry) {
+      const panelW = peekRef.current ? 0 : PANEL_W;
+      window.scrollTo({
+        left: x - (window.innerWidth - panelW) / 2,
+        top: y - window.innerHeight / 2,
+        behavior: "smooth",
+      });
+      checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(annId, false), 700);
+      return;
+    }
+    const vx = x - window.scrollX;
+    const vy = y - window.scrollY;
+    const inPanelBand = vx + 12 > window.innerWidth - PANEL_W && vx - 12 <= window.innerWidth
+      && vy >= 0 && vy <= window.innerHeight;
+    setHiddenMarkerAnn(inPanelBand ? annId : null);
   };
 
   const restorePanel = () => {
@@ -469,8 +497,15 @@ export function App({ projectId }: { projectId: string }) {
     // 패널이 돌아오면(도킹 복원 후) 같은 항목이 다시 가려지는지 재확인해 안내를 되살린다
     const annId = selectedAnn;
     window.clearTimeout(checkTimerRef.current);
-    if (annId) checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(annId), 300);
+    if (annId) checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(annId, false), 300);
   };
+
+  // peek 전환 시 포커스를 탭으로 — transform으로 숨은 패널에 포커스가 남지 않게 (a11y)
+  useEffect(() => {
+    if (!peek) return;
+    const host = document.querySelector("[data-mockspec-root]");
+    (host?.shadowRoot ?? host)?.querySelector<HTMLButtonElement>(".panel-tab")?.focus();
+  }, [peek]);
 
   // 어노테이션 선택·생성 시 마커를 가시영역으로 스크롤 (이슈 #8).
   // 스크롤 목표는 요소 중앙이 아니라 **마커 좌표**를 패널 제외 가시영역 중앙에 두는 것 —
@@ -487,11 +522,11 @@ export function App({ projectId }: { projectId: string }) {
       top: y - window.innerHeight / 2,
       behavior: "smooth",
     });
-    // smooth 스크롤 정착 후 재확인 — 창 스크롤이 무효한 페이지면 여전히 가려져 있고,
-    // 그때는 [패널 접고 마커 보기] 안내를 노출한다
+    // smooth 스크롤 정착 후 재확인(내부 스크롤 보정 1회 포함) — 창 스크롤이 무효한
+    // 페이지면 여전히 가려져 있고, 패널 겹침이면 [패널 접고 마커 보기] 안내를 노출한다
     window.clearTimeout(checkTimerRef.current);
     setHiddenMarkerAnn(null);
-    checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(ann.id), 700);
+    checkTimerRef.current = window.setTimeout(() => recheckMarkerHidden(ann.id, true), 700);
   };
 
   // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(우상단)는
@@ -636,7 +671,8 @@ export function App({ projectId }: { projectId: string }) {
           onClick={restorePanel}
         >❮</button>
       )}
-      <div class={`panel${peek ? " panel--peek" : ""}`} role="complementary" aria-label="mockspec 편집 패널">
+      {/* peek 중엔 inert — transform으로 숨은 패널이 Tab 포커스를 받지 않게 (PR #19 리뷰) */}
+      <div class={`panel${peek ? " panel--peek" : ""}`} inert={peek} role="complementary" aria-label="mockspec 편집 패널">
         <div class="panel__head">
           <span class="panel__title">mockspec</span>
           <span class="panel__pid">{projectId}</span>

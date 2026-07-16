@@ -330,8 +330,9 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     vi.spyOn(window, "scrollTo").mockImplementation(() => {}); // 스크롤 무효(fixed-body) 흉내
 
     await act(async () => { clickMockup("target"); }); // 생성 추종 발동 (마커 1000 > usable 664)
-    // 정착 대기(700ms) 후에도 마커가 그대로 가려짐 → 항목에 안내 노출
-    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    // 정착 대기(700ms) → 신선한 좌표로 window 보정 1회 → 재정착(700ms) 후에도
+    // 가려져 있고 패널 겹침 대역이면 항목에 안내 노출
+    await act(async () => { await vi.advanceTimersByTimeAsync(1400); });
     const note = document.querySelector<HTMLElement>(".ann__hidden");
     expect(note?.textContent).toContain("마커가 패널에 가려져");
 
