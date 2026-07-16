@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { MarkerOffset, SpecProject } from "@mockspec/shared";
+import type { Annotation, MarkerOffset, SpecProject } from "@mockspec/shared";
 import { pickTarget, generateAnchor, resolveAnchor, contentScrollSize } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
@@ -33,6 +33,8 @@ interface Rect { top: number; left: number; width: number; height: number; }
 interface MarkerDrag { annId: string; startX: number; startY: number; dx: number; dy: number; moved: boolean; }
 
 const DRAG_THRESHOLD_PX = 4;
+const PANEL_W = 360;          // 도킹 패널 폭 (styles.ts .panel과 동일)
+const MARKER_CLEARANCE = 48;  // 스크롤 추종 시 마커가 패널 경계에 걸리지 않게 두는 여유
 
 function saveStatusLabel(status: SaveStatus): string {
   if (status === "saved") return "저장됨 ✓";
@@ -247,7 +249,7 @@ export function App({ projectId }: { projectId: string }) {
   // 그 띠까지 스크롤로 노출한다. 도킹 리플로우로 콘텐츠가 패널에 안 가리는 페이지에서는
   // 결과 폭이 뷰포트 이하라 스크롤을 만들지 않는다. height 0은 스크롤 오버플로에
   // 기여하지 않아 1px + visibility:hidden(레이아웃 유지·히트테스트 제외)을 쓴다.
-  const ensureScrollSpacer = () => {
+  const ensureScrollSpacer = (markerDocX = 0) => {
     let spacer = document.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]");
     if (!spacer) {
       spacer = document.createElement("div");
@@ -264,7 +266,12 @@ export function App({ projectId }: { projectId: string }) {
     const contentExtent = document.body.scrollWidth;
     // 앵커 rect 비율의 분모 보정용 실측값 (anchor.ts contentScrollSize가 읽는다)
     spacer.setAttribute("data-content-width", String(contentExtent));
-    spacer.style.width = `${contentExtent + 360}px`;
+    // 도달 목표 = max(콘텐츠 오른쪽 끝, 추종 대상 마커 + 여유). 패널이 열려 있는 동안은
+    // 줄이지 않는다 — 확장 영역으로 스크롤된 상태에서 줄이면 스크롤이 즉시 클램프되어 튄다.
+    const prevReach = Number(spacer.getAttribute("data-reach")) || 0;
+    const reach = Math.max(contentExtent, markerDocX + MARKER_CLEARANCE, prevReach);
+    spacer.setAttribute("data-reach", String(reach));
+    spacer.style.width = `${reach + PANEL_W}px`;
   };
 
   const resetScrollSpacer = () => {
@@ -305,7 +312,11 @@ export function App({ projectId }: { projectId: string }) {
       if (!e.shiftKey) {
         const existing = annotationsOfScene(docRef.current, scene)
           .find((a) => resolveAnchor(a.anchor, document).el === target);
-        if (existing) { setSelectedAnn(existing.id); return; }
+        if (existing) {
+          setSelectedAnn(existing.id);
+          followMarkerIfHidden(existing); // 요소는 클릭했지만 마커는 패널에 가릴 수 있다
+          return;
+        }
       }
 
       const anchor = generateAnchor(target);            // ID-06
@@ -313,6 +324,7 @@ export function App({ projectId }: { projectId: string }) {
       setDoc(nd);
       newAnnRef.current = annotation.id;                 // 이 항목만 title 자동 포커스 대상
       setSelectedAnn(annotation.id);                    // 패널 항목 열고 포커스
+      followMarkerIfHidden(annotation);                  // 생성 직후 마커가 가려지면 추종 (이슈 #8)
     };
     const onMove = (e: MouseEvent) => {
       const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -396,32 +408,61 @@ export function App({ projectId }: { projectId: string }) {
     return base;
   };
 
-  // 패널에서 어노테이션 선택 시 앵커 요소를 뷰포트 중앙으로 스크롤 (이슈 #8).
-  // 넓은 화면(1920px+ 고정폭)에서 뷰포트 밖 마커를 조정할 때 스크롤 왕복을 없앤다.
-  // scrollIntoView는 내부 overflow 컨테이너를 포함한 모든 스크롤 조상을 처리한다.
-  // 마커·목업 요소 클릭에 의한 선택은 이미 뷰포트 안이므로 이 경로를 타지 않는다.
-  const scrollAnnAnchorIntoView = (annId: string) => {
-    const ann = docRef.current.annotations.find((a) => a.id === annId);
-    if (!ann) return;
-    ensureScrollSpacer(); // 오른쪽 끝 요소도 패널에 안 가리는 위치까지 스크롤 가능하게
+  /** 마커의 문서 좌표 (기본 위치 = 요소 우상단 + 드래그 오프셋). 렌더(useMarkers)와 동일 기준. */
+  const markerDocPoint = (ann: Annotation): { x: number; y: number; el: Element | null } => {
     const res = resolveAnchor(ann.anchor, document);
+    let x: number, y: number;
     if (res.el) {
-      res.el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-      return;
+      const r = res.el.getBoundingClientRect();
+      x = r.right + window.scrollX;
+      y = r.top + window.scrollY;
+    } else {
+      // rect fallback (앵커 미해석): 저장된 문서 비율 좌표
+      const size = contentScrollSize(document);
+      x = (ann.anchor.rect.x + ann.anchor.rect.w) * size.width;
+      y = ann.anchor.rect.y * size.height;
     }
-    // rect fallback (앵커 미해석): 저장된 문서 비율 좌표를 뷰포트 중앙으로 (마커 렌더와 동일 기준)
-    const size = contentScrollSize(document);
+    const off = ann.markerOffset ?? { dx: 0, dy: 0 };
+    return { x: x + off.dx, y: y + off.dy, el: res.el };
+  };
+
+  /** 마커가 패널을 제외한 가시영역 안에 있는가 (인자는 문서 좌표). */
+  const markerInView = (x: number, y: number): boolean => {
+    const vx = x - window.scrollX;
+    const vy = y - window.scrollY;
+    return vx >= 0 && vx <= window.innerWidth - PANEL_W && vy >= 0 && vy <= window.innerHeight;
+  };
+
+  // 어노테이션 선택·생성 시 마커를 가시영역으로 스크롤 (이슈 #8).
+  // 스크롤 목표는 요소 중앙이 아니라 **마커 좌표**를 패널 제외 가시영역 중앙에 두는 것 —
+  // 요소 중앙 기준이면 넓은 요소·오른쪽 끝 요소·드래그된 마커에서 마커가 패널에 가린다.
+  // 내부 overflow 컨테이너는 scrollIntoView가 처리하고, window 스크롤 목표는 곧바로
+  // 뒤이은 scrollTo가 이어받는다 (같은 smooth 대상이라 마지막 호출이 이긴다).
+  const scrollMarkerIntoView = (ann: Annotation) => {
+    const { x, y, el } = markerDocPoint(ann);
+    ensureScrollSpacer(x); // 마커+여유까지 스크롤 도달 보장
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
     window.scrollTo({
-      left: (ann.anchor.rect.x + ann.anchor.rect.w / 2) * size.width - window.innerWidth / 2,
-      top: (ann.anchor.rect.y + ann.anchor.rect.h / 2) * size.height - window.innerHeight / 2,
+      left: x - (window.innerWidth - PANEL_W) / 2,
+      top: y - window.innerHeight / 2,
       behavior: "smooth",
     });
+  };
+
+  // 생성·기존 요소 클릭 선택용: 요소 자체는 방금 클릭해서 보이지만, 마커(우상단)는
+  // 오른쪽 가장자리 요소에서 패널에 가릴 수 있다 — 가려질 때만 추종해 불필요한 이동을 피한다.
+  const followMarkerIfHidden = (ann: Annotation) => {
+    const { x, y } = markerDocPoint(ann);
+    if (!markerInView(x, y)) scrollMarkerIntoView(ann);
   };
 
   // 선택이 실제로 바뀔 때만 스크롤 — 이미 선택된 항목을 편집하는 중의 클릭마다
   // 뷰포트가 재정렬되면 오히려 방해다.
   const selectAnnFromPanel = (annId: string) => {
-    if (selectedAnn !== annId) scrollAnnAnchorIntoView(annId);
+    if (selectedAnn !== annId) {
+      const ann = docRef.current.annotations.find((a) => a.id === annId);
+      if (ann) scrollMarkerIntoView(ann);
+    }
     setSelectedAnn(annId);
   };
 

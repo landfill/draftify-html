@@ -54,6 +54,7 @@ beforeEach(() => {
   // 편집 모드 부착 시퀀스(isOwn 검사)에 잡히지 않게 한다
   document.body.innerHTML = `<button id="target">저장</button><button id="other">취소</button><div id="root" data-mockspec-root></div>`;
   vi.stubGlobal("ResizeObserver", StubResizeObserver);
+  window.scrollTo(0, 0); // happy-dom은 scrollTo가 실제 scrollX/Y를 바꾸므로 테스트 간 격리
 });
 
 afterEach(() => {
@@ -289,6 +290,33 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(spy).not.toHaveBeenCalled();
     // 선택 자체는 마커를 따라간다
     expect(document.querySelectorAll<HTMLElement>(".ann")[0]!.classList.contains("ann--sel")).toBe(true);
+  });
+
+  it("생성 직후 마커(요소 우상단)가 패널 가시영역 밖이면 스크롤 추종한다", async () => {
+    await mountWithOpenPanel();
+
+    // 오른쪽 가장자리 요소 흉내: 우상단(right)이 innerWidth-360(패널 경계) 밖
+    const target = document.getElementById("target")!;
+    target.getBoundingClientRect = () => ({
+      left: 1900, right: 2000, top: 10, bottom: 40, width: 100, height: 30, x: 1900, y: 10,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const intoView = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+
+    await act(async () => { clickMockup("target"); });
+    expect(intoView).toHaveBeenCalledOnce(); // 생성 직후 추종 발동
+    expect(scrollTo).toHaveBeenCalledOnce();
+    // 스페이서 도달 목표가 마커+여유까지 확장된다
+    const spacer = document.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]")!;
+    expect(Number(spacer.getAttribute("data-reach"))).toBeGreaterThanOrEqual(2000 + 48);
+
+    // 가시영역 안 요소(#other, rect 0)는 생성 시 추종하지 않는다
+    intoView.mockClear();
+    scrollTo.mockClear();
+    await act(async () => { clickMockup("other"); });
+    expect(intoView).not.toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 
   it("스크롤 스페이서: 패널 선택 시 생성(캡처 제외 마킹 포함), 패널 닫기 시 제거된다", async () => {
