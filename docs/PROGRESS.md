@@ -69,8 +69,8 @@
 
 ### 2026-07-16 — 이슈 #11: 콘솔 UI 모던/글래스모피즘 디자인 개선
 - 브랜치: \`feat/console-ui-redesign\` — 사용자 검토 및 main 병합 대기.
-- 배경(사용자 결정): 콘솔(localhost:4000) UI가 기능만 있고 디자인이 없는 상태(이슈 #11). 사용자 선택으로 "모던/글래스모피즘" 방향(부드러운 그라데이션, 반투명 효과, 미세한 애니메이션) 확정.
-- 완료: \`packages/server/src/routes/console.ts\`의 \`CONSOLE_CSS\`를 전면 개편. 배경 그라데이션, 16px blur 카드(backdrop-filter), 입력창 포커스 효과, 부드러운 버튼 호버 애니메이션(translateY, shadow) 등 최신 웹 디자인(글래스모피즘) 적용. 기존 HTML 구조와 프레임워크 없는(vanilla) 제약은 그대로 유지.
+- 배경(사용자 결정): 콘솔(localhost:4000) UI가 기능만 있고 디자인이 없는 상태(이슈 #11). 사용자 선택으로 "모던/글래스모피즘" 방향(부드러운 그라데이션, 반투명 효과, 미세한 애니메이션) 확정. 데스크톱 콘솔 환경에 맞춰 요소들의 크기가 과하지 않게 밀도를 높이도록 추가 피드백 수용.
+- 완료: \`packages/server/src/routes/console.ts\`의 \`CONSOLE_CSS\`를 전면 개편. 배경 그라데이션, blur 카드(backdrop-filter), 입력창 포커스 효과, 부드러운 버튼 호버 애니메이션(translateY, shadow) 등 최신 웹 디자인(글래스모피즘) 적용. 폰트 크기(기본 13px), 패딩, margin 등 여백을 줄여 데스크톱 환경에 맞는 컴팩트한 밀도로 조정. 기존 HTML 구조와 프레임워크 없는(vanilla) 제약은 그대로 유지.
 - 검증: \`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
 - 다음 할 일: 사용자 검토(로컬 서버 기동 및 브라우저 확인) 후 push·PR 생성, main 병합 대기.
 - 막힌 지점: 없음.
