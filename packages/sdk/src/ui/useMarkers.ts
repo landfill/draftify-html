@@ -1,5 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
-import { resolveAnchor } from "../anchor/anchor.js";
+import { contentScrollSize, resolveAnchor } from "../anchor/anchor.js";
 import { annotationsOfScene, type EditorDoc } from "../state.js";
 
 /** 마커 1개의 뷰포트 좌표 (요소 우상단). uncertain=위치 불확실(rect fallback). */
@@ -35,7 +35,8 @@ export function useMarkers(
 
     const recompute = () => {
       const doc = getDoc();
-      const root = document.documentElement;
+      // rect 비율의 분모 — 스크롤 스페이서(이슈 #8)를 제외한 콘텐츠 크기 (앵커 생성과 동일 기준)
+      const size = contentScrollSize(document);
       const next: MarkerPos[] = annotationsOfScene(doc, sceneId).map((a) => {
         const res = resolveAnchor(a.anchor, document);
         if (res.el) {
@@ -46,8 +47,8 @@ export function useMarkers(
           return { annId: a.id, number: a.number, x: r.right, y: r.top, uncertain: false };
         }
         // rect fallback: 문서 비율 → 뷰포트 좌표
-        const x = (a.anchor.rect.x + a.anchor.rect.w) * root.scrollWidth - window.scrollX;
-        const y = a.anchor.rect.y * root.scrollHeight - window.scrollY;
+        const x = (a.anchor.rect.x + a.anchor.rect.w) * size.width - window.scrollX;
+        const y = a.anchor.rect.y * size.height - window.scrollY;
         return { annId: a.id, number: a.number, x, y, uncertain: true };
       });
       setMarkers(next);

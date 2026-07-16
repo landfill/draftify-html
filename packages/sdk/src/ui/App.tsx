@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { MarkerOffset, SpecProject } from "@mockspec/shared";
-import { pickTarget, generateAnchor, resolveAnchor } from "../anchor/anchor.js";
+import { pickTarget, generateAnchor, resolveAnchor, contentScrollSize } from "../anchor/anchor.js";
 import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
   deleteAnnotation, deleteEmptyAnnotations, isEmptyAnnotation,
@@ -234,8 +234,42 @@ export function App({ projectId }: { projectId: string }) {
     const prev = el.style.marginRight;
     el.style.transition = "margin-right .15s ease";
     el.style.marginRight = open ? "360px" : "";
-    return () => { el.style.marginRight = prev; };
+    return () => {
+      el.style.marginRight = prev;
+      resetScrollSpacer(); // 패널이 닫히면 페이지 원 스크롤 범위로 복귀
+    };
   }, [open]);
+
+  // 스크롤 스페이서 (이슈 #8): 도킹 margin-right는 고정폭 페이지의 스크롤 범위를
+  // 늘리지 못해, 문서 오른쪽 끝 패널 폭(360px)만큼의 띠는 최대 스크롤에서도 패널에
+  // 가린 채 드러낼 방법이 없다 (Chromium 실측: 루트 margin/padding 모두 scrollWidth
+  // 불변). 콘텐츠 폭+패널 폭의 불가시 스페이서(캡처 제외 마킹 data-mockspec-root)로
+  // 그 띠까지 스크롤로 노출한다. 도킹 리플로우로 콘텐츠가 패널에 안 가리는 페이지에서는
+  // 결과 폭이 뷰포트 이하라 스크롤을 만들지 않는다. height 0은 스크롤 오버플로에
+  // 기여하지 않아 1px + visibility:hidden(레이아웃 유지·히트테스트 제외)을 쓴다.
+  const ensureScrollSpacer = () => {
+    let spacer = document.querySelector<HTMLElement>("[data-mockspec-scroll-spacer]");
+    if (!spacer) {
+      spacer = document.createElement("div");
+      spacer.setAttribute("data-mockspec-root", ""); // 캡처 제외 마킹 (freeze §5)
+      spacer.setAttribute("data-mockspec-scroll-spacer", "");
+      spacer.setAttribute("aria-hidden", "true");
+      Object.assign(spacer.style, {
+        position: "absolute", left: "0", top: "0", height: "1px",
+        visibility: "hidden", pointerEvents: "none",
+      });
+      document.body.appendChild(spacer);
+    }
+    spacer.style.width = "0"; // 이전 스페이서 폭을 빼고 실제 콘텐츠 폭을 잰다
+    const contentExtent = document.body.scrollWidth;
+    // 앵커 rect 비율의 분모 보정용 실측값 (anchor.ts contentScrollSize가 읽는다)
+    spacer.setAttribute("data-content-width", String(contentExtent));
+    spacer.style.width = `${contentExtent + 360}px`;
+  };
+
+  const resetScrollSpacer = () => {
+    document.querySelector("[data-mockspec-scroll-spacer]")?.remove();
+  };
 
   // 단축키 Alt+Shift+E
   useEffect(() => {
@@ -360,6 +394,35 @@ export function App({ projectId }: { projectId: string }) {
       ?? { dx: 0, dy: 0 };
     if (drag && drag.annId === annId) return { dx: base.dx + drag.dx, dy: base.dy + drag.dy };
     return base;
+  };
+
+  // 패널에서 어노테이션 선택 시 앵커 요소를 뷰포트 중앙으로 스크롤 (이슈 #8).
+  // 넓은 화면(1920px+ 고정폭)에서 뷰포트 밖 마커를 조정할 때 스크롤 왕복을 없앤다.
+  // scrollIntoView는 내부 overflow 컨테이너를 포함한 모든 스크롤 조상을 처리한다.
+  // 마커·목업 요소 클릭에 의한 선택은 이미 뷰포트 안이므로 이 경로를 타지 않는다.
+  const scrollAnnAnchorIntoView = (annId: string) => {
+    const ann = docRef.current.annotations.find((a) => a.id === annId);
+    if (!ann) return;
+    ensureScrollSpacer(); // 오른쪽 끝 요소도 패널에 안 가리는 위치까지 스크롤 가능하게
+    const res = resolveAnchor(ann.anchor, document);
+    if (res.el) {
+      res.el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      return;
+    }
+    // rect fallback (앵커 미해석): 저장된 문서 비율 좌표를 뷰포트 중앙으로 (마커 렌더와 동일 기준)
+    const size = contentScrollSize(document);
+    window.scrollTo({
+      left: (ann.anchor.rect.x + ann.anchor.rect.w / 2) * size.width - window.innerWidth / 2,
+      top: (ann.anchor.rect.y + ann.anchor.rect.h / 2) * size.height - window.innerHeight / 2,
+      behavior: "smooth",
+    });
+  };
+
+  // 선택이 실제로 바뀔 때만 스크롤 — 이미 선택된 항목을 편집하는 중의 클릭마다
+  // 뷰포트가 재정렬되면 오히려 방해다.
+  const selectAnnFromPanel = (annId: string) => {
+    if (selectedAnn !== annId) scrollAnnAnchorIntoView(annId);
+    setSelectedAnn(annId);
   };
 
   // 새 어노테이션 title 자동 포커스 — **방금 생성한 항목에만** (newAnnRef).
@@ -572,7 +635,7 @@ export function App({ projectId }: { projectId: string }) {
                   class="ann__title" data-ann-title={a.id}
                   placeholder="제목"
                   value={a.title}
-                  onClick={() => setSelectedAnn(a.id)}
+                  onClick={() => selectAnnFromPanel(a.id)}
                   onInput={(e) => setDoc(updateAnnotation(doc, a.id, { title: (e.target as HTMLInputElement).value }))}
                 />
                 <button class="ann__del" title="삭제" onClick={() => setDoc(deleteAnnotation(doc, a.id))}>×</button>
@@ -580,7 +643,7 @@ export function App({ projectId }: { projectId: string }) {
               <textarea
                 class="ann__desc" placeholder="설명 (마크다운)"
                 value={a.description}
-                onClick={() => setSelectedAnn(a.id)}
+                onClick={() => selectAnnFromPanel(a.id)}
                 onInput={(e) => setDoc(updateAnnotation(doc, a.id, { description: (e.target as HTMLTextAreaElement).value }))}
               />
               {/* 전이 지정 (§3.10) — 다른 장면이 있을 때만. 전이는 정의상 장면 간 연결이라
@@ -591,7 +654,7 @@ export function App({ projectId }: { projectId: string }) {
                     class="ann__trans-scene" data-ann-trans={a.id}
                     title="이 요소 조작 시 이동할 화면"
                     value={a.transition?.toSceneId ?? ""}
-                    onClick={() => setSelectedAnn(a.id)}
+                    onClick={() => selectAnnFromPanel(a.id)}
                     onChange={(e) => {
                       const toSceneId = (e.target as HTMLSelectElement).value;
                       setDoc(updateAnnotation(doc, a.id, {
@@ -611,7 +674,7 @@ export function App({ projectId }: { projectId: string }) {
                       class="ann__trans-cond" data-ann-trans-cond={a.id}
                       placeholder="조건 (예: 성공 시)"
                       value={a.transition.condition ?? ""}
-                      onClick={() => setSelectedAnn(a.id)}
+                      onClick={() => selectAnnFromPanel(a.id)}
                       onInput={(e) => {
                         const condition = (e.target as HTMLInputElement).value;
                         setDoc(updateAnnotation(doc, a.id, {
