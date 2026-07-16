@@ -67,6 +67,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — PR #21 Codex P2 반영: 웹폰트 @import 철회 (ID-01 계약 우선)
+- 브랜치: \`feat/console-ui-redesign\` (PR #21). Codex P2 지적 수용(사용자 결정): 직전 Gemini 리뷰 ①로 넣은 jsdelivr Pretendard \`@import\`가 콘솔 테스트 계약 "외부 참조 없이 상대 /api 경로만 (ID-01)"(console.test.ts)과 충돌 — 기존 정규식이 \`src=\`/\`href=\`만 스캔해 CSS \`@import\`를 못 잡았다.
+- 완료: ① \`console.ts\`에서 \`@import\` 제거 — 시스템 폰트 폴백 체인으로 복귀(로컬 설치 Pretendard는 여전히 최우선 적용). ② \`console.test.ts\` ID-01 계약 강화 — \`@import\` 금지 + \`url("http...")\` 외부 참조 금지 단언 추가로 재발 방지. 자가 호스팅(한글 서브셋 다수 파일)은 무거워 기각, CDN 공식화(계약 변경)도 기각.
+- 검증: \`npm run typecheck\`·\`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: push 후 CI 재확인, 사용자 브라우저 검토 → main 병합은 사용자 동의 후.
+- 막힌 지점: 없음.
+
 ### 2026-07-16 — PR #21 Gemini 리뷰 4건 반영
 - 브랜치: \`feat/console-ui-redesign\` (PR #21). Gemini 인라인 리뷰 4건(전부 medium) 반영 (\`packages/server/src/routes/console.ts\`):
   - ① Pretendard 웹폰트 로드 — CSS 상단에 jsdelivr dynamic-subset \`@import\` 추가(쓰인 글자 범위만 다운로드, family명 "Pretendard" 유지). 폐쇄망 등 CDN 미도달 시 기존 font-family 폴백 체인으로 자연 대체. 산출물 네트워크 0건 원칙(PRD §1.3-4)은 산출물 HTML 대상이라 콘솔 페이지는 무관.

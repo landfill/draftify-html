@@ -10,10 +10,6 @@ import { WORKING_NAME } from "@mockspec/shared";
  */
 
 const CONSOLE_CSS = `
-/* Pretendard 웹폰트 (dynamic subset — 화면에 쓰인 글자 범위만 내려받음).
-   CDN 미도달(폐쇄망 등) 시 아래 font-family 폴백 체인으로 자연 대체된다. */
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css");
-
 :root {
   --c-label-w: 120px;
   --c-row-gap: 10px;
