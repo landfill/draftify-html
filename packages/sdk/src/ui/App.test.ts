@@ -277,6 +277,15 @@ describe("패널 선택 시 앵커 요소 스크롤 추종 (이슈 #8)", () => {
     expect(scrolled).toHaveLength(1);
   });
 
+  it("문서 가장자리 요소의 마커는 뷰어와 같은 14px 클램프로 렌더된다 (잘림 방지)", async () => {
+    await mountWithOpenPanel();
+    // happy-dom 기본 rect는 전부 0 — 문서 좌상단 가장자리 요소와 동일 조건
+    await act(async () => { clickMockup("target"); });
+    const marker = document.querySelector<HTMLButtonElement>("button.marker")!;
+    expect(marker.style.left).toBe("14px");
+    expect(marker.style.top).toBe("14px");
+  });
+
   it("마커 클릭 선택은 스크롤하지 않는다 — 이미 뷰포트 안이다", async () => {
     await mountWithOpenPanel();
     await act(async () => { clickMockup("target"); });
