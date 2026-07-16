@@ -50,5 +50,4 @@ num_code_suggestions = 4
 suggestions_score_threshold = 7
 
 # 보안은 /review 안에 자동 포함되지만, /improve에서도 보안 항목이 묻히지 않게 우선순위 끌어올리기
-[best_practices]
 extra_instructions = "보안(SSRF, zip-slip, 토큰 처리, 인증 게이트)·검증(countScripts, 네트워크 0건)·규약 준수를 일반 스타일보다 우선시하라."

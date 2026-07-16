@@ -5,9 +5,8 @@
 #  - concurrency 그룹을 prefix로 분리(ci- vs pr-agent-) — 어느 한쪽이 다른 쪽을 취소하지 않음
 #  - GITHUB_TOKEN은 GitHub Actions가 자동 주입(발급 불필요). Gemini 키만 Secrets에 등록
 #  - on: pull_request(안전한 이벤트 — fork PR에서 시크릿 미노출). pull_request_target 미사용
-#  - 자동 트리거(auto_review/describe/improve)는 기본 OFF. 댓글 명령(/review 등)으로 수동 실행
-#    → 평소 CI 1본만 굴러가고, 리뷰가 필요할 때만 PR-Agent 1본 추가 실행(비용·노이즈 절약)
-#    on: issue_comment가 댓글 명령을 받는다(봇이 단 댓글은 sender.type=Bot 가드로 제외)
+#  - 자동 트리거(auto_review)는 ON. PR 오픈/재오픈/ready/synchronize에서 자동 리뷰
+#  - issue_comment는 /review /describe /improve 수동 명령도 계속 받는다(봇 댓글은 sender.type=Bot 가드로 제외)
 #
 # 사전 의무 작업(이 파일 외 1건): GitHub 리포 Settings → Secrets and variables → Actions
 #   → New repository secret → "GEMINI_API_KEY" 이름으로 Google AI Studio 발급 키 붙여넣기
@@ -16,12 +15,12 @@ name: PR Agent
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, synchronize]
   issue_comment:
 
-# CI(ci.yml, group=ci-*)와 별도 취소 풀. 같은 ref 새 커밋이 오면 이전 PR-Agent 실행 취소
+# CI(ci.yml, group=ci-*)와 별도 취소 풀. PR 번호 기준으로 같은 PR의 이전 실행만 취소
 concurrency:
-  group: pr-agent-${{ github.ref }}
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -46,9 +45,8 @@ jobs:
           config.model: "gemini/gemini-3.5-flash"
           config.fallback_models: '["gemini/gemini-3.1-flash-lite"]'
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # 자동 실행 OFF — /review /describe /improve 등 댓글 명령으로만 트리거.
-          # 사용자가 PR에 직접 댓글을 써야 실행 → 평소엔 Gemini 호출 0건.
-          # 자동 리뷰를 원하면 각 값을 "true"로 변경.
-          github_action_config.auto_review: "false"
+          # 자동 리뷰 ON — PR open/reopen/ready/synchronize 때 리뷰를 단다.
+          # issue_comment 트리거는 /review /describe /improve 수동 명령용으로 유지.
+          github_action_config.auto_review: "true"
           github_action_config.auto_describe: "false"
           github_action_config.auto_improve: "false"
