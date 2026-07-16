@@ -67,6 +67,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — 이슈 #11: 콘솔 UI 모던/글래스모피즘 디자인 개선
+- 브랜치: \`feat/console-ui-redesign\` — 사용자 검토 및 main 병합 대기.
+- 배경(사용자 결정): 콘솔(localhost:4000) UI가 기능만 있고 디자인이 없는 상태(이슈 #11). 사용자 선택으로 "모던/글래스모피즘" 방향(부드러운 그라데이션, 반투명 효과, 미세한 애니메이션) 확정.
+- 완료: \`packages/server/src/routes/console.ts\`의 \`CONSOLE_CSS\`를 전면 개편. 배경 그라데이션, 16px blur 카드(backdrop-filter), 입력창 포커스 효과, 부드러운 버튼 호버 애니메이션(translateY, shadow) 등 최신 웹 디자인(글래스모피즘) 적용. 기존 HTML 구조와 프레임워크 없는(vanilla) 제약은 그대로 유지.
+- 검증: \`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: 사용자 검토(로컬 서버 기동 및 브라우저 확인) 후 push·PR 생성, main 병합 대기.
+- 막힌 지점: 없음.
 ### 2026-07-16 — PR-Agent Gemini 코드 리뷰 워크플로 도입 (핵심 외부 리뷰 자동화)
 - 브랜치: `feat/ci-pr-agent-gemini` — **PR #20 main 병합 완료** (`d9be4bc`), 로컬·원격 브랜치 삭제.
 - 배경(사용자 요청): The-PR-Agent/pr-agent GitHub Action을 Gemini API key로 붙여 이 프로젝트 PR의 자동 코드 리뷰를 얻고 싶다. 검토만 한 뒤 도입 여부 확정 → 도입 진행(본 세션). CodeRabbit·Codex·Gemini Code Assist 외부 봇과 병행. 사용자 결정으로 **자동 리뷰 ON**(`auto_review` + push `handle_push_trigger`), `/describe`·`/improve`는 수동. 모델은 Gemini 3.5 Flash(주) + 3.1 Flash-Lite(폴백/가벼운 작업).
