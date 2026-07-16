@@ -68,6 +68,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-17 — PR-Agent 자기-취소 버그 수정 (concurrency 그룹 이벤트별 분리)
+- 브랜치: `chore/pr-agent-concurrency-split`.
+- 배경(사용자 질문 "pr agent가 실패하는 이유"): PR #23·#25·#26에서 `pr_agent_job` 체크가 반복 fail. 실측 진단 — PR 오픈 직후 CodeRabbit 등 **봇 댓글이 `issue_comment` run을 유발**하고, 그 run이 같은 concurrency 그룹(`pr-agent-<PR번호>`)에 진입하면서 `cancel-in-progress`로 **진행 중이던 pull_request 리뷰 run을 취소**. 봇 가드(`if: sender.type != 'Bot'`)는 job 레벨이라 취소가 판정보다 먼저 일어남 → 취소시킨 run 자신은 skipped. 결과: 리뷰 미실행 + fail 체크.
+- 완료: `.github/workflows/pr-agent.yml` concurrency 그룹에 `github.event_name` 포함 — `pr-agent-<이벤트>-<PR번호>`. push(synchronize)끼리의 이전 리뷰 취소는 유지, 봇 댓글의 교차 취소만 제거. 사유 주석 기록. YAML 파싱 검증.
+- 다음 할 일: 커밋·push·PR → 병합 후 다음 PR에서 pull_request 리뷰 run이 취소 없이 완주하는지 관찰.
+- 막힌 지점: 없음.
+
 ### 2026-07-17 — README 스크린샷 리뉴얼 + 프로젝트 목록 이미지 신설
 - 브랜치: `docs/readme-screenshots`.
 - 배경(사용자 요청): README "화면으로 보는 경로 D"의 이미지 1(콘솔 연결 코드)·2(확장 팝업)가 콘솔 UI 리뉴얼(이슈 #11, PR #21) 이전 구버전. 리뉴얼 화면으로 교체 + 프로젝트 목록 화면을 3번째로 추가(목업 편집 앞 배치).
