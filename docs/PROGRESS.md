@@ -67,6 +67,46 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-16 — PR #21 Codex P2 반영: 웹폰트 @import 철회 (ID-01 계약 우선)
+- 브랜치: \`feat/console-ui-redesign\` (PR #21). Codex P2 지적 수용(사용자 결정): 직전 Gemini 리뷰 ①로 넣은 jsdelivr Pretendard \`@import\`가 콘솔 테스트 계약 "외부 참조 없이 상대 /api 경로만 (ID-01)"(console.test.ts)과 충돌 — 기존 정규식이 \`src=\`/\`href=\`만 스캔해 CSS \`@import\`를 못 잡았다.
+- 완료: ① \`console.ts\`에서 \`@import\` 제거 — 시스템 폰트 폴백 체인으로 복귀(로컬 설치 Pretendard는 여전히 최우선 적용). ② \`console.test.ts\` ID-01 계약 강화 — \`@import\` 금지 + \`url("http...")\` 외부 참조 금지 단언 추가로 재발 방지. 자가 호스팅(한글 서브셋 다수 파일)은 무거워 기각, CDN 공식화(계약 변경)도 기각.
+- 검증: \`npm run typecheck\`·\`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: push 후 CI 재확인, 사용자 브라우저 검토 → main 병합은 사용자 동의 후.
+- 막힌 지점: 없음.
+
+### 2026-07-16 — PR #21 Gemini 리뷰 4건 반영
+- 브랜치: \`feat/console-ui-redesign\` (PR #21). Gemini 인라인 리뷰 4건(전부 medium) 반영 (\`packages/server/src/routes/console.ts\`):
+  - ① Pretendard 웹폰트 로드 — CSS 상단에 jsdelivr dynamic-subset \`@import\` 추가(쓰인 글자 범위만 다운로드, family명 "Pretendard" 유지). 폐쇄망 등 CDN 미도달 시 기존 font-family 폴백 체인으로 자연 대체. 산출물 네트워크 0건 원칙(PRD §1.3-4)은 산출물 HTML 대상이라 콘솔 페이지는 무관.
+  - ② 제출 버튼 \`margin-left: 130px\` 매직 넘버 — \`--c-label-w\`(120px)·\`--c-row-gap\`(10px) CSS 변수 도입, \`.c-row\`/\`.c-row label\`/제출 버튼/\`.c-hint\`(같은 130px 의존이라 함께) 전부 변수·\`calc()\`로 동기화.
+  - ③ \`lastExportAt\` 부재 시 "내보내기 1회 (undefined)" 노출 — 값이 있을 때만 괄호 날짜 표기.
+  - ④ \`renderList\`에서 \`#project-count\` 부재 시 TypeError로 목록 렌더 전체 실패 — \`if (countEl)\` 가드.
+- 검증: \`npm run typecheck\`·\`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: push 후 CI 재확인, 사용자 브라우저 검토 → main 병합은 사용자 동의 후.
+- 막힌 지점: 없음.
+
+### 2026-07-16 — 이슈 #11 (4차): 데스크톱 타이포그래피 정상화 + 프로젝트 목록 정보 위계 재구성
+- 브랜치: \`feat/console-ui-redesign\` — 사용자 검토 및 main 병합 대기.
+- 배경(사용자 피드백 4차): 이전 반복(Gemini)에서 밀도를 올린다며 본문 11px·배지 10px로 과도 축소, 목록 제목줄을 고정 CSS Grid(200px/80px)로 벌려 이름·타입·ID가 띄엄띄엄 보이는 문제. "PC 화면 기준 폰트·레이아웃 정비 + 목록의 제목/노출 정보/불필요 정보 재정의" 요청.
+- 완료 (\`packages/server/src/routes/console.ts\`):
+  - **타이포그래피 스케일 정상화(데스크톱 기준)**: 본문 11px→13px(line-height 1.5), GNB 56px·로고 16px·내비 13px, 카드 제목 15px, 폼 라벨/인풋/버튼 13px, 힌트 12px. 컨테이너 1200px→1080px로 좁혀 구성감 확보. **(5차 피드백 "헤더 대비 본문이 너무 크다" 반영)**: 헤더는 유지하고 본문만 한 단계 하향 — 본문 12px·카드 제목 13.5px·목록 제목 13px·메타 11.5px·배지 10.5px·목록 액션 버튼 11.5px·힌트 11.5px. **(6차 피드백 "더 작게 + 여백을 살려라, 목록이 답답하다" 반영)**: 폰트 한 단계 추가 하향(본문 11.5px·카드 제목 13px·목록 제목 12.5px·메타 11px #94a3b8·배지/ID 10px) + 여백 확장(셸 48px 상단·카드 패딩 28px 32px·카드 간 32px·목록 행 패딩 18px·행 정보 gap 5px). 목록의 이중 테두리(카드+.c-list) 제거, 행 액션 버튼을 박스 테두리 없는 텍스트 버튼(hover 시만 배경)으로 교체해 행당 색·선 노이즈 제거. 빈 목록은 dashed 박스. **(7차 피드백 "버튼인지 글자인지 티가 안 남 + 타이틀/목록 구분 안 됨" 반영)**: 섹션 타이틀(h2)을 카드 밖 회색 배경 위로 이동(.c-section/.c-section-title — 타이틀은 페이지 구조, 카드는 내용물로 분리)하고 "프로젝트 목록" 옆에 개수 칩(#project-count, renderList가 갱신) 추가. 행 액션 버튼은 연한 테두리(#cbd5e1)의 소형 버튼으로 어포던스 복원(7차에서 텍스트 버튼이 과했음), 삭제는 붉은 테두리. 목록 카드는 c-card-flush(패딩 6px 32px)로 행 패딩과 이중 여백 방지, 빈 목록 dashed는 카드가 프레임이라 제거. 검증 동일(196 unit·E2E 4본·1440px 스크린샷).
+  - **목록 정보 위계 재정의**: 제목줄은 "이름(14px/600, 비확장 프로젝트는 편집으로 가는 링크) + 등록 방식 배지(11px 중립 회색 pill)"만. 고정 그리드 제거 — 배지는 이름 바로 옆 8px 간격(inline flex)이라 이름 길이와 무관하게 붙는다. 배지 색을 인디고→중립 회색으로 낮춰 제목이 지배하게 함.
+  - **메타줄(12.5px 회색 한 줄)**: 작성자 · 화면 N · 어노테이션 N · 수정일 · 내보내기 N회 · origin. 작성자 "[김기획]" 대괄호 표기를 " · " 구분으로 통일. 프로젝트 ID는 확장 프로젝트만 메타줄 **맨 앞**에 mono 코드로 노출(제목줄에서 제거 — 연결 코드 대상 확인용 정보라 보조 위계가 맞고, 긴 origin의 ellipsis에 잘리지 않도록 앞 배치). c-project-id 테스트 계약 유지.
+  - 목록 액션 버튼은 12px 소형으로 분리(.c-project-actions .c-btn), ghost 버튼을 인디고 테두리→중립 slate로 낮춰 행마다 색 노이즈 제거, 링크 버튼 밑줄 제거(text-decoration none).
+- 검증: \`npm run typecheck\`·\`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**. Playwright 스텁 렌더(1440px) 스크린샷으로 제목 위계·배지 밀착·ID 노출·긴 origin ellipsis 시각 확인.
+- 다음 할 일: 사용자 검토(로컬 서버 기동 및 브라우저 확인) 후 커밋·push·PR, main 병합 대기.
+- 막힌 지점: 없음.
+
+### 2026-07-16 — 이슈 #11: 콘솔 UI 모던/글래스모피즘 디자인 개선 (1~3차)
+- 브랜치: \`feat/console-ui-redesign\`.
+- 배경(사용자 결정): 콘솔(localhost:4000) UI가 기능만 있고 디자인이 없는 상태(이슈 #11). "모던/글래스모피즘" 방향으로 1차 개편했으나, 아직 크고 데스크톱 대시보드스럽지 않다는 피드백(2차), 그리고 상단에 GNB(글로벌 네비게이션 바)가 있는 플랫한 앱 형태가 좋다는 이미지 피드백(3차)을 수용.
+- 완료: \`packages/server/src/routes/console.ts\` 전면 개편. 
+  - **상단 GNB 추가**: 첨부해주신 이미지 형태를 반영하여, 좌측에 서비스 로고(Mockspec), 우측에 '사용 가이드', 'DOCS', 'FAQ', 'EN' 메뉴 링크가 있는 헤더 바(\`.c-header\`) 추가. 기존 본문 텍스트 타이틀은 제거.
+  - **밀도 및 레이아웃 (대시보드 앱 스타일)**: 백그라운드 그라데이션을 단색(\`#f8fafc\`)으로 변경하고 카드를 흰색 배경으로 플랫(Flat)하게 만들어 깔끔한 SaaS 대시보드 형태로 구성. 본문 폰트(`11px`)와 폼 인풋/버튼 크기를 더 줄여, 중간 타이틀(`15px`)과의 명확한 크기 대비(계층 구조)를 확보함.
+  - **목록 디자인(완벽한 세로 정렬)**: 한 줄(Row) 형태의 레이아웃에서 이름 길이와 무관하게 모든 항목이 표처럼 수직 정렬되도록 CSS Grid(`grid-template-columns: 200px 80px auto`)를 적용하여 프로젝트명, 타입(뱃지), 프로젝트 코드가 완벽히 오와 열을 맞추게 함.
+  - 기존 HTML 구조 기반과 프레임워크 없는 제약(vanilla JS/CSS) 유지 및 Pretendard 한글 폰트 최우선 적용.
+- 검증: \`npm run build\` 통과, \`npm test\` **196 passed**, \`npm run test:e2e\` **4본 통과**.
+- 다음 할 일: 사용자 검토(로컬 서버 기동 및 브라우저 확인) 후 push·PR 생성, main 병합 대기.
+- 막힌 지점: 없음.
 ### 2026-07-16 — PR-Agent Gemini 코드 리뷰 워크플로 도입 (핵심 외부 리뷰 자동화)
 - 브랜치: `feat/ci-pr-agent-gemini` — **PR #20 main 병합 완료** (`d9be4bc`), 로컬·원격 브랜치 삭제.
 - 배경(사용자 요청): The-PR-Agent/pr-agent GitHub Action을 Gemini API key로 붙여 이 프로젝트 PR의 자동 코드 리뷰를 얻고 싶다. 검토만 한 뒤 도입 여부 확정 → 도입 진행(본 세션). CodeRabbit·Codex·Gemini Code Assist 외부 봇과 병행. 사용자 결정으로 **자동 리뷰 ON**(`auto_review` + push `handle_push_trigger`), `/describe`·`/improve`는 수동. 모델은 Gemini 3.5 Flash(주) + 3.1 Flash-Lite(폴백/가벼운 작업).

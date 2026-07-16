@@ -74,6 +74,9 @@ describe("콘솔 페이지 서빙 (T9)", () => {
   it("콘솔 HTML은 외부 참조 없이 상대 /api 경로만 호출한다 (ID-01)", () => {
     // 오리진 하드코딩 금지 — http(s) 절대 URL이 없어야 한다 (SPA base 안내 문구 제외)
     expect(CONSOLE_HTML).not.toMatch(/(?:src|href)="https?:\/\//);
+    // CSS 경유 외부 요청도 금지 — @import·url()은 src/href 스캔에 안 잡힌다 (PR #21에서 실제 유입)
+    expect(CONSOLE_HTML).not.toMatch(/@import/);
+    expect(CONSOLE_HTML).not.toMatch(/url\(\s*["']?https?:\/\//);
     expect(CONSOLE_HTML).toContain('fetch("/api/projects"');
   });
 
