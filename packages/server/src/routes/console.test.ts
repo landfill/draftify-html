@@ -65,10 +65,11 @@ describe("콘솔 페이지 서빙 (T9)", () => {
   it("인라인 콘솔 JS가 문법 오류 없이 파싱된다 (템플릿 리터럴 내 raw 개행 등 회귀 방지)", () => {
     // CONSOLE_JS는 TS 템플릿 리터럴이라 JS 문자열 안 개행은 `\\n`으로 써야 한다.
     // `"\n"`을 잘못 쓰면 빌드 시 실제 개행이 되어 인라인 스크립트 전체가 깨진다(실사용에서 발견).
-    const m = /<script>([\s\S]*?)<\/script>\s*<\/body>/.exec(CONSOLE_HTML);
-    expect(m, "인라인 콘솔 스크립트 블록").not.toBeNull();
+    const scripts = [...CONSOLE_HTML.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    // head 테마 초기화 + body 콘솔 JS — 인라인 스크립트 블록이 최소 2개
+    expect(scripts.length, "인라인 스크립트 블록 수").toBeGreaterThanOrEqual(2);
     // new Function으로 파싱만 확인(실행하지 않음) — 문법 오류면 여기서 throw
-    expect(() => new Function(m![1]!)).not.toThrow();
+    for (const s of scripts) expect(() => new Function(s[1]!)).not.toThrow();
   });
 
   it("콘솔 HTML은 외부 참조 없이 상대 /api 경로만 호출한다 (ID-01)", () => {
