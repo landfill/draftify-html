@@ -18,6 +18,7 @@ import {
   uploadSnapshot,
 } from "../api.js";
 import { useMarkers } from "./useMarkers.js";
+import { currentRoute, observeRouteChanges } from "../routeChanges.js";
 
 /**
  * SDK 편집기: 장면(그릇) + 어노테이션 부착 + 앵커/마커 + 장면 캡처 + 저장.
@@ -65,6 +66,7 @@ export function App({ projectId }: { projectId: string }) {
   const [drag, setDrag] = useState<MarkerDrag | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
+  const [routeSuggestion, setRouteSuggestion] = useState<string | null>(null);
   // 패널 비켜주기(peek, 이슈 #8): 패널이 얇은 탭으로 접혀 마커 가림을 해소한다
   const [peek, setPeek] = useState(false);
   // 추종 후에도 마커가 패널에 가려 있는 선택 항목 — 안내·[패널 접고 마커 보기] 노출 대상
@@ -79,6 +81,8 @@ export function App({ projectId }: { projectId: string }) {
   const peekRef = useRef(peek); peekRef.current = peek;
   const selectedAnnRef = useRef(selectedAnn); selectedAnnRef.current = selectedAnn;
   const suppressClickRef = useRef(false);
+  // 최초 route는 이미 본 것으로 간주하고, 이후 route별 세션 1회만 제안한다 (§11 16차).
+  const seenRoutesRef = useRef(new Set([currentRoute()]));
   // 방금 생성한 어노테이션 id — title 자동 포커스는 "생성 시 1회"에만 한다.
   // (실사용: 앞 번호 칸을 편집 중인데 재렌더로 포커스가 마지막 칸으로 튀는 버그 방지)
   const newAnnRef = useRef<string | null>(null);
@@ -93,6 +97,18 @@ export function App({ projectId }: { projectId: string }) {
     ? annotationsOfScene(doc, currentSceneId).map((a) => `${a.id}:${a.anchor.selector}`).join(",")
     : "";
   const markers = useMarkers(getDoc, currentSceneId, open, onSelectorUpdate, annSignature);
+
+  // 패널 열림·모드와 무관하게 SDK 생존 기간 전체를 감지한다. 닫힌 패널에서 생긴 제안도
+  // state에 보존되어 다음에 패널을 열 때 표시된다 (FR-EDT-06).
+  useEffect(() => observeRouteChanges((route) => {
+    if (seenRoutesRef.current.has(route)) {
+      // 제안 중 다른(이미 본) route로 이동했다면 낡은 제안을 남기지 않는다.
+      setRouteSuggestion(null);
+      return;
+    }
+    seenRoutesRef.current.add(route);
+    setRouteSuggestion(route);
+  }), []);
 
   // SDK 초기 로드: pending이 있으면 로컬 우선으로 즉시 표시하고 PUT을 먼저 시도(ID-05).
   useEffect(() => {
@@ -628,6 +644,7 @@ export function App({ projectId }: { projectId: string }) {
     const { doc: nd, scene } = createScene(doc, { title: "", route });
     setDoc(nd);
     setCurrentSceneId(scene.id);
+    setRouteSuggestion(null);
     setNeedScene(false);
     void runFreeze(scene.id); // 등록 즉시 자동 캡처
   };
@@ -699,6 +716,15 @@ export function App({ projectId }: { projectId: string }) {
 
         <div class="panel__body">
         {loadError && <div class="hint hint--warn">{loadError}</div>}
+        {routeSuggestion && (
+          <div class="route-banner" role="status">
+            <span>새 화면으로 등록할까요?</span>
+            <div class="route-banner__actions">
+              <button class="btn" disabled={!project} onClick={registerScene}>등록</button>
+              <button class="btn" onClick={() => setRouteSuggestion(null)}>무시</button>
+            </div>
+          </div>
+        )}
 
         <div class="section">
           <div class="row">

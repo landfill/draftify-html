@@ -50,6 +50,7 @@ async function flushPromises(): Promise<void> {
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
+  history.replaceState(null, "", "/");
   // #root의 data-mockspec-root는 main.tsx의 호스트 마킹과 동일 — 패널 내부 클릭이
   // 편집 모드 부착 시퀀스(isOwn 검사)에 잡히지 않게 한다
   document.body.innerHTML = `<button id="target">저장</button><button id="other">취소</button><div id="root" data-mockspec-root></div>`;
@@ -62,6 +63,67 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe("SPA route 변경 제안 (FR-EDT-06)", () => {
+  it("새 route를 세션당 한 번만 제안하고 현재 화면은 자동 전환하지 않는다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+
+    await act(async () => { history.pushState(null, "", "/stats?tab=all#summary"); });
+    expect(document.querySelector(".route-banner")?.textContent).toContain("새 화면으로 등록할까요?");
+    expect(document.querySelectorAll(".scene")).toHaveLength(1);
+    expect(document.querySelector(".scene--cur .scene__code")?.textContent).toBe("SCR-001");
+    expect(getDoc().scenes).toHaveLength(1); // route만으로 자동 생성하지 않는다
+
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>(".route-banner .btn")]
+        .find((button) => button.textContent === "무시")!.click();
+    });
+    expect(document.querySelector(".route-banner")).toBeNull();
+
+    await act(async () => { history.pushState(null, "", "/other"); });
+    expect(document.querySelector(".route-banner")).not.toBeNull();
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>(".route-banner .btn")]
+        .find((button) => button.textContent === "무시")!.click();
+      history.pushState(null, "", "/stats?tab=all#summary");
+    });
+    expect(document.querySelector(".route-banner")).toBeNull(); // 이미 본 route는 다시 제안하지 않음
+
+    await act(async () => { history.pushState(null, "", "/fresh"); });
+    expect(document.querySelector(".route-banner")).not.toBeNull();
+    await act(async () => { history.pushState(null, "", "/"); });
+    expect(document.querySelector(".route-banner")).toBeNull(); // 이미 본 현재 route에서 낡은 제안 제거
+  });
+
+  it("패널이 닫힌 동안 route가 바뀌면 다음에 열 때 제안한다", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => jsonResponse(project));
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => { history.pushState(null, "", "/closed-panel-route"); });
+
+    expect(document.querySelector(".route-banner")).toBeNull();
+    await act(async () => { document.querySelector<HTMLButtonElement>(".fab")!.click(); });
+    expect(document.querySelector(".route-banner")?.textContent).toContain("새 화면으로 등록할까요?");
+  });
+
+  it("[등록]은 기존 화면 등록 흐름을 재사용해 현재 route 장면을 만들고 제안을 닫는다", async () => {
+    const { getDoc } = await mountWithOpenPanel();
+    await act(async () => { history.replaceState(null, "", "/result?kind=success#top"); });
+
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>(".route-banner .btn")]
+        .find((button) => button.textContent === "등록")!.click();
+    });
+    await saveTick();
+
+    expect(document.querySelector(".route-banner")).toBeNull();
+    expect(getDoc().scenes).toHaveLength(2);
+    expect(getDoc().scenes[1]?.route).toBe("/result?kind=success#top");
+    expect(document.querySelector(".scene--cur .scene__code")?.textContent).toBe("SCR-002");
+  });
 });
 
 /** 서버 저장을 항상 성공시키는 fetch 스텁 + 마운트·패널 열기까지 공통 수행. */

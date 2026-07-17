@@ -479,6 +479,12 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 |---|------|---------|
 | T29 | `ownerLabel` 승격 + 산출물 이력(메타 전용, §6.3) | 세 등록 경로 ownerLabel 수용·왕복 무손실(라벨 없는 기존 spec.json 하위 호환), export 시 이력 기록·목록 요약 동봉, 콘솔 카드·삭제 confirm·산출물 헤더에 작성자 표시 |
 
+라우트 변경 제안 WBS (2026-07-17 이슈 #18 — 누락된 FR-EDT-06 P0 보완, T29에 이어 번호):
+
+| # | 작업 | AC 요약 |
+|---|------|---------|
+| T30 | SDK: SPA 라우트 변경 제안 배너 + 사용 가이드 | `pathname+search+hash` 변경(`pushState`·`replaceState`·`popstate`·`hashchange`)을 패널/모드와 무관하게 감지, 닫힌 패널의 제안 보존, route별 세션 1회, [등록]은 기존 장면 등록 재사용, [무시]는 제안만 닫음. 자동 생성·현재 장면 전환·route 매칭 없음. user-guide·콘솔 가이드 동기화 |
+
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
 
 ```

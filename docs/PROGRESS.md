@@ -21,6 +21,10 @@
 **콘솔 UI 디자인 개선(이슈 #11, 1~7차 피드백) — PR #21로 main 병합 완료 (2026-07-16, CI green·리뷰 5건(Gemini 4·Codex 1) 반영·브랜치 삭제).**
 **콘솔 가이드(/guide)·FAQ(/faq) 페이지 + 다크 모드 토글(EN 대체) — PR #29로 main 병합 완료 (2026-07-17, CI green·리뷰 3건(Gemini) 반영·브랜치 삭제). 헤더 DOCS 메뉴 정리는 이슈 #30.**
 
+## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
+
+- [x] T30 SDK SPA 라우트 변경 제안 배너 + 사용 가이드 (이슈 #18) — `pathname+search+hash` 변경(pushState·replaceState·popstate·hashchange) 감지, 패널/모드 무관·닫힌 패널 제안 보존·route별 세션 1회·자동 화면 전환 없음. unit/API 213 passed, E2E 4본 통과, 실 Chromium에서 배너 배치·동작 확인
+
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
 - [x] T29 `ownerLabel` 승격 + 산출물 이력(메타 전용, §6.3) — vitest 176 passed(+7)·E2E 4본 통과. 실 서버 구동 검증: 라벨 생성(공백 정리)→export 2회→목록 요약 "내보내기 2회"·뷰어 헤더 "작성자 김기획"·삭제 confirm에 이름·산출물 임베드 spec에 ownerLabel. 이력은 `exports.json`(서버 소유, spec.json 밖)에 메타만. htmlRef(파일 보관)·members[]는 미채택/보류 — technical-spec §2.2
@@ -68,6 +72,11 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-17 — 이슈 #18 SPA 라우트 변경 제안 배너 (feat/route-change-banner)
+- 완료: 누락된 P0 FR-EDT-06을 T30으로 WBS에 추가하고 킥오프 §11 16차에서 감지 경계를 확정. SDK가 `pathname+search+hash` 실제 변경을 `pushState`·`replaceState`·`popstate`·`hashchange`로 감지해 패널 상단에 "새 화면으로 등록할까요? [등록] [무시]"를 route별 세션 1회 제안한다. 최초 route는 이미 본 것으로 처리하고, 패널 닫힘/편집·미리보기 모드와 무관하게 감지하며, 이미 본 route로 돌아오면 낡은 제안을 제거한다. [등록]은 기존 화면 등록·캡처 흐름을 재사용하고 자동 화면 전환·route 매칭은 하지 않는다. user-guide와 콘솔 `/guide` 동기화. 검증: build·typecheck 성공, vitest 213 passed(+6), Playwright E2E 4본 통과(S1에서 실제 history route 배너→등록), 실 Chromium 1440×900에서 패널 상단 배치·문구·버튼 확인.
+- 다음 할 일: draft PR 리뷰 후 사용자 동의를 받아 병합. URL이 바뀌지 않는 Nexacro MDI의 숨김/가림 DOM 마커 처리는 실사용 DOM 재현 확보 후 별도 이슈로 결정.
+- 막힌 지점: 없음.
 
 ### 2026-07-17 — PR #29 main 병합 완료 (가이드·FAQ 페이지 + 다크 모드)
 - 사용자 동의 후 병합(`b33ec53`) — CI 4체크(verify ×2·pr_agent_job·CodeRabbit) 전부 green. 로컬·원격 브랜치 삭제.
