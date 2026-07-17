@@ -17,6 +17,8 @@ describe("안내 페이지 서빙 — 가이드·FAQ", () => {
     expect(res.text).toContain("URL 등록");
     expect(res.text).toContain("내 화면에서 편집");
     expect(res.text).toContain("연결 방식 고르기");
+    expect(res.text).toContain("새 화면으로 등록할까요?");
+    expect(res.text).toContain("URL이 그대로인 탭·MDI 화면");
   });
 
   it("루트 도메인 /faq가 FAQ HTML을 반환한다", async () => {

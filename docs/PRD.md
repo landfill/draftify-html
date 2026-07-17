@@ -203,7 +203,7 @@ P1 중 **S2 확정 범위는 FR-ONB-05(경로 B)와 FR-EDT-11(마스킹)뿐**이
 | FR-EDT-03 | 어노테이션: 번호 자동 부여, 앵커 자동 생성, 마커 렌더, title/description 편집 | P0 |
 | FR-EDT-04 | 앵커 재해석: MutationObserver+ResizeObserver, selector 실패 시 text/attrs 재탐색 후 자동 갱신, 최종 실패 시 rect 위치에 "위치 불확실" 표시 | P0 |
 | FR-EDT-05 | 장면 등록: [+ 현재 화면을 장면으로] → Scene 생성 + 즉시 캡처 시도 | P0 |
-| FR-EDT-06 | SPA 라우트 변경 감지 시 "새 장면으로 등록할까요?" 배너 (자동 생성 금지) | P0 |
+| FR-EDT-06 | SPA 라우트 변경 감지 시 "새 화면으로 등록할까요?" 배너 (자동 생성·현재 화면 자동 전환 금지) | P0 |
 | FR-EDT-07 | 자동 저장 (500ms 디바운스, 문서 전체 교체 PUT) + 오프라인 localStorage 큐 | P0 |
 | FR-EDT-08 | 장면 캡처: single-file-core 클라이언트 실행, 산출 스냅샷에 `<script>` 0개 보장 | P0 |
 | FR-EDT-09 | 캡처 실패 시: 토스트 + "캡처 실패 — 재시도" 배지, 어노테이션 작성은 계속 가능 | P0 |

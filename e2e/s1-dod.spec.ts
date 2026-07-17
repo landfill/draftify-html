@@ -73,8 +73,14 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
   await expect(page.locator("#stats-line")).toBeVisible();
   await expect(page).toHaveURL(/\/stats$/);
 
+  // FR-EDT-06: route 변경은 자동 장면 전환 대신 등록 제안만 한다.
+  const routeBanner = page.locator(".route-banner");
+  await expect(routeBanner).toContainText("새 화면으로 등록할까요?");
+  await expect(page.locator(".scene--cur .scene__code")).toHaveText("SCR-001");
+
   await page.getByRole("button", { name: "편집", exact: true }).click();
-  await registerScene.click();
+  await routeBanner.getByRole("button", { name: "등록", exact: true }).click();
+  await expect(routeBanner).toBeHidden();
   await expect(page.locator(".frz--ok")).toHaveCount(2);
 
   for (const spec of SCENE2) await attachAnnotation(page, spec);

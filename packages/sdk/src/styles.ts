@@ -117,6 +117,15 @@ export const STYLES = /* css */ `
 
 .hint--warn { background: #fff4e5; color: #b5560a; }
 
+/* SPA route 변경 제안 (FR-EDT-06) — 자동 전환 없이 사용자가 등록/무시를 고른다. */
+.route-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0 14px 12px; padding: 9px 10px; border: 1px solid #f1c27d; border-radius: 7px;
+  background: #fff4e5; color: #8a4b08; font-size: 12px; line-height: 1.4;
+}
+.route-banner__actions { display: flex; gap: 5px; flex: 0 0 auto; }
+.route-banner__actions .btn { padding: 4px 7px; }
+
 .list { list-style: none; margin: 8px 0 0; padding: 0; }
 .scene { margin-bottom: 6px; }
 .scene__row { display: flex; align-items: center; gap: 4px; }
