@@ -111,9 +111,10 @@ export function App({ projectId }: { projectId: string }) {
 
   // "세션 1회"는 배너가 실제로 표시된 route 기준(킥오프 §11 17차) — 감지 시점에 소진하면
   // 패널이 닫힌 동안 생겼다가 표시 전에 소멸한 제안이 그 route의 기회를 영구히 없앤다.
+  // peek 중에는 패널이 화면 밖(inert)이라 배너가 보이지 않으므로 표시로 치지 않는다.
   useEffect(() => {
-    if (open && routeSuggestion) seenRoutesRef.current.add(routeSuggestion);
-  }, [open, routeSuggestion]);
+    if (open && !peek && routeSuggestion) seenRoutesRef.current.add(routeSuggestion);
+  }, [open, peek, routeSuggestion]);
 
   // SDK 초기 로드: pending이 있으면 로컬 우선으로 즉시 표시하고 PUT을 먼저 시도(ID-05).
   useEffect(() => {
