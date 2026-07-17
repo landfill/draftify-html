@@ -95,6 +95,8 @@ button, input { font: inherit; }
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .c-theme-toggle:hover { border-color: var(--c-border-hover); background: var(--c-surface-2); }
+.c-theme-toggle::before { content: "🌙"; }
+:root[data-theme="dark"] .c-theme-toggle::before { content: "☀️"; }
 
 .c-shell { max-width: 1080px; margin: 0 auto; padding: 48px 32px 80px; }
 .c-card {
@@ -128,9 +130,9 @@ export const THEME_TOGGLE_JS = `
 (function () {
   var toggle = document.getElementById("theme-toggle");
   if (!toggle) return;
+  // 아이콘은 CSS ::before가 data-theme 기준으로 그린다 (첫 페인트 깜빡임 방지) — JS는 접근성 라벨만
   function syncIcon() {
     var dark = document.documentElement.getAttribute("data-theme") === "dark";
-    toggle.textContent = dark ? "\\u2600\\uFE0F" : "\\uD83C\\uDF19";
     toggle.setAttribute("aria-label", dark ? "라이트 모드로 전환" : "다크 모드로 전환");
     toggle.setAttribute("title", dark ? "라이트 모드로 전환" : "다크 모드로 전환");
   }
@@ -158,7 +160,7 @@ export function pageHeader(active?: "guide" | "faq"): string {
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
       <a href="#" class="c-nav-link">DOCS</a>
       <a href="/faq" class="${cls("faq")}">FAQ</a>
-      <button type="button" id="theme-toggle" class="c-theme-toggle">🌙</button>
+      <button type="button" id="theme-toggle" class="c-theme-toggle" aria-label="다크 모드로 전환" title="다크 모드로 전환"></button>
     </div>
   </header>`.trim();
 }

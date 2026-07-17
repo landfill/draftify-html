@@ -42,9 +42,11 @@ export function buildApp(): express.Express {
 
     // 루트 = 콘솔 정적 페이지 (T9, detailed-spec §2) + 안내 페이지(가이드·FAQ)
     if (req.method === "GET" || req.method === "HEAD") {
-      if (req.path === "/") return consolePage(req, res);
-      if (req.path === "/guide") return guidePage(req, res);
-      if (req.path === "/faq") return faqPage(req, res);
+      // trailing slash 정규화 — `/guide/`도 200 (리뷰 반영: 오탐 404 방지)
+      const pagePath = req.path.replace(/\/+$/, "") || "/";
+      if (pagePath === "/") return consolePage(req, res);
+      if (pagePath === "/guide") return guidePage(req, res);
+      if (pagePath === "/faq") return faqPage(req, res);
     }
     return next();
   });

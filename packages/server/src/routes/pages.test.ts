@@ -27,6 +27,14 @@ describe("안내 페이지 서빙 — 가이드·FAQ", () => {
     expect(res.text).toContain("g-faq-item");
   });
 
+  it("trailing slash가 붙어도 같은 페이지를 반환한다 (/guide/ · /faq/)", async () => {
+    const guide = await request(app).get("/guide/").set("Host", "localhost:4000");
+    expect(guide.status).toBe(200);
+    expect(guide.text).toContain(`<title>사용 가이드 — ${WORKING_NAME}</title>`);
+    const faq = await request(app).get("/faq/").set("Host", "localhost:4000");
+    expect(faq.status).toBe(200);
+  });
+
   it("안내 페이지에도 공통 헤더·다크 모드 토글이 있고 현재 페이지가 하이라이트된다", async () => {
     const guide = await request(app).get("/guide").set("Host", "localhost:4000");
     expect(guide.text).toContain('href="/faq"');
