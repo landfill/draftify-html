@@ -640,7 +640,7 @@ export function App({ projectId }: { projectId: string }) {
     if (!projectRef.current) return;
     // 제목 기본값 없음 — SPA는 document.title이 불변이라 모든 장면에 같은 무의미한 제목이
     // 붙는다(실사용 피드백). 목록의 인라인 입력으로 사용자가 직접 명명한다 (킥오프 §11 8차).
-    const route = location.pathname + location.search + location.hash;
+    const route = currentRoute();
     const { doc: nd, scene } = createScene(doc, { title: "", route });
     setDoc(nd);
     setCurrentSceneId(scene.id);
