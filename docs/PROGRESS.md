@@ -73,6 +73,11 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-18 — PR #32 main 병합 완료 (README 배너 안내 + FAQ 마커 잔존 문항)
+- 완료: 사용자 동의로 squash 병합(`54a118a`) — CI 4체크 green. PR #31에서 README만 누락됐던 배너 안내를 빠른 시작 화면 등록 행에 보강하고, 콘솔 `/faq`에 "편집" 그룹 신설 + 이슈 #18 원 증상 문항("이동했는데 이전 화면 마커가 그대로 보임") 추가. Gemini 리뷰 1건(표 행 명사형 종결 통일) 반영. 검증: server 타입체크·pages.test.ts 6건 통과.
+- 다음 할 일: 이슈 #18 검토 후보 (c) — Nexacro 실 DOM 재현 확보 후 별도 이슈 등록. 열린 이슈 — #30(DOCS 메뉴 정리), #12·#13(실수요 대기).
+- 막힌 지점: 없음.
+
 ### 2026-07-18 — PR #31 main 병합 완료 (SPA 라우트 변경 제안 배너, 이슈 #18 종결)
 - 완료: 리뷰 반영 3건 후 사용자 동의로 squash 병합(`73c8104`), 이슈 #18 자동 닫힘. 반영 내역 — ① CodeRabbit nitpick: `registerScene`의 route 조합을 `currentRoute()` 재사용으로. ② Codex P2: "세션 1회" 소진 기준을 감지 시점 → **배너가 실제 표시된 시점**으로 확정(킥오프 §11 17차, detailed-spec·ID-09 동기화) — 닫힌 패널에서 생겼다가 표시 전에 소멸한 제안은 route를 소진하지 않는다. ③ Codex 후속 P2: peek로 접힌 동안(`inert`)도 미표시로 간주해 seen 조건에 `!peek` 추가. 각각 회귀 테스트 포함, sdk vitest 83 passed. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green, PR Agent 최종 재검토 Non-compliant 없음.
 - 다음 할 일: 이슈 #18 검토 후보 (c) — URL 불변 Nexacro MDI의 숨김/가림 DOM 마커 처리는 실사용 DOM 재현 확보 후 별도 이슈로 등록해 결정. 열린 이슈 — #30(DOCS 메뉴 정리 결정 대기), #12·#13(실수요 대기).
