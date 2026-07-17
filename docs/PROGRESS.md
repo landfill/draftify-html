@@ -68,6 +68,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-17 — 콘솔 상단 가이드·FAQ 페이지 + 다크 모드 (feat/console-guide-faq-darkmode)
+- 완료: 콘솔 헤더의 죽은 링크를 활성화 — `사용 가이드`→`/guide`, `FAQ`→`/faq` (둘 다 서버 서빙 정적 HTML 1장, 외부 참조 0건). `EN` 링크는 다크 모드 토글 버튼으로 교체.
+  - `routes/shell.ts` 신설: 테마 CSS 변수 2벌(라이트 기본 + `:root[data-theme="dark"]`)·공통 헤더·토글 JS. 선택은 `localStorage("mockspec:theme")`에 저장, `<head>` 인라인 스크립트로 첫 페인트 전 적용(FOUC 방지). 콘솔 CSS는 하드코딩 색상을 전부 변수 참조로 전환.
+  - `routes/pages.ts` 신설: 가이드(연결 방식 3종 카드·비교표·시작하기 스텝·편집/마스킹/산출물)와 FAQ(주제 3그룹, `<details>` 아코디언). 내용 원본은 `docs/user-guide.md`, 명칭은 콘솔 탭과 같은 표면 용어.
+  - 검증: vitest 206 passed(+5, `pages.test.ts` 신설 — /guide·/faq 200·헤더 활성 링크·토글·다크 팔레트). 실 서버(4100) + Chrome으로 가이드/FAQ/콘솔 3면에서 다크·라이트 전환과 페이지 간 테마 유지 시각 확인. 기존 콘솔 인라인 JS 파싱 테스트는 head 스크립트 추가에 맞춰 "모든 인라인 블록 각각 파싱"으로 강화.
+- 리뷰 반영 3건(Gemini medium, CodeRabbit·PR-Agent 지적 0건): ① `/guide/` 등 trailing slash 404 → 경로 정규화(+회귀 테스트, vitest 207) ② 토글 아이콘을 CSS `::before`(data-theme 기준)로 이동 — 다크 저장 상태 첫 페인트 깜빡임 제거 ③ 버튼 초기 `aria-label`·`title` 하드코딩. 실 브라우저에서 아이콘·라벨·localStorage 동기화 재검증.
+- 다음 할 일: **PR #29** 사용자 동의 받아 병합. 헤더 `DOCS` 메뉴 정리는 **이슈 #30**(제거 vs 샘플 산출물 대체)으로 분리.
+- 막힌 지점: 없음.
+
 ### 2026-07-17 — PR #28 main 병합 완료 (README 팝업 이미지 표시 폭 절반)
 - README 2번째 이미지(확장 팝업)를 `<img width="372">`로 교체(`743ff97`) — 레티나 2배 촬영본(744px)이 원본 크기로 렌더되던 것을 표시 폭만 절반 지정(화질 유지). 리뷰 지적 0건.
 - **#27 수정 효과 확인**: 본 PR에서 `pr_agent_job`이 봇 활동에도 취소 없이 29s 완주(pass) — concurrency 이벤트별 분리가 의도대로 동작.
