@@ -134,7 +134,7 @@ zip 루트가 `dist/` 한 겹으로 감싸져 있으면 서버가 자동으로 �
 
 기획서로 만들 화면이 열린 탭에서 확장 팝업을 열고, 복사한 연결 코드를 붙여넣어 **[이 사이트에 연결]**. 연결되면 하단에 연결된 프로젝트 ID가 표시된다.
 
-![확장 팝업에서 연결 코드 등록 및 사이트 연결](./docs/images/pathD-2-extension-popup.png)
+<img src="./docs/images/pathD-2-extension-popup.png" alt="확장 팝업에서 연결 코드 등록 및 사이트 연결" width="372">
 
 ### 3. 콘솔 프로젝트 목록
 
