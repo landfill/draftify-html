@@ -109,6 +109,24 @@ describe("SPA route 변경 제안 (FR-EDT-06)", () => {
     expect(document.querySelector(".route-banner")?.textContent).toContain("새 화면으로 등록할까요?");
   });
 
+  it("표시되기 전에 소멸한 제안은 route를 소진하지 않는다 (세션 1회는 배너 표시 기준)", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => jsonResponse(project));
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    // 패널이 닫힌 채 새 route로 갔다가, 배너가 표시되기 전에 이미 본 route로 복귀
+    await act(async () => { history.pushState(null, "", "/missed-route"); });
+    await act(async () => { history.pushState(null, "", "/"); });
+
+    await act(async () => { document.querySelector<HTMLButtonElement>(".fab")!.click(); });
+    expect(document.querySelector(".route-banner")).toBeNull(); // 소멸한 제안은 남지 않는다
+
+    // 한 번도 표시된 적 없는 route는 다시 방문하면 다시 제안한다
+    await act(async () => { history.pushState(null, "", "/missed-route"); });
+    expect(document.querySelector(".route-banner")?.textContent).toContain("새 화면으로 등록할까요?");
+  });
+
   it("[등록]은 기존 화면 등록 흐름을 재사용해 현재 route 장면을 만들고 제안을 닫는다", async () => {
     const { getDoc } = await mountWithOpenPanel();
     await act(async () => { history.replaceState(null, "", "/result?kind=success#top"); });
