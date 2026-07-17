@@ -57,4 +57,28 @@ describe("SPA route 변경 감지 (FR-EDT-06)", () => {
     history.pushState(null, "", "/after-stop");
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it("후속 래퍼가 우리 래퍼를 보존해도 해제 뒤 콜백은 실행하지 않는다", () => {
+    const originalPushState = history.pushState;
+    const listener = vi.fn();
+    stop = observeRouteChanges(listener);
+    const observedPushState = history.pushState;
+
+    // SDK 설치 뒤 다른 라이브러리가 history를 다시 감싼 상황.
+    history.pushState = function (
+      this: History,
+      ...args: Parameters<History["pushState"]>
+    ): void {
+      observedPushState.apply(this, args);
+    };
+
+    try {
+      stop();
+      stop = undefined;
+      history.pushState(null, "", "/after-stacked-cleanup");
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      history.pushState = originalPushState;
+    }
+  });
 });

@@ -10,8 +10,10 @@ export function currentRoute(): string {
  */
 export function observeRouteChanges(onChange: (route: string) => void): () => void {
   let previous = currentRoute();
+  let stopped = false;
 
   const check = () => {
+    if (stopped) return;
     const next = currentRoute();
     if (next === previous) return;
     previous = next;
@@ -43,6 +45,7 @@ export function observeRouteChanges(onChange: (route: string) => void): () => vo
   window.addEventListener("hashchange", check);
 
   return () => {
+    stopped = true;
     window.removeEventListener("popstate", check);
     window.removeEventListener("hashchange", check);
     // 다른 코드가 뒤에서 다시 감쌌다면 그 래퍼를 덮어쓰지 않는다.

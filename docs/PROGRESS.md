@@ -23,7 +23,7 @@
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
 
-- [x] T30 SDK SPA 라우트 변경 제안 배너 + 사용 가이드 (이슈 #18) — `pathname+search+hash` 변경(pushState·replaceState·popstate·hashchange) 감지, 패널/모드 무관·닫힌 패널 제안 보존·route별 세션 1회·자동 화면 전환 없음. unit/API 213 passed, E2E 4본 통과, 실 Chromium에서 배너 배치·동작 확인
+- [x] T30 SDK SPA 라우트 변경 제안 배너 + 사용 가이드 (이슈 #18) — `pathname+search+hash` 변경(pushState·replaceState·popstate·hashchange) 감지, 패널/모드 무관·닫힌 패널 제안 보존·route별 세션 1회·자동 화면 전환 없음. unit/API 214 passed, E2E 4본 통과, 실 Chromium에서 배너 배치·동작 확인
 
 ## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
 
@@ -74,7 +74,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-17 — 이슈 #18 SPA 라우트 변경 제안 배너 (feat/route-change-banner)
-- 완료: 누락된 P0 FR-EDT-06을 T30으로 WBS에 추가하고 킥오프 §11 16차에서 감지 경계를 확정. SDK가 `pathname+search+hash` 실제 변경을 `pushState`·`replaceState`·`popstate`·`hashchange`로 감지해 패널 상단에 "새 화면으로 등록할까요? [등록] [무시]"를 route별 세션 1회 제안한다. 최초 route는 이미 본 것으로 처리하고, 패널 닫힘/편집·미리보기 모드와 무관하게 감지하며, 이미 본 route로 돌아오면 낡은 제안을 제거한다. [등록]은 기존 화면 등록·캡처 흐름을 재사용하고 자동 화면 전환·route 매칭은 하지 않는다. user-guide와 콘솔 `/guide` 동기화. 검증: build·typecheck 성공, vitest 213 passed(+6), Playwright E2E 4본 통과(S1에서 실제 history route 배너→등록), 실 Chromium 1440×900에서 패널 상단 배치·문구·버튼 확인.
+- 완료: 누락된 P0 FR-EDT-06을 T30으로 WBS에 추가하고 킥오프 §11 16차에서 감지 경계를 확정. SDK가 `pathname+search+hash` 실제 변경을 `pushState`·`replaceState`·`popstate`·`hashchange`로 감지해 패널 상단에 "새 화면으로 등록할까요? [등록] [무시]"를 route별 세션 1회 제안한다. 최초 route는 이미 본 것으로 처리하고, 패널 닫힘/편집·미리보기 모드와 무관하게 감지하며, 이미 본 route로 돌아오면 낡은 제안을 제거한다. [등록]은 기존 화면 등록·캡처 흐름을 재사용하고 자동 화면 전환·route 매칭은 하지 않는다. user-guide와 콘솔 `/guide` 동기화. PR #31 Gemini 리뷰 medium 1건(후속 history 래퍼가 남아도 cleanup 뒤 콜백 실행 방지)을 `stopped` 가드+회귀 테스트로 반영. 검증: build·typecheck 성공, vitest 214 passed(+7), Playwright E2E 4본 통과(S1에서 실제 history route 배너→등록), 실 Chromium 1440×900에서 패널 상단 배치·문구·버튼 확인.
 - 다음 할 일: draft PR 리뷰 후 사용자 동의를 받아 병합. URL이 바뀌지 않는 Nexacro MDI의 숨김/가림 DOM 마커 처리는 실사용 DOM 재현 확보 후 별도 이슈로 결정.
 - 막힌 지점: 없음.
 
