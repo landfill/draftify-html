@@ -158,7 +158,7 @@ export function pageHeader(active?: "guide" | "faq"): string {
     </div>
     <div class="c-header-right">
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
-      <a href="#" class="c-nav-link">DOCS</a>
+      <a href="/sample" class="c-nav-link" target="_blank" rel="noopener">샘플 보기</a>
       <a href="/faq" class="${cls("faq")}">FAQ</a>
       <button type="button" id="theme-toggle" class="c-theme-toggle" aria-label="다크 모드로 전환" title="다크 모드로 전환"></button>
     </div>
