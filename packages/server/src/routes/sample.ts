@@ -261,22 +261,25 @@ const SAMPLE_PROJECT: SpecProject = {
   ],
 };
 
-const SAMPLE_SNAPSHOTS: ReadonlyArray<readonly [sceneId: string, assetKey: string, html: string]> = [
-  ["scn_sample0001", "sample-login", LOGIN_HTML],
-  ["scn_sample0002", "sample-orders", ORDERS_HTML],
-  ["scn_sample0003", "sample-detail", DETAIL_HTML],
+function toBundle(sceneId: string, assetKey: string, html: string): SnapshotBundle {
+  const buf = Buffer.from(html, "utf8");
+  return { sceneId, assetKey, base64: buf.toString("base64"), byteLength: buf.byteLength };
+}
+
+// 정적 데모라 모듈 로드 시점에 1회 인코딩 (리뷰 반영)
+const SAMPLE_SNAPSHOTS: SnapshotBundle[] = [
+  toBundle("scn_sample0001", "sample-login", LOGIN_HTML),
+  toBundle("scn_sample0002", "sample-orders", ORDERS_HTML),
+  toBundle("scn_sample0003", "sample-detail", DETAIL_HTML),
 ];
 
-let cachedHtml: string | undefined;
+// Promise를 캐시해 최초 동시 요청에도 빌드가 1회만 수행되고, 실패 시 비워 재시도 (리뷰 반영)
+let cachedHtml: Promise<string> | undefined;
 
 async function buildSampleHtml(): Promise<string> {
-  const snapshots: SnapshotBundle[] = SAMPLE_SNAPSHOTS.map(([sceneId, assetKey, html]) => {
-    const buf = Buffer.from(html, "utf8");
-    return { sceneId, assetKey, base64: buf.toString("base64"), byteLength: buf.byteLength };
-  });
   return buildExportHtml({
     project: SAMPLE_PROJECT,
-    snapshots,
+    snapshots: SAMPLE_SNAPSHOTS,
     viewerScript: await readViewerScript(),
     generatedAt: SAMPLE_GENERATED_AT,
   });
@@ -285,8 +288,13 @@ async function buildSampleHtml(): Promise<string> {
 /** GET /sample — 산출물 그 자체를 인라인으로 서빙 (다운로드 아님) */
 export async function samplePage(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    cachedHtml ??= await buildSampleHtml();
-    res.status(200).type("text/html; charset=utf-8").send(cachedHtml);
+    if (!cachedHtml) {
+      cachedHtml = buildSampleHtml().catch((err: unknown) => {
+        cachedHtml = undefined;
+        throw err;
+      });
+    }
+    res.status(200).type("text/html; charset=utf-8").send(await cachedHtml);
   } catch (err) {
     next(err);
   }
