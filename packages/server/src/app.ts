@@ -3,6 +3,7 @@ import { RESERVED_PATH_PREFIX } from "@mockspec/shared";
 import { parseProjectSubdomain } from "./host.js";
 import { consolePage } from "./routes/console.js";
 import { guidePage, faqPage } from "./routes/pages.js";
+import { samplePage } from "./routes/sample.js";
 import { projectsRouter } from "./routes/projects.js";
 import { serveMockup } from "./routes/serve.js";
 import { sendError } from "./errors.js";
@@ -40,13 +41,14 @@ export function buildApp(): express.Express {
       return api(req, res, next);
     }
 
-    // 루트 = 콘솔 정적 페이지 (T9, detailed-spec §2) + 안내 페이지(가이드·FAQ)
+    // 루트 = 콘솔 정적 페이지 (T9, detailed-spec §2) + 안내 페이지(가이드·FAQ·샘플 산출물)
     if (req.method === "GET" || req.method === "HEAD") {
       // trailing slash 정규화 — `/guide/`도 200 (리뷰 반영: 오탐 404 방지)
       const pagePath = req.path.replace(/\/+$/, "") || "/";
       if (pagePath === "/") return consolePage(req, res);
       if (pagePath === "/guide") return guidePage(req, res);
       if (pagePath === "/faq") return faqPage(req, res);
+      if (pagePath === "/sample") return void samplePage(req, res, next);
     }
     return next();
   });

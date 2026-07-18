@@ -190,7 +190,7 @@ function asciiHeaderFilename(filename: string): string {
   return ascii === ".html" || !ascii.trim() ? "mockspec-export.html" : ascii;
 }
 
-async function readViewerScript(): Promise<string> {
+export async function readViewerScript(): Promise<string> {
   if (process.env.MOCKSPEC_VIEWER_SCRIPT) return process.env.MOCKSPEC_VIEWER_SCRIPT;
   const viewerDistUrl = new URL("../../../viewer/dist/main.js", import.meta.url);
   return stripSourceMapComment(await fs.readFile(viewerDistUrl, "utf8"));
