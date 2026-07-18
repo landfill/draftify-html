@@ -20,6 +20,7 @@
 **PR-Agent Gemini 코드 리뷰 워크플로 — PR #20로 main 병합 완료 (2026-07-16, CI·PR-Agent green·리뷰 피드백 반영·브랜치 삭제).**
 **콘솔 UI 디자인 개선(이슈 #11, 1~7차 피드백) — PR #21로 main 병합 완료 (2026-07-16, CI green·리뷰 5건(Gemini 4·Codex 1) 반영·브랜치 삭제).**
 **콘솔 가이드(/guide)·FAQ(/faq) 페이지 + 다크 모드 토글(EN 대체) — PR #29로 main 병합 완료 (2026-07-17, CI green·리뷰 3건(Gemini) 반영·브랜치 삭제). 헤더 DOCS 메뉴 정리는 이슈 #30.**
+**헤더 DOCS → 샘플 산출물 보기(/sample) 대체(이슈 #30 종결) — PR #33로 main 병합 완료 (2026-07-19, squash `025c2ea`, CI 4체크 green·리뷰 반영 1건(Promise 캐시)·기각 1건(Codex 날짜, UTC 선례)·브랜치 삭제).**
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
 
@@ -72,6 +73,11 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-19 — PR #33 main 병합 완료 (헤더 DOCS → 샘플 보기, 이슈 #30 종결)
+- 완료: 사용자 동의로 squash 병합(`025c2ea`), 이슈 #30 자동 닫힘, 로컬·원격 브랜치 삭제. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green. 리뷰 처리 — Gemini medium·CodeRabbit minor(같은 주제)는 스냅샷 base64 모듈 로드 시 1회 인코딩 + `Promise<string>` 캐시(동시 최초 요청 중복 빌드 방지·실패 시 캐시 비워 재시도)로 반영(`bebda00`). Codex P2 "세션 로그 날짜가 미래(07-18이어야)"는 기각 — 커밋 UTC 시각 기준 지적이고 작업자 로컬(KST) 실제 날짜는 07-19가 맞음(PR #26·#27 동일 선례, AGENTS §3 '실제 날짜'는 로컬 기준).
+- 다음 할 일: 남은 열린 이슈 — #12·#13(실수요 대기). 이슈 #18 검토 후보 (c)는 Nexacro 실 DOM 재현 확보 후 별도 이슈 등록.
+- 막힌 지점: 없음.
 
 ### 2026-07-19 — 이슈 #30: 헤더 DOCS → 샘플 보기(/sample) 대체 (feat/console-sample-view)
 - 완료: 이슈 #30 선택지 2(사용자 결정) 구현. 죽은 `DOCS` 링크를 `샘플 보기`(`/sample`, 새 탭)로 교체 — `pageHeader()` 한 곳 수정으로 콘솔·가이드·FAQ 전부 반영.
