@@ -79,8 +79,9 @@
 - 논의로 확정된 결정 D1~D8(`guide/open-service-rfc.md` §3): ① 완전 공개 가입 + 단일 인증(구글 OAuth 또는 Supabase 이메일, 둘 다 무방·SSO 없음) ② 경로 B(URL 프록시) 공개판 제외 — 서버리스·공개판 부적합 + SSRF 표면 소멸, 공개판은 경로 A(zip)+D(확장)만 ③ 상주 컨테이너 불가 → **Vercel 확정** ④ 데이터·인증·저장은 **Supabase**(Postgres+Storage+Auth) ⑤ zip 해제를 브라우저로 이관(서버리스 영속 디스크 없음) ⑥ SDK 주입은 인제스트 시점 1회 ⑦ 목업 격리는 **경로 접두**(`/m/{id}/`) 방식 ⑧ 프레임워크 Next.js.
 - 산출: `guide/open-service-rfc.md` 신설 — §1 동기, §2 불변(§1.3 제1원칙 4개 유지)/재협상(NFR-01·§7.2만) 구분, §4 목표 아키텍처, §5 Postgres 스키마 스케치(SpecProject를 JSONB 통짜 + RLS 소유자 격리), §6 플로우별 서버리스 함수 설계, §7 경로 격리 메커니즘+절대경로 목업 제약 명시, §8 코드 영향(편집기·뷰어·타입 생존, 서버 계층만 이식), §9 열린 질문 7종, §10 WBS 스케치 W1~W9. **RFC(탐색)이며 아직 킥오프 스펙 아님** — 스코프 확정 시 킥오프로 승격하고 PRD·NFR-01·§7.2 동기화.
 - 진행: `docs/open-service-rfc` 브랜치 커밋(`59f76ba`)·push, **PR #35** 오픈, 엄브렐라 **이슈 #34** 개설(W1~W9 추적). PR #35 Gemini 리뷰 4건(전부 medium) 반영(2차 커밋): ① §5 컬럼/JSONB 중복 → spec 원천·파생 투영 동기화 명시 ② project_tokens·project_exports RLS 누락 → 부모 JOIN 소유자 정책 추가 ③ SDK 주입 주체 모호 → "클라이언트 브라우저 unzip+주입, 서버 검증만"(D5·D6 정합) ④ 목업 서빙 인가 미명시 → "소유자 인증 경유 v1·익명 없음" 확정 + 외부 공유는 §9-8 열린 질문화. Codex 지적 없음, CodeRabbit은 리뷰 한도 초과로 스킵(코드 실패 아님).
-- 다음 할 일: 열린 질문 중 인증 방식(구글 vs 이메일)·기존 사내 데이터 병존/대체·권한 모델 확장 시점을 우선 결정 → RFC 반영 → 킥오프 승격. PR #35 병합은 사용자 동의 대기.
-- 막힌 지점: 없음(설계 논의 단계).
+- Codex 2차 리뷰(P1 2건) — **P1-A(Storage 오브젝트 RLS 누락) 반영**: Postgres 테이블 RLS는 storage.objects 미제약이라, D5 브라우저 직접 업로드에 대비해 storage.objects에 projects/{id} 경로 소유권 검증 정책 + 버킷 비공개 추가(§5·§6·W1). **P1-B(신뢰불가 목업을 인증 오리진에서 분리 — D7 재검토) 미반영·사용자 결정 대기**: 공개 ZIP=임의 JS라 콘솔/API와 same-origin 서빙 시 목업 JS가 same-origin으로 /api 인증 요청 가능(SDK fetchTransport가 same-origin). 소유자-전용 서빙(직전 반영)이 교차 테넌트는 상당 부분 막으나 자기계정 범위 self-XSS·향후 외부 공유 시 표면 재개. 옵션 1(별도 user-content 오리진 — 견고하나 경로 A 저장이 CORS+토큰으로) vs 옵션 2(소유자-전용 v1 수용 + 제약 문서화).
+- 다음 할 일: **P1-B 옵션 1/2 결정** → RFC D7·§7 갱신. 그 외 열린 질문(인증 방식·기존 데이터·권한 모델) 결정 → 킥오프 승격. PR #35 병합은 사용자 동의 대기.
+- 막힌 지점: 없음(P1-B는 설계 결정 대기).
 
 ### 2026-07-19 — PR #33 main 병합 완료 (헤더 DOCS → 샘플 보기, 이슈 #30 종결)
 - 완료: 사용자 동의로 squash 병합(`025c2ea`), 이슈 #30 자동 닫힘, 로컬·원격 브랜치 삭제. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green. 리뷰 처리 — Gemini medium·CodeRabbit minor(같은 주제)는 스냅샷 base64 모듈 로드 시 1회 인코딩 + `Promise<string>` 캐시(동시 최초 요청 중복 빌드 방지·실패 시 캐시 비워 재시도)로 반영(`bebda00`). Codex P2 "세션 로그 날짜가 미래(07-18이어야)"는 기각 — 커밋 UTC 시각 기준 지적이고 작업자 로컬(KST) 실제 날짜는 07-19가 맞음(PR #26·#27 동일 선례, AGENTS §3 '실제 날짜'는 로컬 기준).

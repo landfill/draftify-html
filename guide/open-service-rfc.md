@@ -125,11 +125,36 @@ create policy "owner_export_rw" on project_exports
                  where p.id = project_exports.project_id and p.owner_id = auth.uid()));
 ```
 
+**Storage 오브젝트 RLS (별도·필수).** Postgres 테이블 RLS는 `storage.objects`를 제약하지 **않는다.**
+D5에서 브라우저가 버킷 `projects/{projectId}/...`에 직접 업로드하므로, 경로의 `{projectId}`가 `auth.uid()`
+소유인지 검증하는 **버킷 정책**이 없으면 인증된 사용자 A가 B의 목업/asset을 덮어쓰거나 읽을 수 있다.
+insert·select·update·delete 전부에 적용한다. (경로 D 저장은 토큰 인증 경로라 별도 — §6.)
+
+```sql
+-- 목업·asset 버킷(예: "mockups"). 경로 첫 세그먼트가 "projects/{id}" 형태라고 가정.
+-- storage.foldername(name)[1]='projects', [2]=projectId 를 파싱해 소유권 확인.
+create policy "owner_storage_all" on storage.objects
+  for all to authenticated
+  using (
+    bucket_id = 'mockups'
+    and (storage.foldername(name))[1] = 'projects'
+    and exists (select 1 from projects p
+                where p.id = (storage.foldername(name))[2] and p.owner_id = auth.uid())
+  )
+  with check (
+    bucket_id = 'mockups'
+    and (storage.foldername(name))[1] = 'projects'
+    and exists (select 1 from projects p
+                where p.id = (storage.foldername(name))[2] and p.owner_id = auth.uid())
+  );
+```
+
 - `ownerLabel`(자유 텍스트 라벨)은 유지하되 **표시용**으로 남기고, 실제 소유·권한은 `owner_id`가 담당한다.
 - `MockupSource` union에서 `ProxyMockupSource`는 공개판 코드 경로에서 제거(D2). 타입은 하위 호환 위해
   남겨두되 공개 인테이크에서 거부.
-- **RLS는 세 테이블 모두 활성화**한다. 하위 테이블(`project_tokens`·`project_exports`)은 부모 `projects`를
-  JOIN해 소유권을 확인하므로 애플리케이션 버그가 나도 남의 데이터에 닿지 않는다.
+- **RLS는 세 테이블 + Storage 오브젝트 모두 활성화**한다. 하위 테이블(`project_tokens`·`project_exports`)은
+  부모 `projects`를 JOIN해, Storage는 오브젝트 경로의 `{projectId}`를 JOIN해 소유권을 확인하므로
+  애플리케이션 버그가 나도 남의 데이터에 닿지 않는다. **버킷은 비공개**(public read off).
 - **권한 모델 v1**: 프로젝트는 생성자 단독 소유(개인 소유 플랫). 팀 공유·역할(editor/viewer)·조직 계층은
   다음 단계(§9 열린 질문).
 
@@ -141,7 +166,7 @@ create policy "owner_export_rw" on project_exports
 | **업로드(경로 A)** `POST /api/projects/{id}/mockup:complete` | 클라이언트가 Storage에 이미 올린 파일 manifest | **서버는 파일을 만지지 않는다(D5·D6 확정).** 클라이언트가 브라우저에서 **unzip + SDK 태그 주입 + `<base>` 삽입까지 완료한 주입본**을 Storage에 올리고, 서버는 manifest 검증(엔트리 존재·주입 태그 유무·경로 안전성)만 수행. `mockupSource=upload` 확정 |
 | **목업 서빙** `/m/{id}/*` (미들웨어) | 경로 | **소유자 인증 경유(v1) — 익명 공개 접근 아님.** 요청자 세션이 프로젝트 소유자인지 확인 후 Storage에서 파일 스트림(서버가 소유권 검증 후 접근하는 경로라 Storage 버킷은 비공개). HTML은 이미 주입본(D6). `<base>`도 인제스트 시 삽입됨 |
 | **spec GET/PUT** `/api/projects/{id}/spec` | (PUT) SpecProject 전체 | 전체 교체 PUT 유지. asset GC(ID-11)는 Storage 삭제로 이식 |
-| **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | Storage 버킷 read/write. 경로 D는 토큰 인증 |
+| **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | 비공개 Storage 버킷 read/write. 브라우저 직접 업로드는 **Storage 오브젝트 RLS**(§5)가 `projects/{id}/` 소유권 강제. 경로 D는 토큰 인증 |
 | **export** `POST /api/projects/{id}/export` | — | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환(함수 응답 크기 한계 회피) |
 | **토큰(경로 D)** `POST /api/projects/{id}/tokens` | — | 발급 시 평문 1회 노출, 해시만 저장. 재발급·폐기 |
 | **auth** | Supabase Auth 콜백 | D1 |
@@ -187,7 +212,7 @@ create policy "owner_export_rw" on project_exports
 
 ## 10. WBS 스케치 (승격 시 technical-spec §9.2로 이동)
 
-- [ ] W1 Supabase 프로젝트·Auth(D1)·스키마(§5)·RLS 세팅
+- [ ] W1 Supabase 프로젝트·Auth(D1)·스키마(§5)·RLS 세팅 — **테이블 3종 + Storage 오브젝트 정책 + 버킷 비공개 포함**
 - [ ] W2 스토어 4모듈 → Supabase(Postgres+Storage) 어댑터 교체
 - [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입(D5·D6)
 - [ ] W4 목업 서빙 미들웨어 `/m/{id}/*` + `<base>` 주입(D7)
@@ -201,3 +226,4 @@ create policy "owner_export_rw" on project_exports
 
 - 2026-07-21 — RFC 개설. 확정 D1~D8 기록(§3). NFR-01·§7.2 재협상은 킥오프 승격 시 원본(PRD·킥오프 스펙)에 반영 예정.
 - 2026-07-21 — PR #35 Gemini 리뷰 4건 반영: ① §5 컬럼 vs JSONB 중복 — spec을 원천으로 명시, 최상위 name·updated_at은 쓰기 시 동기화되는 파생 투영으로 정리 ② §5 하위 테이블 RLS 누락 — project_tokens·project_exports에 RLS 활성화 + 부모 JOIN 소유자 정책 추가 ③ §6·D6 SDK 주입 주체 모호 — "클라이언트가 브라우저에서 unzip+주입 완료, 서버는 검증만"으로 D5와 일관되게 확정 ④ §6 목업 서빙 인가 경로 미명시 — "소유자 인증 경유(v1)·익명 접근 없음"으로 확정, 외부 공유는 §9-8 열린 질문으로 분리.
+- 2026-07-21 — PR #35 Codex P1-A 반영: **Storage 오브젝트 RLS 누락.** Postgres 테이블 RLS는 `storage.objects`를 제약하지 않으므로, D5 브라우저 직접 업로드에 대비해 `storage.objects`에 `projects/{id}/` 경로 소유권을 검증하는 버킷 정책(insert/select/update/delete) 추가 + 버킷 비공개 명시. §5·§6 asset 행·W1 반영. **Codex P1-B(신뢰불가 목업을 인증 오리진에서 분리, D7 재검토)는 사용자 결정 대기 — 미반영.**
