@@ -45,31 +45,32 @@
 
 ## 4. 목표 아키텍처
 
-```
+```text
 ┌────────────────────────────────────────────────────────────┐
 │  Vercel (Next.js)                                           │
 │  ├─ 콘솔 UI (기존 vanilla 콘솔 → Next 페이지로 이식)          │
-│  ├─ 미들웨어: /m/{id}/* 경로 격리 라우팅                      │
+│  ├─ 미들웨어: /m/{id}/* 인증·리라이트 → Route Handler 스트림  │
+│  ├─ 예약 경로: /__mockspec/sdk.js · /__mockspec/api/* (§6)   │
 │  └─ API 라우트 (서버리스 함수)                                │
 │       업로드 인테이크 · spec GET/PUT · asset · export · 토큰   │
 └───────────────┬───────────────────────────┬────────────────┘
                 │                           │
         ┌───────▼────────┐          ┌───────▼──────────┐
         │ Supabase        │          │ Supabase Storage │
-        │  Auth (D1)      │          │  목업 파일 버킷    │
-        │  Postgres       │          │  asset(스냅샷) 버킷│
-        │   projects/     │          └──────────────────┘
-        │   tokens/exports│
-        │   + RLS 격리     │
-        └─────────────────┘
+        │  Auth (D1)      │          │  단일 버킷        │
+        │  Postgres       │          │  projects/{id}/   │
+        │   projects/     │          │    mockup/**      │
+        │   tokens/exports│          │    assets/**      │
+        │   + RLS 격리     │          │  (비공개·RLS)      │
+        └─────────────────┘          └──────────────────┘
 ```
 
 | 관심사 | 현재 (파일 기반 Express) | 개편 (Vercel + Supabase) |
 |--------|--------------------------|--------------------------|
 | 인증 | 없음 | Supabase Auth (D1) |
 | 메타·spec 저장 | `data/projects/{id}/spec.json` | Postgres `projects.spec` (JSONB 통짜) — 현 "문서 전체 교체 PUT" 모델과 정합 |
-| 목업 파일 | 디스크 `mockup/` (zip 해제본) | Storage 버킷 `projects/{id}/mockup/**` (D5 클라이언트 업로드) |
-| asset(스냅샷) | 디스크 `assets/` | Storage 버킷 `projects/{id}/assets/**` |
+| 목업 파일 | 디스크 `mockup/` (zip 해제본) | 단일 Storage 버킷 `mockups`의 `projects/{id}/mockup/**` (D5 클라이언트 업로드) |
+| asset(스냅샷) | 디스크 `assets/` | 같은 버킷 `projects/{id}/assets/**` (단일 버킷·단일 RLS 정책, §5) |
 | 토큰(경로 D) | `tokens.json` 해시 | Postgres `project_tokens` (해시 저장 불변) |
 | 산출물 이력 | `exports.json` | Postgres `project_exports` |
 | 목업 서빙+주입 | 서빙 때 HTML 변조 | 인제스트 때 1회 주입(D6) → 정적 서빙 |
@@ -82,22 +83,34 @@
 
 **컬럼 vs JSONB 중복 처리 (원천 명시)**: `spec` JSONB(`SpecProject`)가 **유일한 진실의 원천**이다.
 최상위 컬럼 `name`·`updated_at`은 목록 조회·정렬·인덱싱을 위한 **파생 투영**이며, spec을 쓰는
-경로(생성·PUT)에서 **같은 트랜잭션 안에서 spec 값으로 덮어쓴다**(애플리케이션 또는 트리거로 동기화 강제).
-읽기 응답은 spec을 원천으로 반환한다. `id`는 PK 겸 spec.id로 불변이라 중복이 아니라 동일 키.
+경로(생성·PUT)에서 spec 값으로 채운다. `id`는 PK 겸 spec.id로 불변이라 중복이 아니라 동일 키.
+**RLS만으로는 소유자가 `name`·`updated_at`을 spec과 다르게 직접 갱신하는 것을 막지 못하므로**(CodeRabbit),
+"spec이 유일한 원천" 계약을 **DB 트리거로 강제**한다 — 매 insert/update에서 두 컬럼을 `spec`에서 파생해
+덮어쓴다. 읽기 응답은 spec을 원천으로 반환.
 
 ```sql
 -- 소유자 = auth.uid(). RLS가 교차 접근을 DB 레벨에서 차단.
 create table projects (
   id          text primary key,          -- "prj_" + nanoid(10) = spec.id (동일 키, 불변)
   owner_id    uuid not null references auth.users(id),
-  name        text not null,             -- 파생 투영: PUT 시 spec.name으로 동기화 (목록/정렬용)
+  name        text not null,             -- 파생 투영(트리거가 spec.name에서 강제)
   spec        jsonb not null,            -- 진실의 원천. SpecProject 직렬화 그대로 (mockupSource는 upload|snippet만)
   created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()  -- 파생 투영: PUT 시 spec.updatedAt으로 동기화
+  updated_at  timestamptz not null default now()  -- 파생 투영(트리거가 spec.updatedAt에서 강제)
 );
 alter table projects enable row level security;
 create policy "owner_rw" on projects
   using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- 파생 컬럼을 spec에서 강제 동기화 — 클라이언트가 불일치 값을 저장할 수 없다.
+create function sync_project_derived() returns trigger as $$
+begin
+  new.name := new.spec->>'name';
+  new.updated_at := coalesce((new.spec->>'updatedAt')::timestamptz, now());
+  return new;
+end $$ language plpgsql;
+create trigger trg_sync_project_derived before insert or update on projects
+  for each row execute function sync_project_derived();
 
 create table project_tokens (   -- 경로 D 저장 인증. 평문 미보관 (해시만)
   id          text primary key,
@@ -126,12 +139,14 @@ create policy "owner_export_rw" on project_exports
 ```
 
 **Storage 오브젝트 RLS (별도·필수).** Postgres 테이블 RLS는 `storage.objects`를 제약하지 **않는다.**
-D5에서 브라우저가 버킷 `projects/{projectId}/...`에 직접 업로드하므로, 경로의 `{projectId}`가 `auth.uid()`
-소유인지 검증하는 **버킷 정책**이 없으면 인증된 사용자 A가 B의 목업/asset을 덮어쓰거나 읽을 수 있다.
-insert·select·update·delete 전부에 적용한다. (경로 D 저장은 토큰 인증 경로라 별도 — §6.)
+**목업 파일과 asset(스냅샷)은 단일 버킷 `mockups`의 `projects/{id}/mockup/**`·`projects/{id}/assets/**`
+프리픽스로 통일**한다(별도 버킷 두 개로 나누지 않음 — CodeRabbit: 정책 중복·누락 방지). D5에서 브라우저가
+`projects/{projectId}/...`에 직접 업로드하므로, 경로의 `{projectId}`가 `auth.uid()` 소유인지 검증하는 **버킷
+정책**이 없으면 인증된 사용자 A가 B의 목업/asset을 덮어쓰거나 읽을 수 있다. insert·select·update·delete
+전부에 적용한다. (경로 D 저장은 토큰 인증 경로라 별도 — §6.)
 
 ```sql
--- 목업·asset 버킷(예: "mockups"). 경로 첫 세그먼트가 "projects/{id}" 형태라고 가정.
+-- 단일 버킷 "mockups". 경로 첫 두 세그먼트가 "projects/{id}" 형태(하위는 mockup/ · assets/).
 -- storage.foldername(name)[1]='projects', [2]=projectId 를 파싱해 소유권 확인.
 create policy "owner_storage_all" on storage.objects
   for all to authenticated
@@ -169,10 +184,14 @@ create policy "owner_storage_all" on storage.objects
 | **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | 비공개 Storage 버킷 read/write. 브라우저 직접 업로드는 **Storage 오브젝트 RLS**(§5)가 `projects/{id}/` 소유권 강제. 경로 D는 토큰 인증 |
 | **export** `POST /api/projects/{id}/export` | — | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환(함수 응답 크기 한계 회피) |
 | **토큰(경로 D)** `POST /api/projects/{id}/tokens` | — | 발급 시 평문 1회 노출, 해시만 저장. 재발급·폐기 |
+| **예약 경로(SDK)** `GET /__mockspec/sdk.js` | — | **루트 레벨 필수 (Codex P1).** 주입된 SDK 로더가 `src="/__mockspec/sdk.js"` 절대 경로라 `<base>`의 영향을 안 받는다 → 이 라우트가 없으면 모든 경로 A 목업이 SDK 404로 편집 불가. SDK 번들 서빙 |
+| **예약 경로(API 브리지)** `/__mockspec/api/*` | — | **루트 레벨 필수 (Codex P1).** SDK `transport.ts`가 same-origin `/__mockspec/api`로 저장한다 → `/api/projects/*`로 리라이트/프록시. v1은 same-origin이라 성립. (옵션 1 승격 시 이 경로가 교차 오리진이 되어 CORS+토큰으로 전환 — §7.3·§9-5) |
 | **auth** | Supabase Auth 콜백 | D1 |
 
 - **함수 시간·크기 한계 유의점**: zip 해제(브라우저로 이관, D5)·export 산출물(Storage+signed URL)로
   회피. 개별 서버리스 함수는 짧은 read/transform/write만 담당.
+- **예약 경로는 절대 경로 (Codex P1)**: `/__mockspec/sdk.js`·`/__mockspec/api/*`는 SDK가 하드코딩한 절대
+  경로라 `/m/{id}/` 접두·`<base>`와 무관하게 **콘솔 루트에 존재**해야 한다. 라우팅·WBS(W3·W4·W5)에 명시.
 
 ## 7. 경로 격리(D7) 메커니즘·보안 경계·승격 경로
 
@@ -182,6 +201,9 @@ create policy "owner_storage_all" on storage.objects
   수행한다(Codex P1 — Next Edge 미들웨어는 비공개 Storage 오브젝트의 응답 본문을 스트리밍할 수 없다).
   Handler가 `{id}`를 파싱해 소유권 검증 후 Storage 프리픽스에서 스트림.
 - **상대 경로**: 인제스트 시 HTML `<head>`에 `<base href="/m/{id}/">` 주입 → 상대 리소스 자동 해결.
+- **기존 `<base>` 처리 (Codex P2)**: 업로드 SPA의 `index.html`에 이미 `<base>`가 있으면(예: Angular 빌드의
+  `<base href="/">`) 브라우저는 **첫 base만** 인정하므로 새로 삽입해도 무효 → 자산이 `/`에서 로드돼 깨진다.
+  인제스트(W3)는 **기존 base를 교체/재작성**하거나(없으면 삽입) 없을 때만 삽입한다 — 단순 추가 금지.
 - **SPA history fallback (FR-ONB-04 — 회귀 금지)**: 확장자 없는 미존재 경로(SPA 클라이언트 라우트·그 위치
   새로고침, 예 `/m/{id}/settings`)는 프로젝트 루트 `index.html`로 폴백한다. 현 `packages/server/src/routes/serve.ts`가
   이미 제공하는 동작 — Next 이식 시 반드시 보존(W4).
@@ -270,10 +292,11 @@ create policy "owner_storage_all" on storage.objects
 
 ## 10. WBS 스케치 (승격 시 technical-spec §9.2로 이동)
 
-- [ ] W1 Supabase 프로젝트·Auth(D1 — **Google OAuth + 이메일 매직링크 둘 다**)·스키마(§5)·RLS 세팅 — **테이블 3종 + Storage 오브젝트 정책 + 버킷 비공개 포함**
+- [ ] W1 Supabase 프로젝트·Auth(D1 — **Google OAuth + 이메일 매직링크 둘 다**)·스키마(§5)·RLS 세팅 — **테이블 3종 + 파생컬럼 동기화 트리거 + Storage 오브젝트 정책(단일 버킷) + 버킷 비공개 포함**
 - [ ] W2 스토어 4모듈 → Supabase(Postgres+Storage) 어댑터 교체
-- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입(D5·D6)
-- [ ] W4 목업 서빙 `/m/{id}/*` — **Route Handler**가 소유권 검증+스트림(미들웨어는 인증·리라이트만), `<base>` + **SPA history fallback(FR-ONB-04)** 보존(D7·§7.1)
+- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + **`<base>` 삽입/교체(기존 base 처리, §7.1)**(D5·D6)
+- [ ] W4 목업 서빙 `/m/{id}/*` — **Route Handler**가 소유권 검증+스트림(미들웨어는 인증·리라이트만), **인제스트 결과(주입본·`<base>`) 검증** + **SPA history fallback(FR-ONB-04)** 보존. 서빙은 per-request 변조 안 함(D6·§7.1)
+- [ ] W4b **예약 경로 루트 라우트**(Codex P1): `/__mockspec/sdk.js`(SDK 번들)·`/__mockspec/api/*`(→ `/api/projects/*` 리라이트) — 없으면 경로 A 목업이 SDK 404로 편집 불가
 - [ ] W5 spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용)
 - [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가 — 서버 CORS 불필요, §9-5)
 - [ ] W7 콘솔 UI Next 이식 + Auth 게이트
@@ -289,4 +312,5 @@ create policy "owner_storage_all" on storage.objects
 - 2026-07-21 — PR #35 Codex P1-B 결정·반영: **신뢰불가 목업의 오리진 경계.** 사용자 결정 — **v1은 옵션 2**(콘솔과 같은 오리진 + 소유자-전용 서빙으로 교차 테넌트 차단 + "믿을 수 있는 ZIP만 업로드" 사용 제약), **방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL 인증)를 승격 경로로 기록**하고 §9-8 외부 공유 개방 전 선행 필수로 못 박음. D7 문구 갱신, §7을 7.1~7.4로 재구성(메커니즘·보안 경계·승격 경로·부작용). 방법 A(본인 도메인 서브도메인)는 도메인 구매 필요로 배제. 오리진 격리는 목업 전체 대 콘솔 사이만 필요하므로 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
 - 2026-07-21 — 열린 질문 2건 결정: **인증(§9-1)** = Google OAuth + Supabase 이메일 매직링크 **둘 다 제공**(D1·W1 갱신). **권한 모델 확장(§9-2)** = **실수요까지 유보(YAGNI)**, v1 개인 소유 플랫·멤버십 스키마 선반영 안 함. §9를 "결정됨/남은 것"으로 재구성. **기존 `data/` 데이터 이관(§9-3)은 대기** — "완전 대체"가 레포 파기로 오해돼, 코드는 §8대로 이 레포에서 진화하고 데이터 이관 여부만 남은 질문임을 명확화.
 - 2026-07-21 — 기존 데이터 이관(§9-3) 결정: **이관 없음, 빈 DB로 시작.** 기존 `data/`는 기존 file-based 배포에서 내부 시연·설명 용도로만 유지되는 폐기 대상 — 새 Supabase로 옮기지 않음. 이관 스크립트 불필요.
-- 2026-07-21 — 저강도 4건 확정: **④ 절대경로 목업** = v1 온보딩 제약 문서화(인제스트 재작성은 후속), 현재 버전은 서브도메인이라 절대·상대 둘 다 동작하고 깨짐은 경로 격리 신규 제약임을 명시. 빌드 가이드의 `docs/user-guide.md` 추가는 현재 버전에도 유효하므로 **별도 이슈로 분리 등록**. **⑤ 경로 D 저장** = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest host_permissions+저장 URL 전환만(진짜 CORS는 §7.3 옵션1 승격 시). **⑥ 남용 방어** = W8 포함. **⑦ 브랜치 전략** = 이 레포에 장기 개편 브랜치(`open-service`)+워크스트림별 PR. **상류·저강도 전부 확정 — 남은 열린 질문은 §9-8(외부 공유, v1 밖)뿐.** 킥오프 승격 준비 완료.
+- 2026-07-21 — 저강도 4건 확정: **④ 절대경로 목업** = v1 온보딩 제약 문서화(인제스트 재작성은 후속), 현재 버전은 서브도메인이라 절대·상대 둘 다 동작하고 깨짐은 경로 격리 신규 제약임을 명시. 빌드 가이드의 `docs/user-guide.md` 추가는 현재 버전에도 유효하므로 **별도 이슈로 분리 등록**(#36). **⑤ 경로 D 저장** = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest host_permissions+저장 URL 전환만(진짜 CORS는 §7.3 옵션1 승격 시). **⑥ 남용 방어** = W8 포함. **⑦ 브랜치 전략** = 이 레포에 장기 개편 브랜치(`open-service`)+워크스트림별 PR. **상류·저강도 전부 확정 — 남은 열린 질문은 §9-8(외부 공유, v1 밖)뿐.** 킥오프 승격 준비 완료.
+- 2026-07-21 — PR #35 CodeRabbit·Codex 4차 리뷰 반영: **① Codex P1 예약 경로** — 주입 SDK 로더가 절대 경로(`/__mockspec/sdk.js`)·transport가 `/__mockspec/api`라 `<base>`와 무관, 콘솔 루트에 이 라우트가 없으면 경로 A 목업 편집 불가 → §4·§6에 루트 예약 경로 2개 명시 + W4b 신설. **② Codex P2 기존 `<base>`** — Angular 등 기존 base가 있으면 브라우저는 첫 base만 인정, 인제스트는 삽입이 아니라 교체/재작성(§7.1·W3). **③ CodeRabbit Major 파생컬럼** — RLS로 name·updated_at 직접 갱신 못 막으니 DB 트리거로 spec에서 강제 동기화(§5). **④ CodeRabbit Major asset 버킷** — 단일 버킷 `mockups`의 mockup/·assets/ 프리픽스로 통일해 RLS 정책 1개가 둘 다 커버(§4·§5). **⑤ CodeRabbit Minor** — W4 `<base>` 책임을 D6과 일치(주입은 인제스트, 서빙은 검증)·다이어그램 코드펜스 언어 지정.
