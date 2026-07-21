@@ -39,7 +39,7 @@
 | D3 | **호스팅은 서버리스만 가능 → Vercel 확정.** 상주 컨테이너 불가 | 사용자 결정 (인프라 제약) |
 | D4 | **데이터·인증·저장은 Supabase.** Postgres(메타·spec) + Storage(목업·asset) + Auth | 서버리스에서 영속 상태를 얹는 표준 조합 |
 | D5 | **zip 해제를 브라우저로 이관.** 업로드 시 클라이언트가 unzip → 파일별 Storage 직업로드 → manifest를 API에 통보 | 서버리스엔 영속 디스크가 없다. 서버 스트리밍 해제 폐기 |
-| D6 | **SDK 주입은 인제스트(업로드) 시점 1회.** 저장 전 HTML을 재작성해 정적 서빙. SDK 갱신은 버전 쿼리 | 서빙마다 변조하는 상주 서버 모델을 서버리스에 안 맞음 |
+| D6 | **SDK 주입은 인제스트(업로드) 시점 1회 — 클라이언트가 브라우저에서 수행.** unzip과 함께 HTML에 SDK 태그·`<base>`를 삽입한 주입본을 Storage에 올리고, 서버는 검증만(D5와 일관 — 서버는 파일 미조작). 이후 서빙은 정적. SDK 갱신은 버전 쿼리 | 서빙마다 변조하는 상주 서버 모델은 서버리스에 안 맞고, 서버 파일 조작 없이 D5와 일관 |
 | D7 | **목업 격리는 경로 접두 방식** `/(도메인)/m/{projectId}/...`. 서브도메인·와일드카드 인증서 불필요 | 프록시 제거로 정적 목업만 남아 격리 필요성 감소. §7 트레이드오프 참조 |
 | D8 | **프레임워크는 Next.js**(콘솔 UI + API 라우트 + 미들웨어 + Supabase Auth 연동) | Vercel 서버리스에서 가장 짧은 경로 |
 
@@ -80,15 +80,20 @@
 
 `shared/types.ts`의 `SpecProject`는 **그대로 JSONB 1컬럼**으로 넣는다(정규화하지 않음 — "단순·범용" 원칙). RLS로 소유자 격리.
 
+**컬럼 vs JSONB 중복 처리 (원천 명시)**: `spec` JSONB(`SpecProject`)가 **유일한 진실의 원천**이다.
+최상위 컬럼 `name`·`updated_at`은 목록 조회·정렬·인덱싱을 위한 **파생 투영**이며, spec을 쓰는
+경로(생성·PUT)에서 **같은 트랜잭션 안에서 spec 값으로 덮어쓴다**(애플리케이션 또는 트리거로 동기화 강제).
+읽기 응답은 spec을 원천으로 반환한다. `id`는 PK 겸 spec.id로 불변이라 중복이 아니라 동일 키.
+
 ```sql
 -- 소유자 = auth.uid(). RLS가 교차 접근을 DB 레벨에서 차단.
 create table projects (
-  id          text primary key,          -- "prj_" + nanoid(10) 유지
+  id          text primary key,          -- "prj_" + nanoid(10) = spec.id (동일 키, 불변)
   owner_id    uuid not null references auth.users(id),
-  name        text not null,
-  spec        jsonb not null,            -- SpecProject 직렬화 그대로 (mockupSource는 upload|snippet만)
+  name        text not null,             -- 파생 투영: PUT 시 spec.name으로 동기화 (목록/정렬용)
+  spec        jsonb not null,            -- 진실의 원천. SpecProject 직렬화 그대로 (mockupSource는 upload|snippet만)
   created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  updated_at  timestamptz not null default now()  -- 파생 투영: PUT 시 spec.updatedAt으로 동기화
 );
 alter table projects enable row level security;
 create policy "owner_rw" on projects
@@ -101,6 +106,10 @@ create table project_tokens (   -- 경로 D 저장 인증. 평문 미보관 (해
   created_at  timestamptz not null default now(),
   revoked_at  timestamptz
 );
+alter table project_tokens enable row level security;   -- 하위 테이블도 소유자 격리 (부모 JOIN)
+create policy "owner_token_rw" on project_tokens
+  using (exists (select 1 from projects p
+                 where p.id = project_tokens.project_id and p.owner_id = auth.uid()));
 
 create table project_exports (  -- 산출물 이력 메타 (ExportRecord)
   id          text primary key,
@@ -110,11 +119,17 @@ create table project_exports (  -- 산출물 이력 메타 (ExportRecord)
   bytes       int not null,
   masked      boolean not null
 );
+alter table project_exports enable row level security;  -- 하위 테이블도 소유자 격리 (부모 JOIN)
+create policy "owner_export_rw" on project_exports
+  using (exists (select 1 from projects p
+                 where p.id = project_exports.project_id and p.owner_id = auth.uid()));
 ```
 
 - `ownerLabel`(자유 텍스트 라벨)은 유지하되 **표시용**으로 남기고, 실제 소유·권한은 `owner_id`가 담당한다.
 - `MockupSource` union에서 `ProxyMockupSource`는 공개판 코드 경로에서 제거(D2). 타입은 하위 호환 위해
   남겨두되 공개 인테이크에서 거부.
+- **RLS는 세 테이블 모두 활성화**한다. 하위 테이블(`project_tokens`·`project_exports`)은 부모 `projects`를
+  JOIN해 소유권을 확인하므로 애플리케이션 버그가 나도 남의 데이터에 닿지 않는다.
 - **권한 모델 v1**: 프로젝트는 생성자 단독 소유(개인 소유 플랫). 팀 공유·역할(editor/viewer)·조직 계층은
   다음 단계(§9 열린 질문).
 
@@ -123,8 +138,8 @@ create table project_exports (  -- 산출물 이력 메타 (ExportRecord)
 | 함수 | 입력 | 동작 |
 |------|------|------|
 | `POST /api/projects` | 이름, (선택)ownerLabel | 인증 확인 → `projects` 행 생성(owner_id=auth.uid) |
-| **업로드(경로 A)** `POST /api/projects/{id}/mockup:complete` | 클라이언트가 Storage에 이미 올린 파일 manifest | 서버는 파일을 만지지 않는다(D5). HTML 엔트리에 SDK 태그 주입(D6)만 수행하거나, 클라이언트가 주입본을 올리고 서버는 검증. `mockupSource=upload` 확정 |
-| **목업 서빙** `/m/{id}/*` (미들웨어) | 경로 | RLS/공개 규칙 확인 → Storage에서 해당 파일 스트림. HTML은 이미 주입본(D6). `<base href="/m/{id}/">` 보장 |
+| **업로드(경로 A)** `POST /api/projects/{id}/mockup:complete` | 클라이언트가 Storage에 이미 올린 파일 manifest | **서버는 파일을 만지지 않는다(D5·D6 확정).** 클라이언트가 브라우저에서 **unzip + SDK 태그 주입 + `<base>` 삽입까지 완료한 주입본**을 Storage에 올리고, 서버는 manifest 검증(엔트리 존재·주입 태그 유무·경로 안전성)만 수행. `mockupSource=upload` 확정 |
+| **목업 서빙** `/m/{id}/*` (미들웨어) | 경로 | **소유자 인증 경유(v1) — 익명 공개 접근 아님.** 요청자 세션이 프로젝트 소유자인지 확인 후 Storage에서 파일 스트림(서버가 소유권 검증 후 접근하는 경로라 Storage 버킷은 비공개). HTML은 이미 주입본(D6). `<base>`도 인제스트 시 삽입됨 |
 | **spec GET/PUT** `/api/projects/{id}/spec` | (PUT) SpecProject 전체 | 전체 교체 PUT 유지. asset GC(ID-11)는 Storage 삭제로 이식 |
 | **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | Storage 버킷 read/write. 경로 D는 토큰 인증 |
 | **export** `POST /api/projects/{id}/export` | — | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환(함수 응답 크기 한계 회피) |
@@ -166,6 +181,9 @@ create table project_exports (  -- 산출물 이력 메타 (ExportRecord)
 5. **경로 D 확장의 공개 백엔드 저장**: 확장이 공개 도메인으로 저장 시 CORS·토큰 흐름 재확인.
 6. **저장 쿼터·레이트리밋·업로드 파일 검증**: 공개 노출로 새로 필요한 남용 방어(사내망일 땐 불요).
 7. **마이그레이션 브랜치 전략**: major 개편이므로 장기 브랜치 vs 점진 이관.
+8. **목업의 외부 공유 여부**: v1은 목업 서빙을 소유자 인증 경유로 확정(§6, 익명 접근 없음). 소유자가
+   아닌 사람에게 편집 화면을 보여줄 필요가 생기면 — 링크 공유(비추측 토큰)·읽기 전용 뷰어 등 —
+   별도 설계. 현재 공유 수단은 여전히 **단독 산출물 HTML**(§2 불변).
 
 ## 10. WBS 스케치 (승격 시 technical-spec §9.2로 이동)
 
@@ -182,3 +200,4 @@ create table project_exports (  -- 산출물 이력 메타 (ExportRecord)
 ## 11. 결정 변경 이력
 
 - 2026-07-21 — RFC 개설. 확정 D1~D8 기록(§3). NFR-01·§7.2 재협상은 킥오프 승격 시 원본(PRD·킥오프 스펙)에 반영 예정.
+- 2026-07-21 — PR #35 Gemini 리뷰 4건 반영: ① §5 컬럼 vs JSONB 중복 — spec을 원천으로 명시, 최상위 name·updated_at은 쓰기 시 동기화되는 파생 투영으로 정리 ② §5 하위 테이블 RLS 누락 — project_tokens·project_exports에 RLS 활성화 + 부모 JOIN 소유자 정책 추가 ③ §6·D6 SDK 주입 주체 모호 — "클라이언트가 브라우저에서 unzip+주입 완료, 서버는 검증만"으로 D5와 일관되게 확정 ④ §6 목업 서빙 인가 경로 미명시 — "소유자 인증 경유(v1)·익명 접근 없음"으로 확정, 외부 공유는 §9-8 열린 질문으로 분리.
