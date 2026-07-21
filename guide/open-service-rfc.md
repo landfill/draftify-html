@@ -164,7 +164,7 @@ create policy "owner_storage_all" on storage.objects
 |------|------|------|
 | `POST /api/projects` | 이름, (선택)ownerLabel | 인증 확인 → `projects` 행 생성(owner_id=auth.uid) |
 | **업로드(경로 A)** `POST /api/projects/{id}/mockup:complete` | 클라이언트가 Storage에 이미 올린 파일 manifest | **서버는 파일을 만지지 않는다(D5·D6 확정).** 클라이언트가 브라우저에서 **unzip + SDK 태그 주입 + `<base>` 삽입까지 완료한 주입본**을 Storage에 올리고, 서버는 manifest 검증(엔트리 존재·주입 태그 유무·경로 안전성)만 수행. `mockupSource=upload` 확정 |
-| **목업 서빙** `/m/{id}/*` (미들웨어) | 경로 | **소유자 인증 경유(v1) — 익명 공개 접근 아님.** 요청자 세션이 프로젝트 소유자인지 확인 후 Storage에서 파일 스트림(서버가 소유권 검증 후 접근하는 경로라 Storage 버킷은 비공개). HTML은 이미 주입본(D6). `<base>`도 인제스트 시 삽입됨 |
+| **목업 서빙** `/m/{id}/*` (**Route Handler**, 미들웨어 아님 — Codex P1) | 경로 | **소유자 인증 경유(v1) — 익명 공개 접근 아님.** 미들웨어는 인증·리라이트만 담당하고(Edge 미들웨어는 응답 본문 스트리밍 불가), 실제 서빙은 Route Handler(서버리스)가 소유권 검증 후 비공개 Storage에서 스트림. HTML은 이미 주입본(D6)·`<base>` 삽입됨. **SPA history fallback**: 확장자 없는 미존재 경로(`/m/{id}/settings` 등 클라이언트 라우트·새로고침)는 프로젝트 `index.html`로 폴백(FR-ONB-04·현 `serve.ts` 동작 유지) |
 | **spec GET/PUT** `/api/projects/{id}/spec` | (PUT) SpecProject 전체 | 전체 교체 PUT 유지. asset GC(ID-11)는 Storage 삭제로 이식 |
 | **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | 비공개 Storage 버킷 read/write. 브라우저 직접 업로드는 **Storage 오브젝트 RLS**(§5)가 `projects/{id}/` 소유권 강제. 경로 D는 토큰 인증 |
 | **export** `POST /api/projects/{id}/export` | — | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환(함수 응답 크기 한계 회피) |
@@ -178,8 +178,13 @@ create policy "owner_storage_all" on storage.objects
 
 ### 7.1 경로 격리 메커니즘
 
-- **방식**: `/m/{id}/` 접두 아래 서빙. Next 미들웨어가 `{id}`를 파싱해 Storage 프리픽스로 매핑.
+- **방식**: `/m/{id}/` 접두 아래 서빙. **미들웨어는 인증·리라이트만**, 실제 파일 스트리밍은 **Route Handler**가
+  수행한다(Codex P1 — Next Edge 미들웨어는 비공개 Storage 오브젝트의 응답 본문을 스트리밍할 수 없다).
+  Handler가 `{id}`를 파싱해 소유권 검증 후 Storage 프리픽스에서 스트림.
 - **상대 경로**: 인제스트 시 HTML `<head>`에 `<base href="/m/{id}/">` 주입 → 상대 리소스 자동 해결.
+- **SPA history fallback (FR-ONB-04 — 회귀 금지)**: 확장자 없는 미존재 경로(SPA 클라이언트 라우트·그 위치
+  새로고침, 예 `/m/{id}/settings`)는 프로젝트 루트 `index.html`로 폴백한다. 현 `packages/server/src/routes/serve.ts`가
+  이미 제공하는 동작 — Next 이식 시 반드시 보존(W4).
 - **알려진 제약(정직히 명시)**: **절대 루트 경로**(`/assets/app.js`)를 쓰는 목업은 접두 밖으로 나가 깨진다.
   → **온보딩 제약으로 문서화**("빌드 base path를 프로젝트 경로에 맞추거나 상대 경로로 빌드"). 대부분의
   정적 빌드 도구가 base/publicPath 설정을 지원. 필요 시 후속으로 인제스트 시 절대경로 재작성 추가.
@@ -207,8 +212,13 @@ create policy "owner_storage_all" on storage.objects
 - **무료 실현(방법 B)**: Vercel Hobby에서 프로젝트 2개 → `*-console.vercel.app` / `*-usercontent.vercel.app`.
   서로 다른 오리진 + `vercel.app`은 PSL 등재라 쿠키 공유도 차단. **도메인 구매 불필요.** (본인 도메인
   서브도메인=방법 A는 도메인 구매가 필요해 배제.)
-- **인증 배관**: usercontent 오리진엔 세션이 없으므로, 콘솔(로그인 상태)이 **Supabase Storage 서명 URL**
-  (시간제한 capability)을 발급해 브라우저가 그 URL로 목업을 로드. 목업 오리진은 세션 없이 서명만 검증.
+- **인증 배관 (Codex P2 — 오브젝트 단위 서명 URL로는 불충분)**: 엔트리 HTML 하나에 대한 서명 URL은
+  **그 오브젝트만** 인가한다. 상대 리소스(JS/CSS/청크) 요청은 그 query capability를 물려받지 못하고,
+  주입된 `<base>`가 usercontent 오리진을 가리키므로 자산이 안 붙는다. 또 서명 URL 직접 로드는 페이지를
+  Storage 오리진에 올려 의도한 usercontent Vercel 오리진이 아니게 된다. → **usercontent 오리진에 Route
+  Handler를 두고, 프로젝트 단위 단기 capability**(콘솔이 발급한 프로젝트 스코프 서명 토큰/쿠키를
+  usercontent 오리진에서 검증)로 **그 프로젝트의 모든 오브젝트를 인가**한다. 오브젝트마다 개별 서명하는
+  방식은 SPA 자산·청크에 비현실적.
 - **대가**: 목업이 다른 오리진이 되면 경로 A 편집 SDK의 same-origin 저장이 막혀 **CORS+토큰 저장**으로
   전환해야 한다 — 경로 D(확장)가 이미 쓰는 패턴이라 새 발명은 아니다.
 
@@ -247,7 +257,7 @@ create policy "owner_storage_all" on storage.objects
 - [ ] W1 Supabase 프로젝트·Auth(D1)·스키마(§5)·RLS 세팅 — **테이블 3종 + Storage 오브젝트 정책 + 버킷 비공개 포함**
 - [ ] W2 스토어 4모듈 → Supabase(Postgres+Storage) 어댑터 교체
 - [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입(D5·D6)
-- [ ] W4 목업 서빙 미들웨어 `/m/{id}/*` + `<base>` 주입(D7)
+- [ ] W4 목업 서빙 `/m/{id}/*` — **Route Handler**가 소유권 검증+스트림(미들웨어는 인증·리라이트만), `<base>` + **SPA history fallback(FR-ONB-04)** 보존(D7·§7.1)
 - [ ] W5 spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용)
 - [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환
 - [ ] W7 콘솔 UI Next 이식 + Auth 게이트
@@ -259,4 +269,5 @@ create policy "owner_storage_all" on storage.objects
 - 2026-07-21 — RFC 개설. 확정 D1~D8 기록(§3). NFR-01·§7.2 재협상은 킥오프 승격 시 원본(PRD·킥오프 스펙)에 반영 예정.
 - 2026-07-21 — PR #35 Gemini 리뷰 4건 반영: ① §5 컬럼 vs JSONB 중복 — spec을 원천으로 명시, 최상위 name·updated_at은 쓰기 시 동기화되는 파생 투영으로 정리 ② §5 하위 테이블 RLS 누락 — project_tokens·project_exports에 RLS 활성화 + 부모 JOIN 소유자 정책 추가 ③ §6·D6 SDK 주입 주체 모호 — "클라이언트가 브라우저에서 unzip+주입 완료, 서버는 검증만"으로 D5와 일관되게 확정 ④ §6 목업 서빙 인가 경로 미명시 — "소유자 인증 경유(v1)·익명 접근 없음"으로 확정, 외부 공유는 §9-8 열린 질문으로 분리.
 - 2026-07-21 — PR #35 Codex P1-A 반영: **Storage 오브젝트 RLS 누락.** Postgres 테이블 RLS는 `storage.objects`를 제약하지 않으므로, D5 브라우저 직접 업로드에 대비해 `storage.objects`에 `projects/{id}/` 경로 소유권을 검증하는 버킷 정책(insert/select/update/delete) 추가 + 버킷 비공개 명시. §5·§6 asset 행·W1 반영.
+- 2026-07-21 — PR #35 Codex 3차 리뷰 3건 반영: ① P1 **SPA history fallback** — `/m/{id}/` 라우팅이 확장자 없는 미존재 경로를 프로젝트 index.html로 폴백하도록 §6·§7.1·W4에 명시(FR-ONB-04·현 serve.ts 회귀 방지) ② P1 **미들웨어 스트리밍 불가** — 목업 서빙을 미들웨어에서 Route Handler로 이동(Edge 미들웨어는 응답 본문 스트리밍 불가), 미들웨어는 인증·리라이트만. §6·§7.1·W4 반영 ③ P2 **격리 오리진 자산 인가** — §7.3 승격 경로에서 오브젝트 단위 서명 URL로는 상대 자산·청크가 인가 안 됨(base가 usercontent 오리진 지시), usercontent Route Handler + 프로젝트 단위 단기 capability로 전체 오브젝트 인가하도록 정교화.
 - 2026-07-21 — PR #35 Codex P1-B 결정·반영: **신뢰불가 목업의 오리진 경계.** 사용자 결정 — **v1은 옵션 2**(콘솔과 같은 오리진 + 소유자-전용 서빙으로 교차 테넌트 차단 + "믿을 수 있는 ZIP만 업로드" 사용 제약), **방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL 인증)를 승격 경로로 기록**하고 §9-8 외부 공유 개방 전 선행 필수로 못 박음. D7 문구 갱신, §7을 7.1~7.4로 재구성(메커니즘·보안 경계·승격 경로·부작용). 방법 A(본인 도메인 서브도메인)는 도메인 구매 필요로 배제. 오리진 격리는 목업 전체 대 콘솔 사이만 필요하므로 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
