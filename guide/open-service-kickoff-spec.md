@@ -222,18 +222,26 @@ RLS만으로는 소유자가 파생 컬럼을 spec과 다르게 갱신하는 걸
 
 | 패키지 | 개편 영향 |
 |--------|-----------|
-| `shared` (타입 계약) | **거의 그대로 생존.** `MockupSource`에서 proxy 경로 배제 정도 |
-| `sdk` (Preact/Shadow DOM 편집기) | **그대로 생존** — 저장 API 엔드포인트 URL만 조정 |
+| `shared` (타입 계약) | **거의 그대로 생존 — additive만.** `MockupSource`의 proxy 타입은 **제거하지 않고 유지**, 공개 인테이크에서 거부만(하위 호환·기존 서비스 무영향) |
+| `sdk` (Preact/Shadow DOM 편집기) | **그대로 생존.** transport가 이미 예약 경로 `/__mockspec/api`를 쓰므로(`transport.ts:45`) 경로 A는 URL 조정도 거의 불필요. 경로 D 저장 URL 전환은 `extension`에서(W6) |
 | `viewer` (단독 산출물 런타임) | **그대로 생존** |
-| `server` (Express) | **서버리스 함수 / Next API 라우트로 재작성.** 스토어 4모듈이 이미 격리돼 Supabase 호출로 교체가 국소적. `serve.ts`(디스크 서빙)·`proxy.ts`(제거)·unzip(브라우저 이관)이 주요 변경 |
-| 콘솔 UI | vanilla → Next 페이지 이식 (기능 동등) |
+| **새 앱** `apps/web` (Next.js) | **신규 추가.** 기존 워크스페이스 패키지(`@mockspec/shared`·`sdk`·`viewer`)를 import해 서버리스 API·미들웨어·콘솔 UI·목업 서빙을 구현. Supabase 어댑터·인제스트·예약 경로가 여기 산다 |
+| `server` (기존 Express) | **손대지 않음 — 보존.** 기존 file-based 사내 서비스는 그대로 구동 가능. 서버리스로의 "이식"은 재작성이 아니라 `apps/web`에서 스토어 4모듈 로직·`buildExportHtml`·뷰어 조립을 **참조/재구현**하는 것 |
+| 콘솔 UI | 기존 vanilla 콘솔은 보존, `apps/web`에 Next 페이지로 신규 이식 (기능 동등) |
 
-→ **제품 재작성이 아니라 "서버 계층 이식 + 콘솔 프레임워크 이식".** 편집기·뷰어·타입은 보존.
+→ **제품 재작성이 아니라 "새 앱(`apps/web`) 추가 + 클라이언트 패키지 재사용".** 편집기·뷰어·타입·기존 서버는 전부 보존.
 
-> **레포 보존 원칙(사용자 제약, 2026-07-22)**: 기존 로컬 베이스 레포는 무손상 유지된다. 개편은 이
-> 레포의 장기 브랜치 `open-service` 위에 **추가/이식으로만** 쌓고, 레포 파기·새 레포 생성은 없다.
-> 기존 `data/` 런타임 데이터는 새 Supabase로 옮기지 않고 빈 DB로 시작한다(§9-3 결정, 데이터 폐기이지
-> 코드/레포와 무관).
+> **레포·기존 서비스 보존 원칙 (사용자 확정, 2026-07-22)**:
+> - **구조 = monorepo + 새 앱.** 별도 레포로 분리하지 않는다 — `shared`·`sdk`·`viewer` 재사용이
+>   개편의 전제라, 별도 레포는 그 3종을 복제/드리프트시키는 비용만 크다. 대신 같은 monorepo에
+>   `apps/web`(Next.js)를 신규로 두고, 기존 `packages/server`(Express)는 건드리지 않는다. 두 서비스가
+>   한 레포에서 공존하며 클라이언트 패키지를 단일 소스로 공유한다.
+> - **작업 방식 = git worktree.** open-service 작업은 별도 폴더 워크트리(`../Draftify-open-service`,
+>   브랜치 `open-service`)에서 한다. 메인 폴더(`Draftify-Html`)는 `main` 체크아웃 상태로 두어 기존
+>   Express 서비스를 언제든 그대로 구동·비교할 수 있다. 워크트리는 **별도 레포가 아니라** 같은 `.git`을
+>   공유하는 두 번째 작업 폴더다(히스토리·remote·PR 동일).
+> - **레포 무손상**: 개편은 `apps/web` 추가와 shared additive 변경으로만 쌓고, 레포 파기·새 레포 없음.
+>   기존 `data/` 런타임 데이터는 새 Supabase로 옮기지 않고 빈 DB로 시작(§9-3, 데이터 폐기이지 코드 무관).
 
 ---
 
@@ -250,6 +258,10 @@ RLS만으로는 소유자가 파생 컬럼을 spec과 다르게 갱신하는 걸
 ---
 
 ## 10. WBS와 완료 기준 (technical-spec §9.2로 이관 — W1~W9)
+
+> **모든 W 구현은 새 앱 `apps/web`(Next.js)에 얹는다**(§8). 기존 `packages/server`는 보존하고, W2·W4·W5·W7의
+> "교체/이식"은 apps/web에서 기존 스토어 로직·`buildExportHtml`·뷰어 조립을 참조해 Supabase/서버리스로
+> **재구현**하는 것을 뜻한다. 워크트리(`../Draftify-open-service`)에서 작업.
 
 | # | 작업 | 완료 기준 (AC) |
 |---|------|---------------|

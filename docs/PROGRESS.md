@@ -91,6 +91,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-22 — PR #37 병합 + 구조·작업방식 확정 (monorepo+새앱, worktree)
+- 완료: **PR #37(RFC→킥오프 승격) squash 병합**(`95e5a4d`, main). 리뷰 4건 반영 후 사용자 동의. main·open-service·origin/open-service 전부 `95e5a4d`로 정렬(트리 동일 확인 후 open-service를 병합 main 위로 reset — 내용 손실 0). 리뷰 반영 = Codex P1(export signed URL 다운로드 핸드오프) + CodeRabbit minor 3(PRD SSO 표기·README 상단·PROGRESS 검증). Gemini 종료, PR-Agent compliant.
+- 구조 결정(사용자 확인 질문 2건 해소, 킥오프 §8·§10 갱신): 사용자 우려 = "open-service 개발이 기존 소스를 건드리나 / 별도 레포로 분리해야 하나". 코드 확인 결과 sdk transport가 이미 예약 경로 `/__mockspec/api`를 써서(`transport.ts:45`) 클라이언트 3종은 거의 무변경. 확정 —
+  - **① 구조 = monorepo + 새 앱 `apps/web`(Next.js).** 별도 레포 분리 기각(shared·sdk·viewer 재사용이 전제라 복제·드리프트 비용만 큼). 기존 `packages/server`(Express)는 **손대지 않고 보존**, 새 앱이 워크스페이스 패키지를 import해 서버리스/콘솔/목업서빙 재구현. 두 서비스 한 레포 공존. shared는 additive만(proxy 타입 제거 안 함).
+  - **② 작업 방식 = git worktree.** open-service는 별도 폴더 워크트리 `../Draftify-open-service`(브랜치 open-service)에서 작업, 메인 폴더 `Draftify-Html`은 main 유지(기존 Express 구동·비교용). 워크트리는 같은 `.git` 공유하는 두 번째 폴더일 뿐(별도 레포 아님, PR·히스토리 동일).
+  - 두 결정을 킥오프 §8(코드 영향 표 재작성 + 보존 원칙 확장)·§10(모든 W는 apps/web에 얹힘 주석)에 기록.
+- 워크트리 실제 생성 완료: `git worktree list`에 `Draftify-Html [main]` + `Draftify-open-service [open-service]` 확인.
+- 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 환류).
+- 막힌 지점: 없음.
+
 ### 2026-07-22 — 공개 서비스 개편 RFC → 킥오프 스펙 승격 (open-service 브랜치)
 - 배경: PR #35(RFC)가 `42e1784`로 main 병합 완료됨을 확인(열린 PR 0). RFC §11 마지막 "다음 할 일"(RFC 승격)이 최전선 → 착수. 사용자 제약 확인·반영: **어떤 방식이든 기존 로컬 베이스 레포는 무손상 유지** — 개편은 이 레포의 장기 브랜치 `open-service` 위에 추가/이식으로만 쌓고 레포 파기·새 레포 없음(RFC §8·§9-3과 정합). 진행 방식은 "먼저 계획으로 정리" 후 실행(사용자 선택).
 - 완료(문서만, 코드 변경 0 — AGENTS.md §4 규범 문서 먼저):
