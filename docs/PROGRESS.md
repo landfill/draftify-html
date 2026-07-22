@@ -28,7 +28,7 @@
 
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
-- [ ] W1 Supabase 프로젝트·Auth(Google OAuth + 이메일 매직링크)·스키마·RLS(테이블 3종 + 파생컬럼 트리거 + Storage 오브젝트 정책 단일 버킷 + 버킷 비공개)
+- [~] W1 Supabase 프로젝트·Auth·스키마·RLS — **DB 계층 완료, Auth 일부 대기.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. **남은 것: Google OAuth provider 설정**(Google Cloud OAuth 클라이언트 발급 → Supabase 대시보드 입력, 사용자 수작업). 이메일 매직링크는 기본 활성
 - [ ] W2 스토어 4모듈(project·export·token·paths) → Supabase 어댑터 교체
 - [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체
 - [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
@@ -90,6 +90,15 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-22 — W1 착수: Supabase DB 스키마·RLS·Storage 적용 (draftify-html)
+- 대상: 사용자가 새 Supabase 프로젝트 **`draftify-html`**(ref `dhzojuatkmafgwiwtdwe`, org `landfill72@naver.com's Org`, region ap-northeast-1 도쿄, plan **free**) 생성. free 2개 상한은 기존 `kids` 프로젝트를 정리해 확보(현 활성 = tmdb-quiz + draftify-html). 프로젝트 생성 시 "Enable automatic RLS"는 켜고(public 신규 테이블 RLS 자동), "Branching(GitHub 자동 배포)"은 끔(free는 Pro 기능·레포 브랜치 구조 불일치·MCP/CLI 직접 적용이 더 단순).
+- 완료(마이그레이션 코드로 관리 + MCP `apply_migration` 적용 — 킥오프 §5):
+  - `apps/web/supabase/migrations/20260722072600_init_open_service_schema.sql` — 테이블 3종(`projects`·`project_tokens`·`project_exports`) + RLS(owner_id=auth.uid, 하위는 부모 projects JOIN) + 파생컬럼 트리거 `sync_project_derived`(spec→name·updated_at 강제) + 인덱스 + Storage 비공개 버킷 `mockups` + 오브젝트 정책 `owner_storage_all`(경로 projects/{id} 소유권).
+  - `apps/web/supabase/migrations/20260722073000_harden_security_advisors.sql` — advisor WARN 3건 처리: ① `sync_project_derived` search_path=''로 고정 ② 자동-RLS 헬퍼 `rls_auto_enable()`의 anon/authenticated EXECUTE 회수(이벤트 트리거라 API 노출 불요, 자동 RLS 동작은 유지).
+- 검증: `list_tables` 3종 rls_enabled=true·rows=0 / `execute_sql` 집계 — public 정책 3·storage 정책 1·파생 트리거 1·버킷 존재·public=false / `get_advisors(security)` **0건**(하드닝 전 3건 → 후 0). `apps/web`는 아직 스캐폴드 안 함(supabase/migrations/만 존재) — W7에서 Next 앱 구성 시 config.toml 등 채움.
+- 다음 할 일: **W1 잔여 = Google OAuth provider 설정**(사용자 수작업: Google Cloud OAuth 클라이언트 ID/secret 발급 → Supabase Auth Providers에 입력. redirect URL은 `https://dhzojuatkmafgwiwtdwe.supabase.co/auth/v1/callback`). 이메일 매직링크는 기본 활성이라 별도 작업 없음. 이후 **W2**(스토어 4모듈 → Supabase 어댑터, apps/web) 착수. 마이그레이션은 open-service 브랜치에 커밋(트랙 완료 시 main 환류).
+- 막힌 지점: 없음. (Google OAuth는 외부 콘솔 작업이라 사용자 진행 필요 — 블로커 아님, W2는 이메일 인증만으로도 진행 가능.)
 
 ### 2026-07-22 — PR #37 병합 + 구조·작업방식 확정 (monorepo+새앱, worktree)
 - 완료: **PR #37(RFC→킥오프 승격) squash 병합**(`95e5a4d`, main). 리뷰 4건 반영 후 사용자 동의. main·open-service·origin/open-service 전부 `95e5a4d`로 정렬(트리 동일 확인 후 open-service를 병합 main 위로 reset — 내용 손실 0). 리뷰 반영 = Codex P1(export signed URL 다운로드 핸드오프) + CodeRabbit minor 3(PRD SSO 표기·README 상단·PROGRESS 검증). Gemini 종료, PR-Agent compliant.
