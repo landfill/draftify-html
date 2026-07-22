@@ -100,6 +100,8 @@
   - **technical-spec §9.2**: WBS **W1~W9 블록** 편입(독립 트랙, W 번호·워크스트림 PR 방침 주석).
   - **RFC 상태 전환**: 헤더 "RFC 초안(탐색)" → "킥오프 스펙으로 승격됨" + §11 승격 이력 1줄.
   - **PROGRESS**: 공개 서비스 WBS 체크리스트(W1~W9) 추가 + 이 세션 로그.
+- 검증(문서 변경이라 빌드/테스트 대신 정합성 확인): ① `git diff` 전체 리뷰 — 코드 파일 변경 0건 확인(문서 6종만) ② 신규 킥오프의 크로스레퍼런스 링크(`open-service-kickoff-spec.md`)가 PRD·technical-spec·README·RFC에서 실제 파일을 가리키는지 `grep -l`로 확인 ③ WBS W1~W9가 킥오프 §10·technical-spec §9.2·PROGRESS 체크리스트 세 곳에서 일치하는지 대조 ④ 불변(§1.3 제1원칙 4개)·재협상(NFR-01·§7.2) 경계가 킥오프 §2와 PRD 개정문에서 상호 모순 없는지 확인 ⑤ PR #37 CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green.
+- 리뷰 반영(PR #37, `8b26e46` 2차 커밋): Codex P1(export signed URL 다운로드 핸드오프 — SDK/확장이 URL이 아닌 HTML을 저장하도록 302 리다이렉트/클라이언트 분기 명시, 킥오프 §6·W5) + CodeRabbit minor 3건(PRD "SSO/인증"→"인증"으로 SSO 프로토콜 미도입 구분 / README 상단 설명에 open-service 트랙 병기 / 이 검증 항목 추가). Gemini는 서비스 종료로 리뷰 없음, PR-Agent fully compliant.
 - 다음 할 일: 승격 커밋 → **PR 오픈(이슈 #34 연결)** → 사용자 동의 후 `open-service` 브랜치는 장기 유지(main 병합이 아니라, 이후 W1~W9 워크스트림 PR이 이 브랜치로 병합). 첫 실 구현 워크스트림은 **W1(Supabase 세팅)** 이 의존 선두. 별도 이슈 #36(빌드 가이드)은 개편과 독립하게 대기.
 - 막힌 지점: 없음. (착수를 막는 유일한 열린 질문 §9-8 외부 공유는 v1 범위 밖.)
 

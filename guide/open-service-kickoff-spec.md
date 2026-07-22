@@ -170,7 +170,7 @@ RLS만으로는 소유자가 파생 컬럼을 spec과 다르게 갱신하는 걸
 | **목업 서빙** `/m/{id}/*` (**Route Handler**, 미들웨어 아님) | **소유자 인증 경유(v1) — 익명 접근 없음.** 미들웨어는 인증·리라이트만(Edge 미들웨어는 본문 스트리밍 불가), Route Handler가 소유권 검증 후 비공개 Storage에서 스트림. **SPA history fallback**: 확장자 없는 미존재 경로는 프로젝트 `index.html`로 폴백(FR-ONB-04·현 `serve.ts` 회귀 방지) |
 | **spec GET/PUT** `/api/projects/{id}/spec` | 전체 교체 PUT 유지. asset GC(ID-11)는 Storage 삭제로 이식 |
 | **asset** `POST/GET /api/projects/{id}/assets` | 비공개 Storage read/write. 브라우저 직접 업로드는 Storage 오브젝트 RLS(§5)가 소유권 강제. 경로 D는 토큰 인증 |
-| **export** `POST /api/projects/{id}/export` | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환 |
+| **export** `POST /api/projects/{id}/export` | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. **기본은 완성 HTML을 응답 본문으로 반환**(현 클라이언트 계약 — SDK는 응답 본문을 HTML로 다루고, 확장은 이 엔드포인트를 `chrome.downloads`로 받는다). 큰 산출물만 Storage에 쓰되, **signed URL을 그냥 돌려주면 두 클라이언트가 HTML 대신 URL 응답을 저장/소비해 깨진다(Codex P1)** → **다운로드 핸드오프 명시**: ⓐ 같은 엔드포인트가 signed URL로 302 리다이렉트해 SDK·확장의 기존 다운로드 경로가 그대로 따라가게 하거나, ⓑ SDK·확장에 signed-URL 분기를 추가한다. 저장소 폴백 사용 전 이 핸드오프가 선행(W5) |
 | **토큰(경로 D)** `POST /api/projects/{id}/tokens` | 발급 시 평문 1회 노출, 해시만 저장. 재발급·폐기 |
 | **예약(SDK)** `GET /__mockspec/sdk.js` | **루트 레벨 필수.** SDK 번들 서빙 |
 | **예약(API 브리지)** `/__mockspec/api/*` | **루트 레벨 필수.** SDK transport의 same-origin `/__mockspec/api` → `/api/projects/*` 리라이트 |
@@ -258,7 +258,7 @@ RLS만으로는 소유자가 파생 컬럼을 spec과 다르게 갱신하는 걸
 | W3 | 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체(기존 base 처리) | manifest 검증 통과, 주입본에 SDK 태그·단일 `<base>` 존재 |
 | W4 | 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 결과 검증 + SPA history fallback(FR-ONB-04) 보존 | 소유자만 열림, 확장자 없는 미존재 경로가 index.html로 폴백, 서빙 시 per-request 변조 없음 |
 | W4b | 예약 경로 루트 라우트: `/__mockspec/sdk.js`(SDK 번들)·`/__mockspec/api/*`(→ `/api/projects/*` 리라이트) | 주입 SDK가 `<base>` 무관하게 로드·저장됨(없으면 경로 A 편집 불가 회귀) |
-| W5 | spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용) | 전체 교체 PUT 왕복 무손실, export 산출물 file:// 네트워크 0건 |
+| W5 | spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용) | 전체 교체 PUT 왕복 무손실, export 산출물 file:// 네트워크 0건. **큰 산출물 Storage 폴백 시 다운로드 핸드오프(§6 ⓐ 302 리다이렉트 또는 ⓑ 클라이언트 분기)로 SDK·확장이 URL이 아닌 HTML을 저장**(Codex P1) |
 | W6 | 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가) | 토큰 없는 저장 401, 타 프로젝트 토큰 거부, 확장이 공개 백엔드로 저장 성공 |
 | W7 | 콘솔 UI Next 이식 + Auth 게이트 | 미인증 접근 차단, 가입·로그인 후 콘솔 기능 동등 |
 | W8 | 남용 방어(쿼터·레이트리밋·업로드 검증) — 공개 필수 최소 셋 | 초과 요청 거부, 악성 업로드 형식 거부 |
