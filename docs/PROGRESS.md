@@ -29,7 +29,7 @@
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
 - [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 개발용 Supabase Redirect URLs 등록은 W7 앱 포트 확정 시
-- [ ] W2 스토어 4모듈(project·export·token·paths) → Supabase 어댑터 교체
+- [~] W2 스토어 4모듈 → Supabase 어댑터 — **어댑터 구현·타입 통과. 런타임 왕복 테스트만 대기.** `apps/web`(Next 15 + React 19) 스캐폴드 + Supabase 클라이언트 3종(server/browser/admin) + DB 타입 + 어댑터 3본(projectStore·tokenStore·exportStore, paths는 Storage 경로 유틸 `ids.ts`로 흡수). 어댑터는 요청 스코프 클라이언트 `db`를 받아 RLS로 격리. verifyToken만 service_role 클라이언트 필요(W6 배선). 검증: apps/web typecheck OK·루트 build 회귀 0·기존 vitest 219 passed. **남은 것: 왕복 무손실 통합 테스트** — 인증 세션(테스트 사용자) 또는 service_role 키 필요라 W7 Auth 배선/키 확보 후. 취약점 sharp high는 Next 전이 의존 노이즈(미사용)
 - [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체
 - [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
 - [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
@@ -90,6 +90,18 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-22 — W2 착수: apps/web 스캐폴드 + 스토어 Supabase 어댑터
+- 완료(구조 = monorepo + 새 앱, 워크트리에서 작업):
+  - **`.gitignore`**: Next(.next·next-env.d.ts·out)·Vercel(.vercel)·Supabase CLI 로컬 산출물 추가(마이그레이션 SQL은 커밋 대상). `.env*`는 기존 규칙이 이미 커버.
+  - **`apps/web` 스캐폴드**: `@mockspec/web`(Next 15.1 + React 19), 워크스페이스 등록, tsconfig(noEmit·bundler), next.config(transpilePackages `@mockspec/shared`). 실 앱 라우트(app/)는 W7.
+  - **Supabase 클라이언트 3종**(`lib/supabase/`): `server.ts`(@supabase/ssr, 요청 스코프·쿠키 세션→RLS owner), `client.ts`(브라우저), `admin.ts`(service_role, RLS 우회 — 사용자 세션 없는 경로 D 저장 전용, 키 없으면 명시적 실패). `database.types.ts`는 MCP generate_typescript_types 산출물.
+  - **스토어 어댑터 3본**(`lib/store/`): `projectStore`(create/read/list/replace/delete + asset은 Storage upload/download/remove, replaceSpec는 orphan asset GC), `tokenStore`(issue/verify/revoke/has — sha256 해시만, 활성 1개), `exportStore`(append=단일 INSERT라 파일판의 write 직렬화 불요). `paths.ts`는 Storage 경로 유틸(`ids.ts`)로 흡수 — 4모듈 인터페이스 보존. 전부 요청 스코프 `db: SupabaseClient<Database>`를 받아 RLS 격리.
+  - **환경**: `.env.example`(공개 URL·publishable 키 문서화 + service_role placeholder) 커밋, `.env.local`(gitignore, 실 공개값 채움·service_role은 사용자 TODO).
+  - **owner_id 기본값 마이그레이션**(`20260722080000_projects_owner_default.sql`): `default auth.uid()` — 어댑터 insert가 owner_id 미지정, RLS with check가 위조 차단.
+- 검증: apps/web `tsc --noEmit` 통과(캐스트·쿠키 타입 2차 수정 후), 루트 `npm run build` 회귀 0, 기존 `vitest` **219 passed**. npm audit high 2건 = sharp(Next 이미지 최적화 전이 의존) libvips CVE — 미사용·강제수정(next@9 다운그레이드) 비현실적이라 기록만.
+- 다음 할 일: **W2 잔여 = 왕복 무손실 통합 테스트**(인증 세션 또는 service_role 키 필요 → W7 Auth 배선/키 확보 후 또는 사용자가 service_role 키를 `.env.local`에 채우면 즉시). 이어서 **W3**(브라우저 unzip + Storage 직업로드 + SDK/`<base>` 주입) 또는 **W7**(Auth 게이트·콘솔) 중 선택. 코드는 open-service 브랜치 누적.
+- 막힌 지점: 없음. (통합 테스트는 service_role 키 대기 — 블로커 아님, 코드·타입은 완료.)
 
 ### 2026-07-22 — W1 착수: Supabase DB 스키마·RLS·Storage 적용 (draftify-html)
 - 대상: 사용자가 새 Supabase 프로젝트 **`draftify-html`**(ref `dhzojuatkmafgwiwtdwe`, org `landfill72@naver.com's Org`, region ap-northeast-1 도쿄, plan **free**) 생성. free 2개 상한은 기존 `kids` 프로젝트를 정리해 확보(현 활성 = tmdb-quiz + draftify-html). 프로젝트 생성 시 "Enable automatic RLS"는 켜고(public 신규 테이블 RLS 자동), "Branching(GitHub 자동 배포)"은 끔(free는 Pro 기능·레포 브랜치 구조 불일치·MCP/CLI 직접 적용이 더 단순).

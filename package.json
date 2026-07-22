@@ -12,6 +12,7 @@
     "packages/server",
     "packages/viewer",
     "packages/extension",
+    "apps/web",
     "fixtures/todo-app"
   ],
   "scripts": {

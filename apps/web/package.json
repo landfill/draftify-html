@@ -1,0 +1,26 @@
+{
+  "name": "@mockspec/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "공개 서비스(open-service) Next.js 앱 — Vercel 서버리스 + Supabase 백엔드",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mockspec/shared": "*",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "nanoid": "^5.0.9",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}
