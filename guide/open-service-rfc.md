@@ -1,7 +1,9 @@
 # RFC — 공개 서비스 개편 (Vercel + Supabase)
 
-> **상태: RFC 초안 (탐색 단계).** 스코프가 굳으면 정식 킥오프 스펙(`guide/open-service-kickoff-spec.md`)으로
-> 승격하고, PRD §7.1 로드맵·NFR-01·§7.2를 동기화한다. 아직 구현 착수 문서가 아니다.
+> **상태: 킥오프 스펙으로 승격됨 (2026-07-22).** 착수 계약은 이제
+> **[open-service-kickoff-spec.md](./open-service-kickoff-spec.md)** 이고 PRD NFR-01·§7.1·§7.2,
+> technical-spec §9.2(WBS W1~W9)가 동기화됐다. **이 RFC는 논의·대안 비교·리뷰 반영 이력의 근거
+> 문서로 보존**한다 — 세부 근거(옵션 비교·리뷰 4차 반영)가 필요하면 여기를 보고, 착수 판단은 킥오프를 따른다.
 >
 > 이 문서는 "사내망·무인증 로컬/사내 서버" 전제로 만들어진 현 제품을 **공개 URL로 기획자들이
 > 직접 접속해 쓰는 멀티테넌트 서비스**로 여는 개편의 설계 계약 초안이다. 논의·결정을 여기에
@@ -313,4 +315,5 @@ create policy "owner_storage_all" on storage.objects
 - 2026-07-21 — 열린 질문 2건 결정: **인증(§9-1)** = Google OAuth + Supabase 이메일 매직링크 **둘 다 제공**(D1·W1 갱신). **권한 모델 확장(§9-2)** = **실수요까지 유보(YAGNI)**, v1 개인 소유 플랫·멤버십 스키마 선반영 안 함. §9를 "결정됨/남은 것"으로 재구성. **기존 `data/` 데이터 이관(§9-3)은 대기** — "완전 대체"가 레포 파기로 오해돼, 코드는 §8대로 이 레포에서 진화하고 데이터 이관 여부만 남은 질문임을 명확화.
 - 2026-07-21 — 기존 데이터 이관(§9-3) 결정: **이관 없음, 빈 DB로 시작.** 기존 `data/`는 기존 file-based 배포에서 내부 시연·설명 용도로만 유지되는 폐기 대상 — 새 Supabase로 옮기지 않음. 이관 스크립트 불필요.
 - 2026-07-21 — 저강도 4건 확정: **④ 절대경로 목업** = v1 온보딩 제약 문서화(인제스트 재작성은 후속), 현재 버전은 서브도메인이라 절대·상대 둘 다 동작하고 깨짐은 경로 격리 신규 제약임을 명시. 빌드 가이드의 `docs/user-guide.md` 추가는 현재 버전에도 유효하므로 **별도 이슈로 분리 등록**(#36). **⑤ 경로 D 저장** = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest host_permissions+저장 URL 전환만(진짜 CORS는 §7.3 옵션1 승격 시). **⑥ 남용 방어** = W8 포함. **⑦ 브랜치 전략** = 이 레포에 장기 개편 브랜치(`open-service`)+워크스트림별 PR. **상류·저강도 전부 확정 — 남은 열린 질문은 §9-8(외부 공유, v1 밖)뿐.** 킥오프 승격 준비 완료.
+- 2026-07-22 — **킥오프 스펙 승격.** RFC의 확정 항목(D1~D8·§5 스키마·§6 함수·§7 격리·§10 WBS)을 착수 계약 [open-service-kickoff-spec.md](./open-service-kickoff-spec.md)로 이관. PRD 동기화(NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증+RLS로 대체 / §7.1 = open-service 독립 트랙 행 추가 / §7.2 = SSO 조건 ① 충족으로 YAGNI 해제), technical-spec §9.2 = WBS W1~W9 편입. RFC 상태를 "승격됨"으로 전환, 근거 문서로 보존. 이 레포의 장기 브랜치 `open-service`에서 진행(레포 보존 — 기존 베이스 무손상, 추가/이식으로만 진화). 착수를 막는 열린 질문은 §9-8(외부 공유, v1 밖) 하나뿐.
 - 2026-07-21 — PR #35 CodeRabbit·Codex 4차 리뷰 반영: **① Codex P1 예약 경로** — 주입 SDK 로더가 절대 경로(`/__mockspec/sdk.js`)·transport가 `/__mockspec/api`라 `<base>`와 무관, 콘솔 루트에 이 라우트가 없으면 경로 A 목업 편집 불가 → §4·§6에 루트 예약 경로 2개 명시 + W4b 신설. **② Codex P2 기존 `<base>`** — Angular 등 기존 base가 있으면 브라우저는 첫 base만 인정, 인제스트는 삽입이 아니라 교체/재작성(§7.1·W3). **③ CodeRabbit Major 파생컬럼** — RLS로 name·updated_at 직접 갱신 못 막으니 DB 트리거로 spec에서 강제 동기화(§5). **④ CodeRabbit Major asset 버킷** — 단일 버킷 `mockups`의 mockup/·assets/ 프리픽스로 통일해 RLS 정책 1개가 둘 다 커버(§4·§5). **⑤ CodeRabbit Minor** — W4 `<base>` 책임을 D6과 일치(주입은 인제스트, 서빙은 검증)·다이어그램 코드펜스 언어 지정.

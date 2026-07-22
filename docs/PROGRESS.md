@@ -21,6 +21,23 @@
 **콘솔 UI 디자인 개선(이슈 #11, 1~7차 피드백) — PR #21로 main 병합 완료 (2026-07-16, CI green·리뷰 5건(Gemini 4·Codex 1) 반영·브랜치 삭제).**
 **콘솔 가이드(/guide)·FAQ(/faq) 페이지 + 다크 모드 토글(EN 대체) — PR #29로 main 병합 완료 (2026-07-17, CI green·리뷰 3건(Gemini) 반영·브랜치 삭제). 헤더 DOCS 메뉴 정리는 이슈 #30.**
 **헤더 DOCS → 샘플 산출물 보기(/sample) 대체(이슈 #30 종결) — PR #33로 main 병합 완료 (2026-07-19, squash `025c2ea`, CI 4체크 green·리뷰 반영 1건(Promise 캐시)·기각 1건(Codex 날짜, UTC 선례)·브랜치 삭제).**
+**공개 서비스 개편 RFC(Vercel+Supabase) — PR #35로 main 병합 완료 (2026-07-21, `42e1784`). 엄브렐라 이슈 #34.**
+**공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·§7.1 open-service 트랙·§7.2 SSO 조건 ①)·technical-spec §9.2(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
+
+## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
+
+> RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
+
+- [ ] W1 Supabase 프로젝트·Auth(Google OAuth + 이메일 매직링크)·스키마·RLS(테이블 3종 + 파생컬럼 트리거 + Storage 오브젝트 정책 단일 버킷 + 버킷 비공개)
+- [ ] W2 스토어 4모듈(project·export·token·paths) → Supabase 어댑터 교체
+- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체
+- [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
+- [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
+- [ ] W5 spec GET/PUT·asset·export 함수 이식
+- [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions)
+- [ ] W7 콘솔 UI Next 이식 + Auth 게이트
+- [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
+- [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
 
@@ -73,6 +90,20 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-22 — 공개 서비스 개편 RFC → 킥오프 스펙 승격 (open-service 브랜치)
+- 배경: PR #35(RFC)가 `42e1784`로 main 병합 완료됨을 확인(열린 PR 0). RFC §11 마지막 "다음 할 일"(RFC 승격)이 최전선 → 착수. 사용자 제약 확인·반영: **어떤 방식이든 기존 로컬 베이스 레포는 무손상 유지** — 개편은 이 레포의 장기 브랜치 `open-service` 위에 추가/이식으로만 쌓고 레포 파기·새 레포 없음(RFC §8·§9-3과 정합). 진행 방식은 "먼저 계획으로 정리" 후 실행(사용자 선택).
+- 완료(문서만, 코드 변경 0 — AGENTS.md §4 규범 문서 먼저):
+  - `open-service` 장기 브랜치 생성(base = 최신 main, main 무접촉).
+  - **`guide/open-service-kickoff-spec.md` 신설** — RFC의 확정 항목(D1~D8·§5 스키마·§6 함수·§7 격리·§8 코드 영향·§10 WBS)을 pathD 킥오프 구조로 착수 계약화. 0 한 줄 정의 / 1 범위 / 2 불변·재협상 / 3 D1~D8 / 4 아키텍처 / 5 스키마 / 6 함수 / 7 격리 / 8 코드 영향(+레포 보존 원칙 명시) / 9 유일 열린 질문(외부 공유, v1 밖) / 10 WBS W1~W9 + 공개 DoD / 11 이력. RFC는 근거로 보존·참조.
+  - **PRD 동기화**: NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증(Google OAuth·이메일 매직링크)+소유자 RLS로 대체 명시(file-based 배포엔 유지) / §7.1 로드맵 = **open-service 독립 트랙 행** 추가(단계 번호 안 잇는 이유 주석) / §7.2 = SSO 조건 ① 충족으로 YAGNI 해제 주석.
+  - **technical-spec §9.2**: WBS **W1~W9 블록** 편입(독립 트랙, W 번호·워크스트림 PR 방침 주석).
+  - **RFC 상태 전환**: 헤더 "RFC 초안(탐색)" → "킥오프 스펙으로 승격됨" + §11 승격 이력 1줄.
+  - **PROGRESS**: 공개 서비스 WBS 체크리스트(W1~W9) 추가 + 이 세션 로그.
+- 검증(문서 변경이라 빌드/테스트 대신 정합성 확인): ① `git diff` 전체 리뷰 — 코드 파일 변경 0건 확인(문서 6종만) ② 신규 킥오프의 크로스레퍼런스 링크(`open-service-kickoff-spec.md`)가 PRD·technical-spec·README·RFC에서 실제 파일을 가리키는지 `grep -l`로 확인 ③ WBS W1~W9가 킥오프 §10·technical-spec §9.2·PROGRESS 체크리스트 세 곳에서 일치하는지 대조 ④ 불변(§1.3 제1원칙 4개)·재협상(NFR-01·§7.2) 경계가 킥오프 §2와 PRD 개정문에서 상호 모순 없는지 확인 ⑤ PR #37 CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green.
+- 리뷰 반영(PR #37, `8b26e46` 2차 커밋): Codex P1(export signed URL 다운로드 핸드오프 — SDK/확장이 URL이 아닌 HTML을 저장하도록 302 리다이렉트/클라이언트 분기 명시, 킥오프 §6·W5) + CodeRabbit minor 3건(PRD "SSO/인증"→"인증"으로 SSO 프로토콜 미도입 구분 / README 상단 설명에 open-service 트랙 병기 / 이 검증 항목 추가). Gemini는 서비스 종료로 리뷰 없음, PR-Agent fully compliant.
+- 다음 할 일: 승격 커밋 → **PR 오픈(이슈 #34 연결)** → 사용자 동의 후 `open-service` 브랜치는 장기 유지(main 병합이 아니라, 이후 W1~W9 워크스트림 PR이 이 브랜치로 병합). 첫 실 구현 워크스트림은 **W1(Supabase 세팅)** 이 의존 선두. 별도 이슈 #36(빌드 가이드)은 개편과 독립하게 대기.
+- 막힌 지점: 없음. (착수를 막는 유일한 열린 질문 §9-8 외부 공유는 v1 범위 밖.)
 
 ### 2026-07-21 — 공개 서비스 개편 RFC 초안 (Vercel + Supabase, docs/open-service-rfc)
 - 배경(사용자 방향): 사내망·무인증 전제로 만든 현 제품을 **공개 URL로 기획자들이 직접 접속해 쓰는 멀티테넌트 서비스**로 여는 개편을 검토 착수. 가능성 타진 단계지만 방향은 "개편 프로젝트"로 확정. PRD §7.2 인증 도입 조건의 실수요 발생에 해당.

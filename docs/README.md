@@ -1,7 +1,8 @@
 # Mockup-as-Spec (mockspec) 문서 인덱스
 
 > 각자가 이미 만든 목업을 등록하면, 그 위에 어노테이션을 달아
-> 단독 실행 가능한 기획서 HTML을 만들어 주는 사내 서비스.
+> 단독 실행 가능한 기획서 HTML을 만들어 주는 서비스.
+> (현 배포 = 사내 서비스. 공개 URL 멀티테넌트 전환은 **open-service 트랙** — 아래 §6·§7.)
 
 **서비스를 실행하는 방법**은 루트 [README.md](../README.md)(빠른 시작),
 **세 가지 연결 방식(경로 A·B·D)의 상세 사용법**은 [user-guide.md](./user-guide.md)(사용 가이드)에 있다.
@@ -37,6 +38,8 @@
 3. [guide/s1-kickoff-spec.md](../guide/s1-kickoff-spec.md) — S1 확정 사양 (재검토 대상 아님)
 4. [guide/s2-kickoff-spec.md](../guide/s2-kickoff-spec.md) — S2 확정 사양: 경로 B(URL 프록시)·SSRF/쿠키 보안·마스킹·CI (재검토 대상 아님)
 5. [guide/pathD-kickoff-spec.md](../guide/pathD-kickoff-spec.md) — S2.5 확정 사양: 경로 D(브라우저 확장 클라이언트 주입)·프로젝트 토큰 인증 (재검토 대상 아님)
+6. [guide/open-service-kickoff-spec.md](../guide/open-service-kickoff-spec.md) — open-service 트랙 착수 계약: 공개 멀티테넌트 개편(Vercel + Supabase·소유자 RLS), 서버 계층 이식·경로 A/D만 (재검토 대상 아님)
+7. [guide/open-service-rfc.md](../guide/open-service-rfc.md) — 위 킥오프의 근거 RFC (논의·대안 비교·리뷰 반영 이력, 킥오프로 승격됨)
 
 ## 한눈에 보는 핵심
 
