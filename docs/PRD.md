@@ -237,7 +237,7 @@ P1 중 **S2 확정 범위는 FR-ONB-05(경로 B)와 FR-EDT-11(마스킹)뿐**이
 
 | ID | 요구사항 |
 |----|----------|
-| NFR-01 | **접근 제어**: 사내망 전제 + 비추측성 프로젝트 ID(nanoid). S1~S2 인증 없음. SSO는 조건부(§7.2) |
+| NFR-01 | **접근 제어**: (현 file-based 배포) 사내망 전제 + 비추측성 프로젝트 ID(nanoid), S1~S2.5 인증 없음. **(공개 서비스 개편, open-service 트랙)** 이 전제는 폐기 — 공개 인터넷 + Supabase 인증(Google OAuth·이메일 매직링크) + 소유자별 RLS 격리로 대체. SSO 조건(§7.2) ① 충족([guide/open-service-kickoff-spec.md](../guide/open-service-kickoff-spec.md) §2) |
 | NFR-02 | **격리**: SDK UI는 Shadow DOM으로 목업 CSS와 완전 격리. 프로젝트별 서브도메인으로 localStorage/쿠키 오염 방지 |
 | NFR-03 | **보안(프록시, S2)**: SSRF deny-by-default allowlist, 메타데이터 IP 차단, 리다이렉트 hop별 재검증 |
 | NFR-04 | **데이터 경계**: SDK가 서버로 보내는 것은 spec 데이터와 사용자가 명시적으로 캡처한 스냅샷뿐 (코드 리뷰 기준) |
@@ -272,10 +272,15 @@ P1 중 **S2 확정 범위는 FR-ONB-05(경로 B)와 FR-EDT-11(마스킹)뿐**이
 | **S2.5** | "로그인 뒤 화면도 된다" | **경로 D(브라우저 확장 클라이언트 주입) + 프로젝트 토큰 인증** — **완료 (2026-07-12, T19~T25·실사용 판정 "가능")** (상세·WBS·DoD는 [guide/pathD-kickoff-spec.md](../guide/pathD-kickoff-spec.md)) |
 | 후속 판단 | S2.5 종료 후 실수요 기준 | **다중 장면 전이 + 흐름도 (2026-07-12 착수 확정 — WBS T26~T28)**, **작성자 라벨·산출물 이력 (2026-07-14 착수 확정 — WBS T29)**, 스크린샷 fallback, 옵션 S(스니펫) |
 | **S3** | 보조 자동화·확장 | LLM 초안 제안, 레포 빌드(경로 C), SSO 검토(조건 충족 시에만) |
+| **open-service 트랙** | "공개 URL로 기획자가 직접 접속해 쓴다" | **공개 멀티테넌트 개편 — Vercel(서버리스) + Supabase(Postgres·Storage·Auth) + 소유자 RLS 격리. 경로 A(zip)·D(확장)만(경로 B 제외), 편집기·뷰어·타입·산출물은 보존하고 서버 계층만 이식** — **착수 (2026-07-22, RFC 승격)** (상세·WBS·DoD는 [guide/open-service-kickoff-spec.md](../guide/open-service-kickoff-spec.md), 엄브렐라 이슈 #34) |
+
+> **트랙 표기 이유**: 공개 서비스 개편은 S1~S3 단계 로드맵과 별개의 **배포 형태 전환**(사내 상주 서버 → 공개 서버리스)이라 단계 번호를 잇지 않고 독립 트랙으로 둔다. S3 항목과 겹치는 SSO/인증은 이 트랙이 실현한다.
 
 ### 7.2 SSO 도입 조건 (그 전까지 YAGNI)
 
 다음 중 하나가 충족될 때만 검토: ① 프로젝트가 수십 개·여러 부서로 확산되어 소유권 정리가 필요, ② 사내에서도 열람 제한이 필요한 목업(미공개 신사업 등) 등장, ③ 수정 이력 추적 요구.
+
+> **조건 ① 충족 (2026-07-22)**: 공개 URL로 다수 기획자가 접속해 각자 프로젝트를 소유·격리하는 실수요가 발생 → open-service 트랙에서 인증·소유권을 도입한다(YAGNI 해제). 채택 = Supabase Auth 단일 인증(Google OAuth + 이메일 매직링크), 조직/SSO 프로토콜(SAML 등)은 여전히 미도입. 상세는 [guide/open-service-kickoff-spec.md](../guide/open-service-kickoff-spec.md) §2·§3(D1).
 
 ### 7.3 S1 Definition of Done
 

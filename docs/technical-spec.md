@@ -485,6 +485,23 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 |---|------|---------|
 | T30 | SDK: SPA 라우트 변경 제안 배너 + 사용 가이드 | `pathname+search+hash` 변경(`pushState`·`replaceState`·`popstate`·`hashchange`)을 패널/모드와 무관하게 감지, 닫힌 패널의 제안 보존, route별 세션 1회, [등록]은 기존 장면 등록 재사용, [무시]는 제안만 닫음. 자동 생성·현재 장면 전환·route 매칭 없음. user-guide·콘솔 가이드 동기화 |
 
+공개 서비스 개편 WBS (open-service 트랙 — 2026-07-22 착수, [guide/open-service-kickoff-spec.md](../guide/open-service-kickoff-spec.md) §10, 엄브렐라 이슈 #34):
+
+> **독립 트랙**: T1~T30(사내 file-based 제품)과 별개의 배포 형태 전환이라 T 번호를 잇지 않고 W 번호를 쓴다. 워크스트림별 PR로 `open-service` 장기 브랜치에 병합. 편집기·뷰어·타입은 보존, 서버 계층만 이식.
+
+| # | 작업 | AC 요약 |
+|---|------|---------|
+| W1 | Supabase 프로젝트·Auth(Google OAuth + 이메일 매직링크)·스키마·RLS 세팅 | 테이블 3종 + 파생컬럼 동기화 트리거 + Storage 오브젝트 정책(단일 버킷 `mockups`) + 버킷 비공개. 타 소유자 접근이 RLS로 차단 |
+| W2 | 스토어 4모듈(project·export·token·paths) → Supabase(Postgres+Storage) 어댑터 교체 | 기존 스토어 인터페이스 유지, 왕복 무손실 |
+| W3 | 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체(기존 base 처리) | manifest 검증 통과, 주입본에 SDK 태그·단일 `<base>` 존재 |
+| W4 | 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 결과 검증 + SPA history fallback(FR-ONB-04) 보존 | 소유자만 열림, 확장자 없는 미존재 경로가 index.html로 폴백, 서빙 시 per-request 변조 없음 |
+| W4b | 예약 경로 루트 라우트: `/__mockspec/sdk.js`·`/__mockspec/api/*`(→ `/api/projects/*` 리라이트) | 주입 SDK가 `<base>` 무관하게 로드·저장(없으면 경로 A 편집 불가 회귀) |
+| W5 | spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용) | 전체 교체 PUT 왕복 무손실, export 산출물 file:// 네트워크 0건 |
+| W6 | 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가) | 토큰 없는 저장 401, 타 프로젝트 토큰 거부, 확장이 공개 백엔드로 저장 성공 |
+| W7 | 콘솔 UI Next 이식 + Auth 게이트 | 미인증 접근 차단, 로그인 후 기능 동등 |
+| W8 | 남용 방어(쿼터·레이트리밋·업로드 검증) — 공개 필수 최소 셋 | 초과 요청·악성 업로드 형식 거부 |
+| W9 | E2E: 가입→업로드→편집→export→뷰어 공개 시나리오 | open-service DoD(킥오프 §10) 통과 — 격리 회귀(타 사용자 RLS 차단)·예약 경로 회귀 포함 |
+
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
 
 ```
