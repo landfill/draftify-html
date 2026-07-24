@@ -159,7 +159,7 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
 
   it("계층 배치: 체인은 왼→오 계층, 분기는 같은 계층에 세로로 쌓인다", () => {
     const p = flowProject();
-    const nodes = buildFlowNodes(p, buildFlowEdges(p));
+    const nodes = buildFlowNodes(p, buildFlowEdges(p), true);
     const byId = new Map(nodes.map((n) => [n.sceneId, n]));
     expect(byId.get("scn_1")?.layer).toBe(0);
     expect(byId.get("scn_2")?.layer).toBe(1);
@@ -167,6 +167,12 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
     expect(byId.get("scn_4")?.layer).toBe(1); // scn_2와 같은 계층, 다음 행
     expect(byId.get("scn_4")?.row).toBe(1);
     expect(byId.get("scn_1")?.label).toBe("SCR-001 scn_1");
+  });
+
+  it("계층 배치(산출물): SCR 없이 표시 제목만 노출한다", () => {
+    const p = flowProject();
+    const nodes = buildFlowNodes(p, buildFlowEdges(p), false);
+    expect(nodes.find((n) => n.sceneId === "scn_1")?.label).toBe("scn_1");
   });
 
   it("순환(A→B→A)이 있어도 멈추지 않고 결정론적으로 배치한다", () => {
@@ -187,7 +193,7 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
   it("뷰어: 전이가 있으면 흐름도 섹션·전이 링크가 렌더되고, 링크 클릭 시 장면이 전환된다", () => {
     document.body.innerHTML = `<div id="app"></div>`;
     const root = document.getElementById("app")!;
-    renderViewer(flowProject(), new Map(), root);
+    renderViewer(flowProject(), new Map(), root, { showScrCodes: true });
 
     // 섹션 2 흐름도 — 노드 4개(장면 전부) + 간선 라벨
     const flow = root.querySelector(".ms-flow");
@@ -227,6 +233,29 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
 
     root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
     expect(root.querySelector(".ms-flow-body svg")).not.toBeNull();
+  });
+
+  it("뷰어(산출물): SCR 미노출 + 페이지 헤더 밴드 + headerTitle 우선 제목", () => {
+    document.body.innerHTML = `<div id="app"></div>`;
+    const root = document.getElementById("app")!;
+    const p = project({
+      scenes: [
+        {
+          ...scene("scn_1", 0),
+          title: "내부 제목",
+          pageSectionLabel: "03 화면상세",
+          headerTitle: "주요 작업 ② 마이페이지",
+        },
+      ],
+      annotations: [annotation()],
+    });
+    renderViewer(p, new Map(), root);
+
+    expect(root.textContent).not.toContain("SCR-001");
+    expect(root.querySelector(".ms-page-band__section")?.textContent).toBe("03 화면상세");
+    expect(root.querySelector(".ms-page-band__title")?.textContent).toBe("주요 작업 ② 마이페이지");
+    expect(root.querySelector(".ms-stage-title")?.textContent).toBe("주요 작업 ② 마이페이지");
+    expect(root.querySelector(".ms-code")).toBeNull();
   });
 
   it("뷰어: ownerLabel이 있으면 헤더 메타에 작성자를 표시하고, 없으면 표시하지 않는다 (T29)", () => {

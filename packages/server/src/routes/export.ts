@@ -65,6 +65,12 @@ button, input, textarea { font: inherit; }
 .ms-main { min-width: 0; overflow: auto; padding: 16px; }
 /* 넓은 캡처는 .ms-main이 양방향 스크롤 — 스테이지는 콘텐츠 너비로 커진다 (JS가 iframe 너비 지정) */
 .ms-stage-header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
+.ms-page-band {
+  margin-bottom: 12px; padding: 12px 14px; background: #fff; border: 1px solid #dfe3e7;
+  border-radius: 8px;
+}
+.ms-page-band__section { font-size: 12px; font-weight: 600; color: #5f6368; margin-bottom: 4px; }
+.ms-page-band__title { font-size: 15px; font-weight: 700; line-height: 1.4; color: #202124; }
 .ms-stage-title { margin: 0; font-size: 16px; line-height: 1.4; }
 .ms-note { margin: 6px 0 0; color: #5f6368; font-size: 13px; }
 .ms-stage-wrap {
@@ -190,6 +196,11 @@ function asciiHeaderFilename(filename: string): string {
   return ascii === ".html" || !ascii.trim() ? "mockspec-export.html" : ascii;
 }
 
+/**
+ * 산출물에 삽입할 뷰어 런타임. packages/viewer/dist/main.js **단일 파일만** 인라인한다.
+ * main.js가 @mockspec/shared 등 외부 import를 하면 file:// 산출물에서 모듈 해석이 실패한다(제1원칙 4).
+ * 장면 표시 헬퍼는 shared/sceneDisplay.ts와 main.ts에 의도적 복제 — 동등성은 viewer parity 테스트로 검증.
+ */
 export async function readViewerScript(): Promise<string> {
   if (process.env.MOCKSPEC_VIEWER_SCRIPT) return process.env.MOCKSPEC_VIEWER_SCRIPT;
   const viewerDistUrl = new URL("../../../viewer/dist/main.js", import.meta.url);

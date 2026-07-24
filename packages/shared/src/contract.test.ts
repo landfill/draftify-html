@@ -152,4 +152,34 @@ describe("shared contract", () => {
     const legacy: SpecProject = { ...project, ownerLabel: undefined };
     expect(JSON.parse(JSON.stringify(legacy))).not.toHaveProperty("ownerLabel");
   });
+
+  it("페이지 헤더 밴드(#38) — pageSectionLabel·headerTitle 왕복 무손실, 없으면 하위 호환", () => {
+    const now = new Date().toISOString();
+    const project: SpecProject = {
+      version: 1,
+      id: "prj_header0001",
+      name: "헤더 밴드",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "upload", originalFilename: "mockup.zip", uploadedAt: now },
+      sceneCodeSeq: 2,
+      scenes: [
+        {
+          id: "scn_hdr000001",
+          code: "SCR-001",
+          title: "로그인",
+          route: "/login",
+          order: 0,
+          annoNumberSeq: 1,
+          pageSectionLabel: "03 화면상세",
+          headerTitle: "주요 작업 ②",
+        },
+      ],
+      annotations: [],
+    };
+    expect(JSON.parse(JSON.stringify(project))).toEqual(project);
+    const legacyScene = { ...project.scenes[0]!, pageSectionLabel: undefined, headerTitle: undefined };
+    expect(JSON.parse(JSON.stringify(legacyScene))).not.toHaveProperty("pageSectionLabel");
+    expect(JSON.parse(JSON.stringify(legacyScene))).not.toHaveProperty("headerTitle");
+  });
 });

@@ -88,6 +88,16 @@ export interface Scene {
   route: string;
   /** "모달 열림 상태" 등 */
   stateNote?: string;
+  /**
+   * [이슈 #38] 페이지 헤더 밴드 — 문서 목차상 섹션 라벨 (예: "03 화면상세").
+   * 사람 입력, 추론·기본값 없음. output-standard §2·§4.
+   */
+  pageSectionLabel?: string;
+  /**
+   * [이슈 #38] 페이지 헤더 밴드 — 기획서 페이지 타이틀. `title`(화면 제목)과 별개.
+   * 산출물 제목 슬롯은 headerTitle ?? title (export SCR 미노출, s1-kickoff §11 18차).
+   */
+  headerTitle?: string;
   /** 패널·뷰어 정렬 기준 */
   order: number;
   /** 장면 내 다음 어노테이션 번호. 현재 남은 최대 번호+1 — 끝 번호 삭제 시 감소 가능 */
