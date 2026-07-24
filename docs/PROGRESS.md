@@ -32,7 +32,7 @@
 - [x] T38-2 `shared` — `Scene.pageSectionLabel?`·`Scene.headerTitle?` + `sceneDisplay.ts` 헬퍼
 - [x] T38-3 뷰어 — 편집(`showScrCodes`) vs 산출물 분기, 페이지 헤더 밴드 렌더, export CSS
 - [x] T38-4 SDK — 페이지 헤더 편집 UI + 신규 장면 섹션 라벨 프리필 + `updateSceneHeaderFields`
-- [x] T38-5 검증 — vitest **229 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
+- [x] T38-5 검증 — vitest **260 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
 
 ## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
 

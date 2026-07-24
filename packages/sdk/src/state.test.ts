@@ -77,6 +77,24 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     expect(created.scene.pageSectionLabel).toBe("03 화면상세");
   });
 
+  it("중간 장면 삭제 후 신규 장면 — order 중복 없음 + 직전 pageSectionLabel 프리필 (#39)", () => {
+    let doc = docFromProject(project);
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "01 개요" });
+    const second = createScene(doc, { title: "B", route: "/b" });
+    doc = second.doc;
+    const third = createScene(doc, { title: "C", route: "/c" });
+    doc = updateSceneHeaderFields(third.doc, third.scene.id, { pageSectionLabel: "03 화면상세" });
+
+    doc = deleteScene(doc, second.scene.id);
+    expect(doc.scenes.map((s) => s.order)).toEqual([0, 2]);
+
+    const added = createScene(doc, { title: "D", route: "/d" });
+    expect(added.scene.order).toBe(3);
+    expect(added.scene.pageSectionLabel).toBe("03 화면상세");
+    const orders = added.doc.scenes.map((s) => s.order);
+    expect(new Set(orders).size).toBe(orders.length);
+  });
+
   it("페이지 헤더 필드는 updateSceneHeaderFields로 갱신·삭제한다", () => {
     let doc = docFromProject(project);
     doc = updateSceneHeaderFields(doc, "scn_one", {

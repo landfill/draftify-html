@@ -108,7 +108,7 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
   const flow = viewer.locator(".ms-flow");
   await expect(flow).toBeVisible();
   await expect(flow.locator(".ms-flow-node")).toHaveCount(2);
-  await expect(flow.locator(".ms-flow-node").first()).toContainText("로그인");
+  await expect(flow.locator(".ms-flow-node text").first()).toHaveText("로그인");
   await expect(flow.locator(".ms-flow-label")).toHaveText("성공 시");
 
   // 전이 링크: export는 SCR 없이 대상 장면 제목만
@@ -139,7 +139,7 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
 
   // 링크 클릭 → 장면 2로 전환(실행 대신 이동) + 흐름도 하이라이트 동기화
   await link.click();
-  await expect(viewer.locator(".ms-stage-title")).toContainText("완료");
+  await expect(viewer.locator(".ms-stage-title")).toHaveText("완료");
   await expect(viewer.locator(".ms-flow-node.is-active")).toHaveAttribute("data-scene-id", "scn_done000001");
   await expect(viewer.locator(".ms-transition")).toHaveCount(0); // 장면 2엔 전이 없음
 
@@ -150,7 +150,7 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
 
   // 흐름도 노드 클릭 → 장면 1로 복귀
   await viewer.locator('.ms-flow-node[data-scene-id="scn_login00001"]').click();
-  await expect(viewer.locator(".ms-stage-title")).toContainText("로그인");
+  await expect(viewer.locator(".ms-stage-title")).toHaveText("로그인");
 
   // 네트워크 요청 0건: 문서 자체(file://) 1건뿐
   const external = requests.filter((u) => !u.startsWith("file://"));

@@ -196,6 +196,11 @@ function asciiHeaderFilename(filename: string): string {
   return ascii === ".html" || !ascii.trim() ? "mockspec-export.html" : ascii;
 }
 
+/**
+ * 산출물에 삽입할 뷰어 런타임. packages/viewer/dist/main.js **단일 파일만** 인라인한다.
+ * main.js가 @mockspec/shared 등 외부 import를 하면 file:// 산출물에서 모듈 해석이 실패한다(제1원칙 4).
+ * 장면 표시 헬퍼는 shared/sceneDisplay.ts와 main.ts에 의도적 복제 — 동등성은 viewer parity 테스트로 검증.
+ */
 export async function readViewerScript(): Promise<string> {
   if (process.env.MOCKSPEC_VIEWER_SCRIPT) return process.env.MOCKSPEC_VIEWER_SCRIPT;
   const viewerDistUrl = new URL("../../../viewer/dist/main.js", import.meta.url);

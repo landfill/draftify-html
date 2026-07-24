@@ -1,21 +1,25 @@
 import type { Anchor, Annotation, Scene, SpecProject } from "@mockspec/shared";
 
-/** 산출물 HTML은 main.js 단일 모듈로 인라인되므로 헬퍼는 이 파일에 둔다 (shared와 동기 유지). */
+/**
+ * 산출물 HTML은 main.js 단일 모듈로 인라인된다(제1원칙 4, readViewerScript).
+ * @mockspec/shared/sceneDisplay 런타임 import는 export 뷰어를 깨뜨리므로 여기에 동일 로직을 복제한다.
+ * shared와 드리프트 방지: sceneDisplay.parity.test.ts 동등성 테스트 + 킥오프 §11 18차.
+ */
 
 function hasDisplayText(value: string | undefined): boolean {
   return Boolean(value?.trim());
 }
 
-function sceneDisplayTitle(scene: Scene): string {
+export function sceneDisplayTitle(scene: Scene): string {
   const raw = scene.headerTitle?.trim() || scene.title?.trim();
   return raw || "(제목 없음)";
 }
 
-function scenePageBandActive(scene: Scene): boolean {
+export function scenePageBandActive(scene: Scene): boolean {
   return hasDisplayText(scene.pageSectionLabel) || hasDisplayText(scene.headerTitle);
 }
 
-function sceneStageHeaderTitle(scene: Scene, showScrCodes: boolean): string {
+export function sceneStageHeaderTitle(scene: Scene, showScrCodes: boolean): string {
   if (showScrCodes) {
     const title = scene.title?.trim() || "(제목 없음)";
     return `${scene.code} ${title}`;
@@ -23,7 +27,7 @@ function sceneStageHeaderTitle(scene: Scene, showScrCodes: boolean): string {
   return sceneDisplayTitle(scene);
 }
 
-function sceneNavLabel(scene: Scene, showScrCodes: boolean): string {
+export function sceneNavLabel(scene: Scene, showScrCodes: boolean): string {
   if (showScrCodes) {
     return `${scene.code} ${scene.title?.trim() || "(제목 없음)"}`;
   }

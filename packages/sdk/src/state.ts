@@ -56,7 +56,7 @@ export function createScene(
   doc: EditorDoc,
   fields: { title: string; route: string; stateNote?: string; pageSectionLabel?: string },
 ): { doc: EditorDoc; scene: Scene } {
-  const order = doc.scenes.length;
+  const order = doc.scenes.reduce((max, s) => Math.max(max, s.order), -1) + 1;
   const scene: Scene = {
     id: sceneId(),
     code: sceneCode(doc.sceneCodeSeq),
