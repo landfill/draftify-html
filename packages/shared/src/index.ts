@@ -26,3 +26,11 @@ export {
 } from "./constants.js";
 
 export { encodeConnection, decodeConnection, type ConnectionInfo } from "./connection.js";
+
+export {
+  sceneDisplayTitle,
+  scenePageBandActive,
+  sceneStageHeaderTitle,
+  sceneNavLabel,
+  previousSceneSectionLabel,
+} from "./sceneDisplay.js";

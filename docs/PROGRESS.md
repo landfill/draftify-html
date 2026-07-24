@@ -23,6 +23,17 @@
 **헤더 DOCS → 샘플 산출물 보기(/sample) 대체(이슈 #30 종결) — PR #33로 main 병합 완료 (2026-07-19, squash `025c2ea`, CI 4체크 green·리뷰 반영 1건(Promise 캐시)·기각 1건(Codex 날짜, UTC 선례)·브랜치 삭제).**
 **공개 서비스 개편 RFC(Vercel+Supabase) — PR #35로 main 병합 완료 (2026-07-21, `42e1784`). 엄브렐라 이슈 #34.**
 **공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·§7.1 open-service 트랙·§7.2 SSO 조건 ①)·technical-spec §9.2(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
+**페이지 헤더 밴드(이슈 #38) — PR #39로 main 병합 완료 (2026-07-24, merge `338677b`, CI green·리뷰 3라운드 반영·브랜치 삭제). Closes #38.**
+
+## 페이지 헤더 밴드 WBS 체크리스트 (이슈 #38, 2026-07-24 착수 — **완료·main 병합**)
+
+> 코어(`main`) 트랙. open-service(#34)와 분리. 브랜드 로고·`SpecProject` 변경 없음.
+
+- [x] T38-1 스펙 반영 — `guide/s1-kickoff-spec.md` §11 18차 + `docs/output-standard.md` §2·§4 (페이지 헤더 밴드·산출물 SCR 전역 숨김)
+- [x] T38-2 `shared` — `Scene.pageSectionLabel?`·`Scene.headerTitle?` + `sceneDisplay.ts` 헬퍼
+- [x] T38-3 뷰어 — 편집(`showScrCodes`) vs 산출물 분기, 페이지 헤더 밴드 렌더, export CSS
+- [x] T38-4 SDK — 페이지 헤더 편집 UI + 신규 장면 섹션 라벨 프리필 + `updateSceneHeaderFields`
+- [x] T38-5 검증 — vitest **262 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
 
 ## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
 
@@ -172,6 +183,32 @@
 - 워크트리 실제 생성 완료: `git worktree list`에 `Draftify-Html [main]` + `Draftify-open-service [open-service]` 확인.
 - 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 환류).
 - 막힌 지점: 없음.
+
+### 2026-07-24 — PR #39 main 병합 (이슈 #38 종결)
+- 완료: 사용자 동의 후 PR #39 merge (`338677b`) — 페이지 헤더 밴드 + 산출물 SCR 전역 숨김. 3차 커밋 포함: Codex P2 헤더 필드 입력 중 공백 보존(onBlur trim). `feat/page-header-band` 브랜치 삭제.
+- 검증: 병합 전 CI green(verify×2·pr_agent_job·CodeRabbit). vitest **262 passed**, E2E **4본 통과**.
+- 다음 할 일: open-service W1 또는 다음 이슈 착수.
+- 막힌 지점: 없음.
+
+### 2026-07-24 — PR #39 리뷰 반영 (feat/page-header-band)
+- 완료: Codex P2 — `createScene` order를 `max(order)+1`로 변경(결번 [0,2] 후 중복 order 방지), 중간 삭제→신규 장면 프리필 유닛 테스트. CodeRabbit E2E 5곳 `toHaveText` 정확 일치(흐름도 노드는 visible `text` 자식). viewer↔shared 동등성 테스트(`sceneDisplay.parity.test.ts`) + `readViewerScript`/킥오프 §11 18차에 단일 모듈 인라인 제약 문서화.
+- 검증: typecheck·vitest **260 passed**, E2E **4본 통과**.
+- 다음 할 일: PR #39 CI green 확인 → 사용자 동의 후 main 병합.
+- 막힌 지점: 없음.
+
+### 2026-07-24 — 이슈 #38 페이지 헤더 밴드 (feat/page-header-band)
+- 배경: 이슈 #38 최종 확정(사용자) — 로고 제외, 장면 레벨 `pageSectionLabel`·`headerTitle` 2종. 산출물 표시 = 방향 2(SCR 전역 숨김, 제목 슬롯 = `headerTitle ?? title`). 편집 화면은 SCR 스테이지 헤더 유지 + 밴드 위에 얹음.
+- 완료(AGENTS.md §4 순서):
+  - `guide/s1-kickoff-spec.md` §11 18차 + Scene 모델 필드 2종
+  - `docs/output-standard.md` §2(페이지 헤더 밴드 하위 + SCR 숨김)·§4 동기화
+  - `packages/shared` — 타입·`sceneDisplay.ts` 헬퍼·contract/sceneDisplay 테스트
+  - `packages/viewer` — `ViewerOptions.showScrCodes`(기본 false=산출물), 밴드 렌더, 사이드바·흐름도·전이 링크 SCR 분기
+  - `packages/server/routes/export.ts` — 밴드 CSS
+  - `packages/sdk` — 페이지 헤더 편집 UI, `updateSceneHeaderFields`, 신규 장면 `pageSectionLabel` 직전 장면 프리필
+  - E2E(s1·s2·transitions) — export 뷰어 SCR 기대값 제거
+- 검증: `npm run typecheck`·`npm test` **229 passed**, `npm run test:e2e` **4본 통과**. 뷰어는 산출물 인라인 특성상 `sceneDisplay` 헬퍼를 `main.ts`에 로컬 복제(shared와 동기).
+- 다음 할 일: PR 오픈(Closes #38) → 사용자 동의 후 main 병합
+- 막힌 지점: 없음
 
 ### 2026-07-22 — 공개 서비스 개편 RFC → 킥오프 스펙 승격 (open-service 브랜치)
 - 배경: PR #35(RFC)가 `42e1784`로 main 병합 완료됨을 확인(열린 PR 0). RFC §11 마지막 "다음 할 일"(RFC 승격)이 최전선 → 착수. 사용자 제약 확인·반영: **어떤 방식이든 기존 로컬 베이스 레포는 무손상 유지** — 개편은 이 레포의 장기 브랜치 `open-service` 위에 추가/이식으로만 쌓고 레포 파기·새 레포 없음(RFC §8·§9-3과 정합). 진행 방식은 "먼저 계획으로 정리" 후 실행(사용자 선택).

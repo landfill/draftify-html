@@ -105,11 +105,11 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
 
   await viewer.goto(`file://${exportPath}`);
 
-  // 장면 2개 — 사이드바에 SCR-001·SCR-002
+  // 장면 2개 — 산출물(export)은 SCR 미노출, 제목 슬롯만 표시 (#38 방향 2)
   const sceneButtons = viewer.locator(".ms-scene-button");
   await expect(sceneButtons).toHaveCount(2);
-  await expect(sceneButtons.nth(0)).toContainText("SCR-001");
-  await expect(sceneButtons.nth(1)).toContainText("SCR-002");
+  await expect(sceneButtons.nth(0)).toContainText("(제목 없음)");
+  await expect(sceneButtons.nth(0)).not.toContainText("SCR-");
 
   // 장면별 검증 헬퍼: 마커 2개가 "올바른 요소 위"(대상 좌상단) + 설명 텍스트 일치
   const verifyScene = async (specs: typeof SCENE1 | typeof SCENE2) => {
@@ -148,15 +148,15 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
   };
 
   // 장면 1 검증 → 장면 2로 전환 → 검증 → 다시 장면 1로 (전환 왕복)
-  await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-001");
+  await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
   await verifyScene(SCENE1);
 
   await sceneButtons.nth(1).click();
-  await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-002");
+  await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
   await verifyScene(SCENE2);
 
   await sceneButtons.nth(0).click();
-  await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-001");
+  await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
 
   // 마커 ↔ 목록 상호 하이라이트
   await viewer.locator(".ms-marker", { hasText: "1" }).click();

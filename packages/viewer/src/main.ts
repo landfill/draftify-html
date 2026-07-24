@@ -1,5 +1,39 @@
 import type { Anchor, Annotation, Scene, SpecProject } from "@mockspec/shared";
 
+/**
+ * 산출물 HTML은 main.js 단일 모듈로 인라인된다(제1원칙 4, readViewerScript).
+ * @mockspec/shared/sceneDisplay 런타임 import는 export 뷰어를 깨뜨리므로 여기에 동일 로직을 복제한다.
+ * shared와 드리프트 방지: sceneDisplay.parity.test.ts 동등성 테스트 + 킥오프 §11 18차.
+ */
+
+function hasDisplayText(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+export function sceneDisplayTitle(scene: Scene): string {
+  const raw = scene.headerTitle?.trim() || scene.title?.trim();
+  return raw || "(제목 없음)";
+}
+
+export function scenePageBandActive(scene: Scene): boolean {
+  return hasDisplayText(scene.pageSectionLabel) || hasDisplayText(scene.headerTitle);
+}
+
+export function sceneStageHeaderTitle(scene: Scene, showScrCodes: boolean): string {
+  if (showScrCodes) {
+    const title = scene.title?.trim() || "(제목 없음)";
+    return `${scene.code} ${title}`;
+  }
+  return sceneDisplayTitle(scene);
+}
+
+export function sceneNavLabel(scene: Scene, showScrCodes: boolean): string {
+  if (showScrCodes) {
+    return `${scene.code} ${scene.title?.trim() || "(제목 없음)"}`;
+  }
+  return sceneDisplayTitle(scene);
+}
+
 type ResolveMode = "selector" | "refind" | "selector-mismatch" | "rect-fallback";
 
 interface ResolveResult {
@@ -16,6 +50,13 @@ interface ViewerState {
   /** 프로세스 흐름도 섹션 접힘 (output-standard §2 섹션 2) */
   flowCollapsed: boolean;
 }
+
+/** 편집(true) vs 산출물(false). 산출물은 SCR 전역 미노출(이슈 #38 방향 2). */
+export interface ViewerOptions {
+  showScrCodes?: boolean;
+}
+
+const DEFAULT_VIEWER_OPTIONS: ViewerOptions = { showScrCodes: false };
 
 /** 장면의 어노테이션을 번호 순으로 정렬해 반환 — 뷰어/편집기 공통 표시 순서. */
 export function annotationsOf(scene: Scene, all: Annotation[]): Annotation[] {
@@ -287,7 +328,11 @@ export function buildFlowEdges(project: SpecProject): FlowEdge[] {
  * 계층 배치: DFS(장면 order 순 진입)로 순환을 이루는 back 간선을 제외한 뒤,
  * 위상 순서로 longest-path 계층을 매긴다. 순환은 배치에서만 무시되고 간선은 그려진다.
  */
-export function buildFlowNodes(project: SpecProject, edges: FlowEdge[]): FlowNode[] {
+export function buildFlowNodes(
+  project: SpecProject,
+  edges: FlowEdge[],
+  showScrCodes = false,
+): FlowNode[] {
   const scenes = orderedScenes(project);
   const out = new Map<string, string[]>();
   for (const s of scenes) out.set(s.id, []);
@@ -326,7 +371,7 @@ export function buildFlowNodes(project: SpecProject, edges: FlowEdge[]): FlowNod
     const l = layer.get(s.id) ?? 0;
     const row = rowCount.get(l) ?? 0;
     rowCount.set(l, row + 1);
-    return { sceneId: s.id, label: `${s.code} ${s.title || "(제목 없음)"}`, layer: l, row };
+    return { sceneId: s.id, label: sceneNavLabel(s, showScrCodes), layer: l, row };
   });
 }
 
@@ -356,10 +401,11 @@ function renderFlowSvg(
   project: SpecProject,
   selectedSceneId: string | null,
   onSelectScene: (sceneId: string) => void,
+  showScrCodes: boolean,
 ): SVGSVGElement | null {
   const edges = buildFlowEdges(project);
   if (edges.length === 0) return null;
-  const nodes = buildFlowNodes(project, edges);
+  const nodes = buildFlowNodes(project, edges, showScrCodes);
 
   const nodeW = Math.min(
     300,
@@ -469,8 +515,9 @@ function renderFlowSection(
   state: ViewerState,
   onSelectScene: (sceneId: string) => void,
   onToggle: () => void,
+  showScrCodes: boolean,
 ): HTMLElement | null {
-  const svg = renderFlowSvg(project, state.selectedSceneId, onSelectScene);
+  const svg = renderFlowSvg(project, state.selectedSceneId, onSelectScene, showScrCodes);
   if (!svg) return null;
 
   const section = child("section", "ms-flow");
@@ -646,6 +693,7 @@ function renderAnnotationPanel(
   state: ViewerState,
   root: HTMLElement,
   onSelectScene: (sceneId: string) => void,
+  showScrCodes: boolean,
 ): HTMLElement {
   const panel = child("aside", "ms-panel");
   const title = child("div", "ms-section-title");
@@ -694,7 +742,8 @@ function renderAnnotationPanel(
       const link = child("button", "ms-transition");
       link.type = "button";
       const condition = transition.condition?.trim();
-      setText(link, `${condition ? `${condition} ` : ""}→ ${target.code} ${target.title || "(제목 없음)"} 보기`);
+      const targetLabel = sceneNavLabel(target, showScrCodes);
+      setText(link, `${condition ? `${condition} ` : ""}→ ${targetLabel} 보기`);
       link.addEventListener("click", (event) => {
         event.stopPropagation(); // 카드 클릭(하이라이트)과 분리
         onSelectScene(target.id);
@@ -714,6 +763,7 @@ function renderSidebar(
   collapsed: boolean,
   onSelect: (sceneId: string) => void,
   onToggle: () => void,
+  showScrCodes: boolean,
 ): HTMLElement {
   if (collapsed) {
     // 접힘: 얇은 레일 + 펼치기 버튼만 (중앙을 최대한 넓힌다)
@@ -748,11 +798,35 @@ function renderSidebar(
     setText(code, scene.code);
     const title = child("span", "ms-scene-title");
     setText(title, scene.title || "(제목 없음)");
-    button.append(code, title);
+    if (showScrCodes) {
+      button.append(code, title);
+    } else {
+      setText(title, sceneNavLabel(scene, false));
+      button.append(title);
+    }
     aside.append(button);
   }
 
   return aside;
+}
+
+/** 페이지 헤더 밴드 — pageSectionLabel·headerTitle 중 하나라도 있을 때만 (output-standard §2). */
+function renderPageHeaderBand(scene: Scene): HTMLElement | null {
+  if (!scenePageBandActive(scene)) return null;
+  const band = child("div", "ms-page-band");
+  const section = scene.pageSectionLabel?.trim();
+  if (section) {
+    const label = child("div", "ms-page-band__section");
+    setText(label, section);
+    band.append(label);
+  }
+  const headerTitle = scene.headerTitle?.trim();
+  if (headerTitle) {
+    const title = child("div", "ms-page-band__title");
+    setText(title, headerTitle);
+    band.append(title);
+  }
+  return band;
 }
 
 function renderStage(
@@ -762,14 +836,18 @@ function renderStage(
   state: ViewerState,
   root: HTMLElement,
   markerRefresh: { current: (() => void) | null },
+  showScrCodes: boolean,
 ): HTMLElement {
   markerRefresh.current = null; // 이전 장면의 stale 콜백 제거 (스냅샷 없는 장면 포함)
   const main = child("main", "ms-main");
 
+  const band = renderPageHeaderBand(scene);
+  if (band) main.append(band);
+
   const header = child("div", "ms-stage-header");
   const titleGroup = child("div");
   const title = child("h2", "ms-stage-title");
-  setText(title, `${scene.code} ${scene.title || "(제목 없음)"}`);
+  setText(title, sceneStageHeaderTitle(scene, showScrCodes));
   titleGroup.append(title);
   if (scene.stateNote) {
     const note = child("p", "ms-note");
@@ -792,7 +870,7 @@ function renderStage(
   const wrap = child("div", "ms-stage-wrap");
   const iframe = child("iframe", "ms-frame") as HTMLIFrameElement;
   iframe.setAttribute("sandbox", "allow-same-origin");
-  iframe.title = `${scene.code} ${scene.title || project.name} 스냅샷`;
+  iframe.title = `${sceneDisplayTitle(scene)} 스냅샷`;
   const layer = child("div", "ms-marker-layer");
   iframe.addEventListener("load", () => {
     renderMarkers(scene, project.annotations, iframe, layer, state, root);
@@ -833,7 +911,13 @@ function renderHeader(project: SpecProject, generatedAt: string | null): HTMLEle
   return header;
 }
 
-export function renderViewer(project: SpecProject, snapshots: Map<string, string>, root: HTMLElement): void {
+export function renderViewer(
+  project: SpecProject,
+  snapshots: Map<string, string>,
+  root: HTMLElement,
+  options: ViewerOptions = DEFAULT_VIEWER_OPTIONS,
+): void {
+  const showScrCodes = options.showScrCodes ?? false;
   const scenes = orderedScenes(project);
   const state: ViewerState = {
     activeAnnotationId: null,
@@ -876,7 +960,7 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
     const flow = renderFlowSection(project, state, onSelectScene, () => {
       state.flowCollapsed = !state.flowCollapsed;
       render();
-    });
+    }, showScrCodes);
     if (flow) shell.append(flow);
 
     // 접힘 시 왼쪽 컬럼을 얇은 레일로 → 중앙 확대 (가로 스크롤 감소). 클래스로 처리해
@@ -892,9 +976,10 @@ export function renderViewer(project: SpecProject, snapshots: Map<string, string
           state.sidebarCollapsed = !state.sidebarCollapsed;
           render();
         },
+        showScrCodes,
       ),
-      renderStage(selectedScene, project, snapshots, state, root, markerRefresh),
-      renderAnnotationPanel(selectedScene, project.annotations, scenes, state, root, onSelectScene),
+      renderStage(selectedScene, project, snapshots, state, root, markerRefresh, showScrCodes),
+      renderAnnotationPanel(selectedScene, project.annotations, scenes, state, root, onSelectScene, showScrCodes),
     );
     shell.append(layout);
     root.append(shell);

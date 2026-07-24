@@ -153,6 +153,11 @@ export const STYLES = /* css */ `
 
 /* 캡처 상태 (장면 항목 하단) */
 .scene__frz { margin: 3px 0 0 2px; font-size: 11px; }
+.field { display: block; margin-top: 8px; }
+.field__label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; }
+.field__input {
+  width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 5px 7px; font-size: 12px;
+}
 .frz { display: inline-flex; align-items: center; gap: 5px; }
 .frz--busy { color: #7a7a7a; }
 .frz--ok { color: #2b8a3e; }
