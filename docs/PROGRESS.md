@@ -101,6 +101,12 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-24 — PR #39 리뷰 반영 (feat/page-header-band)
+- 완료: Codex P2 — `createScene` order를 `max(order)+1`로 변경(결번 [0,2] 후 중복 order 방지), 중간 삭제→신규 장면 프리필 유닛 테스트. CodeRabbit E2E 5곳 `toHaveText` 정확 일치(흐름도 노드는 visible `text` 자식). viewer↔shared 동등성 테스트(`sceneDisplay.parity.test.ts`) + `readViewerScript`/킥오프 §11 18차에 단일 모듈 인라인 제약 문서화.
+- 검증: typecheck·vitest **260 passed**, E2E **4본 통과**.
+- 다음 할 일: PR #39 CI green 확인 → 사용자 동의 후 main 병합.
+- 막힌 지점: 없음.
+
 ### 2026-07-24 — 이슈 #38 페이지 헤더 밴드 (feat/page-header-band)
 - 배경: 이슈 #38 최종 확정(사용자) — 로고 제외, 장면 레벨 `pageSectionLabel`·`headerTitle` 2종. 산출물 표시 = 방향 2(SCR 전역 숨김, 제목 슬롯 = `headerTitle ?? title`). 편집 화면은 SCR 스테이지 헤더 유지 + 밴드 위에 얹음.
 - 완료(AGENTS.md §4 순서):
