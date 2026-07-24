@@ -24,4 +24,9 @@ export const assetObjectPath = (projectId: string, key: string): string =>
   `projects/${projectId}/assets/${key}`;
 
 export const mockupPrefix = (projectId: string): string => `projects/${projectId}/mockup`;
+
+/** 목업 정적 파일 Storage 경로. manifest 엔트리(상대 경로)와 1:1 대응. */
+export const mockupObjectPath = (projectId: string, relativePath: string): string =>
+  `${mockupPrefix(projectId)}/${relativePath}`;
+
 export const projectPrefix = (projectId: string): string => `projects/${projectId}`;
