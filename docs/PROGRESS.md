@@ -9,6 +9,15 @@
 
 ## 현재 단계
 
+**▶ 다음 세션 시작점 (2026-07-25 핸드오프 — 임의 에이전트) — 활성 트랙: open-service, 이 워크트리에서 W8부터.**
+- 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
+- 진행: **W1~W7 완료**(아래 WBS `[x]`, 코드리뷰로 소유권·traversal·토큰·dual-auth 견고 확인). 다음 = **W8 남용 방어** → W9 E2E. `main` 환류는 W9 완료 후 **사용자 동의 필수**(§6), 대규모 diff·봇 리뷰 다수 예상.
+- **W8 착수 참고 (2026-07-25 코드리뷰 회수 — 대화에만 있던 조언을 여기 고정):**
+  - ① 레이트리밋은 서버리스라 **in-memory 카운터 금지** → Supabase 카운터/edge 방식.
+  - ② 업로드 검증 = **zip bomb 방어**: 해제 후 총 크기·파일 수·압축비 게이트(경로만 보는 `isSafeMockupPath`와 별개).
+  - ③ 확장 manifest `host_permissions`의 `*.vercel.app` 와일드카드 → **프로덕션 확정 도메인으로 좁히고 localhost 정리**(다른 vercel 앱에 토큰 노출 표면).
+  - ④ (선택) spec PUT 내부 항목 스키마 엄격 검증(zod 등)은 강화 항목.
+
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
 **다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12).**
@@ -101,6 +110,11 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — 핸드오프 정리 (다음 세션은 임의 에이전트)
+- 완료: W1~W7 코드리뷰 검증(소유권 RLS·path traversal 방어·토큰 timingSafeEqual·dual-auth 저장 route 일관 — 인증 우회 경로 없음 확인). 이 세션 조언(W8 세부·host_permissions 좁히기)을 "현재 단계" 배너에 회수 고정.
+- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 환류 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` §1 참조.
+- 막힌 지점: 없음.
 
 ### 2026-07-25 — W6 경로 D 토큰 인증 + 확장 host_permissions 전환
 - 완료:
