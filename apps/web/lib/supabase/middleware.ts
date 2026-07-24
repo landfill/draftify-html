@@ -1,12 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProtectedApiPath, isPublicPath } from "../auth/public-path.js";
 import type { Database } from "./database.types.js";
-
-const PUBLIC_PREFIXES = ["/login", "/auth/", "/guide", "/faq", "/sample"];
-
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
-}
 
 /** 미들웨어용 Supabase 클라이언트 — 세션 갱신 + Auth 게이트(W7). */
 export async function updateSession(request: NextRequest) {
@@ -37,7 +32,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname.startsWith("/api/")) {
+  if (!user && isProtectedApiPath(pathname)) {
     return NextResponse.json(
       { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
       { status: 401 },
