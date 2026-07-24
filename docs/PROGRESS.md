@@ -44,7 +44,7 @@
 - [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 콘솔 UI에서 zip→업로드→complete 왕복 — 수동 스모크 가능, 자동 E2E는 W9)
 - [x] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존 — **완료.** `app/m/[id]/[[...path]]/route.ts` + `lib/mockup/serve.ts`(readSpec RLS 소유권·Storage 스트림·확장자 없는 미존재 경로→index.html). per-request 주입 없음(D6).
 - [x] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*` — **완료.** `GET /__mockspec/sdk`(rewrite→`sdk.js`)·`next.config` rewrite `/__mockspec/api/:path*`→`/api/:path*`. 미들웨어 `isProtectedApiPath`로 브리지도 인증 필수.
-- [ ] W5 spec GET/PUT·asset·export 함수 이식
+- [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 §6 ⓐ). vitest **292 passed**.
 - [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions)
 - [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
 - [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
@@ -101,6 +101,14 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — origin/main 병합(#38) + W5 spec·asset·export API
+- 완료:
+  - **병합**: `origin/main` → `open-service` — #38 `pageSectionLabel`·`headerTitle`(shared Scene, JSONB 자동 포함, 마이그레이션 0). merge 커밋 `4f07559`.
+  - **W5**: `GET/PUT /api/projects/{id}` — RLS·`validatePutSpec`·`replaceSpec` orphan GC. `POST /api/projects/{id}/assets`(snapshot 50MB)·`GET .../assets/{key}`. `POST .../export` — `buildExportHtml` 재사용, ≤4MB 인라인+`Content-Disposition`, 초과 시 Storage 업로드→**signed URL 302**(SDK redirect 따라 HTML 저장).
+- 검증: 루트 `npm run build`·`npm test` **292 passed**, apps/web `tsc`·`next build` green.
+- 다음 할 일: **W6** 경로 D 토큰 인증. 수동: 로그인→업로드→`/m/{id}/` 편집·저장·export 스모크.
+- 막힌 지점: 없음.
 
 ### 2026-07-25 — 미들웨어 공개 경로 버그 수정 + W4/W4b 목업·예약 경로 서빙
 - 완료:
