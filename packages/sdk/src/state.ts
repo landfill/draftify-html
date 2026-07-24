@@ -1,5 +1,6 @@
 import { customAlphabet } from "nanoid";
-import type { SpecProject, Scene, Annotation, Anchor } from "@mockspec/shared";
+import type { Scene, Annotation, Anchor, SpecProject } from "@mockspec/shared";
+import { previousSceneSectionLabel } from "@mockspec/shared";
 
 /**
  * 편집 상태 (인메모리). 서버 저장 시 SpecProject에 다시 합쳐 전체 문서 PUT으로 보낸다.
@@ -53,17 +54,20 @@ export function sceneCode(seq: number): string {
 /** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 캡처는 App이 등록 직후 트리거. */
 export function createScene(
   doc: EditorDoc,
-  fields: { title: string; route: string; stateNote?: string },
+  fields: { title: string; route: string; stateNote?: string; pageSectionLabel?: string },
 ): { doc: EditorDoc; scene: Scene } {
+  const order = doc.scenes.length;
   const scene: Scene = {
     id: sceneId(),
     code: sceneCode(doc.sceneCodeSeq),
     title: fields.title,
     route: fields.route,
     stateNote: fields.stateNote,
-    order: doc.scenes.length,
+    order,
     annoNumberSeq: 1,
   };
+  const sectionLabel = fields.pageSectionLabel ?? previousSceneSectionLabel(doc.scenes, order);
+  if (sectionLabel) scene.pageSectionLabel = sectionLabel;
   return {
     doc: { ...doc, sceneCodeSeq: doc.sceneCodeSeq + 1, scenes: [...doc.scenes, scene] },
     scene,
@@ -141,6 +145,31 @@ export function updateSceneTitle(doc: EditorDoc, sceneId: string, title: string)
   return {
     ...doc,
     scenes: doc.scenes.map((s) => (s.id === sceneId ? { ...s, title } : s)),
+  };
+}
+
+export function updateSceneHeaderFields(
+  doc: EditorDoc,
+  sceneId: string,
+  fields: { pageSectionLabel?: string; headerTitle?: string },
+): EditorDoc {
+  return {
+    ...doc,
+    scenes: doc.scenes.map((s) => {
+      if (s.id !== sceneId) return s;
+      const next = { ...s };
+      if (fields.pageSectionLabel !== undefined) {
+        const trimmed = fields.pageSectionLabel.trim();
+        if (trimmed) next.pageSectionLabel = trimmed;
+        else delete next.pageSectionLabel;
+      }
+      if (fields.headerTitle !== undefined) {
+        const trimmed = fields.headerTitle.trim();
+        if (trimmed) next.headerTitle = trimmed;
+        else delete next.headerTitle;
+      }
+      return next;
+    }),
   };
 }
 

@@ -5,6 +5,7 @@ import {
   emptyDoc, createScene, deleteScene, addAnnotation, updateAnnotation,
   deleteAnnotation, deleteEmptyAnnotations, isEmptyAnnotation,
   annotationsOfScene, updateAnchorSelector, setSceneSnapshot, updateSceneTitle,
+  updateSceneHeaderFields,
   docFromProject, applyDocToProject, projectContentSignature,
   type EditorDoc,
 } from "../state.js";
@@ -777,6 +778,39 @@ export function App({ projectId }: { projectId: string }) {
             ))}
           </ul>
         </div>
+
+        {scene && (
+          <div class="section">
+            <h4>페이지 헤더</h4>
+            <p class="muted">기획서 상단 밴드(섹션 라벨·페이지 타이틀). 비우면 산출물에 표시하지 않습니다.</p>
+            <label class="field">
+              <span class="field__label">섹션 라벨</span>
+              <input
+                class="field__input"
+                placeholder="예: 03 화면상세"
+                value={scene.pageSectionLabel ?? ""}
+                onInput={(e) =>
+                  setDoc(updateSceneHeaderFields(doc, scene.id, {
+                    pageSectionLabel: (e.target as HTMLInputElement).value,
+                  }))
+                }
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">페이지 타이틀</span>
+              <input
+                class="field__input"
+                placeholder="기획서 페이지 제목 (화면 제목과 별개)"
+                value={scene.headerTitle ?? ""}
+                onInput={(e) =>
+                  setDoc(updateSceneHeaderFields(doc, scene.id, {
+                    headerTitle: (e.target as HTMLInputElement).value,
+                  }))
+                }
+              />
+            </label>
+          </div>
+        )}
 
         <div class="section">
           <div class="row">

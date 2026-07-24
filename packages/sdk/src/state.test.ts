@@ -3,6 +3,7 @@ import type { Anchor, SpecProject } from "@mockspec/shared";
 import {
   applyDocToProject, createScene, deleteAnnotation, deleteEmptyAnnotations, deleteScene, docFromProject,
   projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot, updateSceneTitle,
+  updateSceneHeaderFields,
 } from "./state.js";
 
 const project: SpecProject = {
@@ -65,6 +66,30 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     let doc = docFromProject(project);
     doc = updateSceneTitle(doc, "scn_one", "메인 스튜디오");
     expect(doc.scenes[0]?.title).toBe("메인 스튜디오");
+  });
+
+  it("신규 장면은 직전 장면의 pageSectionLabel을 프리필한다 (#38)", () => {
+    let doc = docFromProject({
+      ...project,
+      scenes: [{ ...project.scenes[0]!, pageSectionLabel: "03 화면상세" }],
+    });
+    const created = createScene(doc, { title: "", route: "/next" });
+    expect(created.scene.pageSectionLabel).toBe("03 화면상세");
+  });
+
+  it("페이지 헤더 필드는 updateSceneHeaderFields로 갱신·삭제한다", () => {
+    let doc = docFromProject(project);
+    doc = updateSceneHeaderFields(doc, "scn_one", {
+      pageSectionLabel: "03 화면상세",
+      headerTitle: "페이지 타이틀",
+    });
+    expect(doc.scenes[0]).toMatchObject({
+      pageSectionLabel: "03 화면상세",
+      headerTitle: "페이지 타이틀",
+    });
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "  ", headerTitle: "" });
+    expect(doc.scenes[0]).not.toHaveProperty("pageSectionLabel");
+    expect(doc.scenes[0]).not.toHaveProperty("headerTitle");
   });
 });
 

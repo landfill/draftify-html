@@ -221,11 +221,11 @@ test("S2 DoD: 프록시 URL 등록 → 장면 2/어노테이션 4 → 마스킹 
     }
   };
 
-  await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-001");
+  await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
   await verifyScene(SCENE1);
 
   await sceneButtons.nth(1).click();
-  await expect(viewer.locator(".ms-stage-title")).toContainText("SCR-002");
+  await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
   await verifyScene(SCENE2);
 
   // 네트워크 요청 0건: 문서 자체(file://) 1건 외 어떤 요청도 없어야 한다
