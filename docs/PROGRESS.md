@@ -29,7 +29,7 @@
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
 - [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 개발용 Supabase Redirect URLs 등록은 W7 앱 포트 확정 시
-- [~] W2 스토어 4모듈 → Supabase 어댑터 — **어댑터·통합 테스트 코드 완료. 로컬 실행은 `SUPABASE_SECRET_KEY` 필요.** `apps/web` 스캐폴드 + 클라이언트 3종 + 어댑터 3본. `lib/store/supabase.integration.test.ts`(project·export·token 왕복 + admin secret 키 RLS 우회) — `sb_secret_` 키가 `.env.local`에 있으면 실행, 없으면 skip. 서버 관리 키 env = **`SUPABASE_SECRET_KEY`**(legacy `SUPABASE_SERVICE_ROLE_KEY` 폐기). 검증: apps/web typecheck OK·루트 build 회귀 0·vitest **233 passed**(+5 skip = 통합 테스트 대기).
+- [x] W2 스토어 4모듈 → Supabase 어댑터 — **완료.** 어댑터 3본 + `SUPABASE_SECRET_KEY` admin 클라이언트. `lib/store/supabase.integration.test.ts` 5건 green(project·asset·export·token 왕복 + admin RLS 우회). Storage RLS 보정 마이그레이션 `20260724150000_fix_storage_object_rls.sql`(SECURITY DEFINER 소유권 검증·INSERT/SELECT 분리). `exportStore` timestamptz→ISO 정규화. vitest **238 passed**.
 - [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 Auth 게이트 후 콘솔 UI에서 zip→업로드→complete 왕복)
 - [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
 - [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
@@ -90,6 +90,12 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-24 — W2 완료: 통합 테스트 5/5 green + Storage RLS 보정
+- 완료: 사용자가 `SUPABASE_SECRET_KEY` 설정·Storage RLS 마이그레이션(`20260724150000_fix_storage_object_rls.sql`) 원격 적용 후 `npm test -- apps/web/lib/store/supabase.integration.test.ts` **5 passed**(admin·projectStore·asset GC·exportStore·tokenStore). W2 체크리스트 `[x]`.
+- 코드(미커밋): `exportStore.ts` timestamptz `+00:00` → ISO `Z` 정규화, 마이그레이션 SQL·`supabase/config.toml`(CLI push용).
+- 다음 할 일: **W7**(Auth 게이트·콘솔 UI) 또는 **W4**(`/m/{id}/*` 목업 서빙) — W3 Storage 직업로드 경로가 열렸으므로 W4 병행 가능.
+- 막힌 지점: 없음.
 
 ### 2026-07-24 — 서버 Supabase 키 secret 체계 통일 + W2 통합 테스트
 - 완료:

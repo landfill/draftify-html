@@ -1,0 +1,5 @@
+# Supabase CLI — 마이그레이션 push용 최소 설정 (로컬 DB 미사용).
+project_id = "dhzojuatkmafgwiwtdwe"
+
+[db]
+major_version = 15

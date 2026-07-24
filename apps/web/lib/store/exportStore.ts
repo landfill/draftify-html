@@ -21,8 +21,8 @@ export async function readExportRecords(db: Db, projectId: string): Promise<Expo
   if (error) throw new Error(`readExportRecords failed: ${error.message}`);
   return (data ?? []).map((r) => ({
     id: r.id,
-    createdAt: r.created_at,
-    specUpdatedAt: r.spec_updated_at,
+    createdAt: new Date(r.created_at).toISOString(),
+    specUpdatedAt: new Date(r.spec_updated_at).toISOString(),
     bytes: r.bytes,
     masked: r.masked,
   }));
