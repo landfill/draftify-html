@@ -116,8 +116,8 @@
 `main` 병합이 끝나면 다음을 정리한다 (다음 세션이 죽은 브랜치·낡은 base에서 시작하지 않게):
 
 - **원격 토픽 브랜치 삭제**: 머지된 `feat/`·`fix/`·`docs/`·`chore/` 브랜치는 원격에서 지운다 (`gh pr merge --delete-branch` 또는 GitHub 자동 삭제). `main`·`open-service` 같은 **장기 브랜치는 삭제하지 않는다**
-- **로컬 정리**: 머지된 로컬 토픽 브랜치를 삭제하고(`git branch -d`), 로컬 `main`을 원격과 동기화한다(`git fetch origin --prune` → `git pull --ff-only`). §1.0의 "작업 전 동기화"와 짝이다
-- **임시 워크트리 제거**: 그 작업용으로만 판 워크트리는 `git worktree remove`로 정리한다. 장기 트랙 워크트리(`open-service` 등)는 유지
+- **임시 워크트리 제거 (브랜치 삭제보다 먼저)**: 그 작업용으로만 판 워크트리는 `git worktree remove`로 정리한다. 토픽 브랜치가 워크트리에 체크아웃된 상태면 `git branch -d`가 실패하므로, 워크트리 제거가 로컬 브랜치 삭제에 선행한다. 장기 트랙 워크트리(`open-service` 등)는 유지
+- **로컬 정리**: `main`으로 전환한 뒤 머지된 로컬 토픽 브랜치를 삭제하고(`git branch -d`), 로컬 `main`을 원격과 동기화한다(`git fetch origin --prune` → `git pull --ff-only`). §1.0의 "작업 전 동기화"와 짝이다
 - **PROGRESS 갱신**: 병합 완료·이슈 종결은 §3 규약대로 `docs/PROGRESS.md`에 기록한다
 
 ## 7. 작업 위생
