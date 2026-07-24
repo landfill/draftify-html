@@ -23,8 +23,9 @@
 **헤더 DOCS → 샘플 산출물 보기(/sample) 대체(이슈 #30 종결) — PR #33로 main 병합 완료 (2026-07-19, squash `025c2ea`, CI 4체크 green·리뷰 반영 1건(Promise 캐시)·기각 1건(Codex 날짜, UTC 선례)·브랜치 삭제).**
 **공개 서비스 개편 RFC(Vercel+Supabase) — PR #35로 main 병합 완료 (2026-07-21, `42e1784`). 엄브렐라 이슈 #34.**
 **공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·§7.1 open-service 트랙·§7.2 SSO 조건 ①)·technical-spec §9.2(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
+**페이지 헤더 밴드(이슈 #38) — PR #39로 main 병합 완료 (2026-07-24, merge `338677b`, CI green·리뷰 3라운드 반영·브랜치 삭제). Closes #38.**
 
-## 페이지 헤더 밴드 WBS 체크리스트 (이슈 #38, 2026-07-24 착수)
+## 페이지 헤더 밴드 WBS 체크리스트 (이슈 #38, 2026-07-24 착수 — **완료·main 병합**)
 
 > 코어(`main`) 트랙. open-service(#34)와 분리. 브랜드 로고·`SpecProject` 변경 없음.
 
@@ -32,7 +33,7 @@
 - [x] T38-2 `shared` — `Scene.pageSectionLabel?`·`Scene.headerTitle?` + `sceneDisplay.ts` 헬퍼
 - [x] T38-3 뷰어 — 편집(`showScrCodes`) vs 산출물 분기, 페이지 헤더 밴드 렌더, export CSS
 - [x] T38-4 SDK — 페이지 헤더 편집 UI + 신규 장면 섹션 라벨 프리필 + `updateSceneHeaderFields`
-- [x] T38-5 검증 — vitest **260 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
+- [x] T38-5 검증 — vitest **262 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
 
 ## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
 
@@ -100,6 +101,12 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-24 — PR #39 main 병합 (이슈 #38 종결)
+- 완료: 사용자 동의 후 PR #39 merge (`338677b`) — 페이지 헤더 밴드 + 산출물 SCR 전역 숨김. 3차 커밋 포함: Codex P2 헤더 필드 입력 중 공백 보존(onBlur trim). `feat/page-header-band` 브랜치 삭제.
+- 검증: 병합 전 CI green(verify×2·pr_agent_job·CodeRabbit). vitest **262 passed**, E2E **4본 통과**.
+- 다음 할 일: open-service W1 또는 다음 이슈 착수.
+- 막힌 지점: 없음.
 
 ### 2026-07-24 — PR #39 리뷰 반영 (feat/page-header-band)
 - 완료: Codex P2 — `createScene` order를 `max(order)+1`로 변경(결번 [0,2] 후 중복 order 방지), 중간 삭제→신규 장면 프리필 유닛 테스트. CodeRabbit E2E 5곳 `toHaveText` 정확 일치(흐름도 노드는 visible `text` 자식). viewer↔shared 동등성 테스트(`sceneDisplay.parity.test.ts`) + `readViewerScript`/킥오프 §11 18차에 단일 모듈 인라인 제약 문서화.
