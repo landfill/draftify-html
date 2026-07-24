@@ -794,6 +794,11 @@ export function App({ projectId }: { projectId: string }) {
                     pageSectionLabel: (e.target as HTMLInputElement).value,
                   }))
                 }
+                onBlur={(e) =>
+                  setDoc(updateSceneHeaderFields(doc, scene.id, {
+                    pageSectionLabel: (e.target as HTMLInputElement).value.trim(),
+                  }))
+                }
               />
             </label>
             <label class="field">
@@ -805,6 +810,11 @@ export function App({ projectId }: { projectId: string }) {
                 onInput={(e) =>
                   setDoc(updateSceneHeaderFields(doc, scene.id, {
                     headerTitle: (e.target as HTMLInputElement).value,
+                  }))
+                }
+                onBlur={(e) =>
+                  setDoc(updateSceneHeaderFields(doc, scene.id, {
+                    headerTitle: (e.target as HTMLInputElement).value.trim(),
                   }))
                 }
               />

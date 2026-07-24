@@ -105,9 +105,42 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
       pageSectionLabel: "03 화면상세",
       headerTitle: "페이지 타이틀",
     });
-    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "  ", headerTitle: "" });
-    expect(doc.scenes[0]).not.toHaveProperty("pageSectionLabel");
+    doc = updateSceneHeaderFields(doc, "scn_one", { headerTitle: "" });
+    expect(doc.scenes[0]).toMatchObject({ pageSectionLabel: "03 화면상세" });
     expect(doc.scenes[0]).not.toHaveProperty("headerTitle");
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "" });
+    expect(doc.scenes[0]).not.toHaveProperty("pageSectionLabel");
+  });
+
+  it("페이지 헤더 필드는 입력 중 raw 저장 — 내부·trailing 공백 보존 (#39 Codex P2)", () => {
+    let doc = docFromProject(project);
+    // 사용자가 "03" 입력 후 스페이스 — trim 없이 "03 " 그대로 저장
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "03 " });
+    expect(doc.scenes[0]!.pageSectionLabel).toBe("03 ");
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "03 화면상세" });
+    expect(doc.scenes[0]!.pageSectionLabel).toBe("03 화면상세");
+    // 공백만인 값은 blur 정규화 전까지 raw 저장
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "  " });
+    expect(doc.scenes[0]!.pageSectionLabel).toBe("  ");
+  });
+
+  it("페이지 헤더 필드 blur 정규화 — trailing 제거·내부 공백 유지·공백만이면 삭제", () => {
+    let doc = docFromProject(project);
+    doc = updateSceneHeaderFields(doc, "scn_one", {
+      pageSectionLabel: "03 화면상세 ",
+      headerTitle: " 타이틀 ",
+    });
+    // onBlur: trim 후 저장
+    doc = updateSceneHeaderFields(doc, "scn_one", {
+      pageSectionLabel: "03 화면상세 ".trim(),
+      headerTitle: " 타이틀 ".trim(),
+    });
+    expect(doc.scenes[0]).toMatchObject({
+      pageSectionLabel: "03 화면상세",
+      headerTitle: "타이틀",
+    });
+    doc = updateSceneHeaderFields(doc, "scn_one", { pageSectionLabel: "  ".trim() });
+    expect(doc.scenes[0]).not.toHaveProperty("pageSectionLabel");
   });
 });
 

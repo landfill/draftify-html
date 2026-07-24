@@ -159,13 +159,11 @@ export function updateSceneHeaderFields(
       if (s.id !== sceneId) return s;
       const next = { ...s };
       if (fields.pageSectionLabel !== undefined) {
-        const trimmed = fields.pageSectionLabel.trim();
-        if (trimmed) next.pageSectionLabel = trimmed;
+        if (fields.pageSectionLabel) next.pageSectionLabel = fields.pageSectionLabel;
         else delete next.pageSectionLabel;
       }
       if (fields.headerTitle !== undefined) {
-        const trimmed = fields.headerTitle.trim();
-        if (trimmed) next.headerTitle = trimmed;
+        if (fields.headerTitle) next.headerTitle = fields.headerTitle;
         else delete next.headerTitle;
       }
       return next;
