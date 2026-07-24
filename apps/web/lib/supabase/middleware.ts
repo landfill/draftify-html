@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasBearerAuth } from "../auth/bearer.js";
 import { isProtectedApiPath, isPublicPath } from "../auth/public-path.js";
 import type { Database } from "./database.types.js";
 
@@ -32,7 +33,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && isProtectedApiPath(pathname)) {
+  if (!user && isProtectedApiPath(pathname) && !hasBearerAuth(request)) {
     return NextResponse.json(
       { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
       { status: 401 },

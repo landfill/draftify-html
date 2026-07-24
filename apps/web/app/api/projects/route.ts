@@ -4,6 +4,7 @@ import { jsonError } from "@/lib/api/errors.js";
 import { getAuthedContext } from "@/lib/auth/require-user.js";
 import { createProject, listProjects } from "@/lib/store/projectStore.js";
 import { exportSummary } from "@/lib/store/exportStore.js";
+import { issueToken } from "@/lib/store/tokenStore.js";
 
 function parseOwnerLabel(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
@@ -37,6 +38,22 @@ export async function POST(req: Request) {
   }
 
   const record = body as Record<string, unknown>;
+
+  if (record.source === "snippet") {
+    const name = typeof record.name === "string" ? record.name.trim() : "";
+    if (!name) {
+      return jsonError("INVALID_REQUEST", "프로젝트 이름이 필요합니다.");
+    }
+    const project = await createProject(
+      db,
+      name,
+      { type: "snippet" },
+      parseOwnerLabel(record.ownerLabel),
+    );
+    const token = await issueToken(db, project.id);
+    return NextResponse.json({ project, token }, { status: 201 });
+  }
+
   const originalFilename =
     typeof record.originalFilename === "string" ? record.originalFilename.trim() : "";
   if (!originalFilename) {

@@ -8,9 +8,8 @@ import {
   downloadFilename,
   exportObjectPath,
 } from "@/lib/export/build-export.js";
-import { getAuthedContext } from "@/lib/auth/require-user.js";
+import { getProjectWriteAccess } from "@/lib/auth/project-access.js";
 import { appendExportRecord } from "@/lib/store/exportStore.js";
-import { readSpec } from "@/lib/store/projectStore.js";
 import { STORAGE_BUCKET } from "@/lib/store/ids.js";
 
 type RouteCtx = { params: Promise<{ id: string }> };
@@ -19,18 +18,17 @@ type RouteCtx = { params: Promise<{ id: string }> };
  * POST /api/projects/{id}/export — 산출물 HTML.
  * 작은 본문은 인라인, 큰 본문은 Storage signed URL로 302(킥오프 §6 ⓐ — SDK가 redirect 따라 HTML 저장).
  */
-export async function POST(_req: Request, ctx: RouteCtx) {
-  const authed = await getAuthedContext();
-  if (!authed) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
-
+export async function POST(req: Request, ctx: RouteCtx) {
   const { id } = await ctx.params;
-  const project = await readSpec(authed.db, id);
-  if (!project) return jsonError("NOT_FOUND", `프로젝트 ${id}를 찾을 수 없습니다.`);
+  const access = await getProjectWriteAccess(req, id);
+  if (!access) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
 
-  const { html, usedMasked } = await assembleExportHtml(authed.db, project);
+  const project = access.spec;
+
+  const { html, usedMasked } = await assembleExportHtml(access.db, project);
   const bytes = Buffer.byteLength(html, "utf8");
 
-  const record = await appendExportRecord(authed.db, id, {
+  const record = await appendExportRecord(access.db, id, {
     specUpdatedAt: project.updatedAt,
     bytes,
     masked: usedMasked,
@@ -41,7 +39,7 @@ export async function POST(_req: Request, ctx: RouteCtx) {
 
   if (bytes > EXPORT_INLINE_MAX_BYTES) {
     const objectPath = exportObjectPath(id, record?.id ?? `exp_fallback`);
-    const { error: uploadError } = await authed.db.storage
+    const { error: uploadError } = await access.db.storage
       .from(STORAGE_BUCKET)
       .upload(objectPath, html, {
         contentType: "text/html; charset=utf-8",
@@ -49,7 +47,7 @@ export async function POST(_req: Request, ctx: RouteCtx) {
       });
     if (uploadError) return jsonError("INTERNAL", "산출물 저장에 실패했습니다.");
 
-    const { data: signed, error: signError } = await authed.db.storage
+    const { data: signed, error: signError } = await access.db.storage
       .from(STORAGE_BUCKET)
       .createSignedUrl(objectPath, 120);
     if (signError || !signed?.signedUrl) {

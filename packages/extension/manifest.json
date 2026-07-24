@@ -4,7 +4,11 @@
   "version": "0.1.0",
   "description": "로그인해 둔 화면 위에 mockspec 편집기를 띄웁니다 (경로 D — 서버는 아무것도 fetch하지 않음).",
   "permissions": ["storage", "activeTab", "downloads"],
-  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
+    "https://*.vercel.app/*"
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

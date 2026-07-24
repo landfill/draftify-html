@@ -45,7 +45,7 @@
 - [x] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존 — **완료.** `app/m/[id]/[[...path]]/route.ts` + `lib/mockup/serve.ts`(readSpec RLS 소유권·Storage 스트림·확장자 없는 미존재 경로→index.html). per-request 주입 없음(D6).
 - [x] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*` — **완료.** `GET /__mockspec/sdk`(rewrite→`sdk.js`)·`next.config` rewrite `/__mockspec/api/:path*`→`/api/:path*`. 미들웨어 `isProtectedApiPath`로 브리지도 인증 필수.
 - [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 §6 ⓐ). vitest **292 passed**.
-- [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions)
+- [x] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions) — **완료.** `project-access`(세션 vs Bearer·admin 해시 검증·projectId 스코프), `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`, 미들웨어 Bearer 우회, manifest `localhost:3000`·`*.vercel.app`. vitest **297 passed**.
 - [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
 - [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
 - [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
@@ -101,6 +101,16 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — W6 경로 D 토큰 인증 + 확장 host_permissions 전환
+- 완료:
+  - **토큰 인증**: `lib/auth/project-access.ts` — upload=세션(RLS), snippet 저장=Bearer+`verifyToken`(admin·SHA-256 해시·projectId 한정). GET도 세션 또는 Bearer.
+  - **API**: `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`(토큰 1회 반환), PUT/assets/export에 `applySnippetPutOverrides`(lastSeenOrigin).
+  - **미들웨어**: `/api/*`는 Bearer 있으면 세션 없이 통과(W6).
+  - **확장**: manifest `host_permissions` → `localhost:3000`·`*.vercel.app`, popup 기본 서버 `http://localhost:3000`.
+- 검증: `npm run build`·`npm test` **297 passed**.
+- 다음 할 일: **W8** 남용 방어. 수동: 확장 unpacked→snippet 등록·연결→PUT/export Bearer 스모크(Vercel 배포 후 `*.vercel.app` 권한 확인).
+- 막힌 지점: 없음.
 
 ### 2026-07-25 — origin/main 병합(#38) + W5 spec·asset·export API
 - 완료:
