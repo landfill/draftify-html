@@ -29,8 +29,8 @@
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
 - [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 개발용 Supabase Redirect URLs 등록은 W7 앱 포트 확정 시
-- [~] W2 스토어 4모듈 → Supabase 어댑터 — **어댑터 구현·타입 통과. 런타임 왕복 테스트만 대기.** `apps/web`(Next 15 + React 19) 스캐폴드 + Supabase 클라이언트 3종(server/browser/admin) + DB 타입 + 어댑터 3본(projectStore·tokenStore·exportStore, paths는 Storage 경로 유틸 `ids.ts`로 흡수). 어댑터는 요청 스코프 클라이언트 `db`를 받아 RLS로 격리. verifyToken만 service_role 클라이언트 필요(W6 배선). 검증: apps/web typecheck OK·루트 build 회귀 0·기존 vitest 219 passed. **남은 것: 왕복 무손실 통합 테스트** — 인증 세션(테스트 사용자) 또는 service_role 키 필요라 W7 Auth 배선/키 확보 후. 취약점 sharp high는 Next 전이 의존 노이즈(미사용)
-- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체
+- [~] W2 스토어 4모듈 → Supabase 어댑터 — **어댑터·통합 테스트 코드 완료. 로컬 실행은 `SUPABASE_SECRET_KEY` 필요.** `apps/web` 스캐폴드 + 클라이언트 3종 + 어댑터 3본. `lib/store/supabase.integration.test.ts`(project·export·token 왕복 + admin secret 키 RLS 우회) — `sb_secret_` 키가 `.env.local`에 있으면 실행, 없으면 skip. 서버 관리 키 env = **`SUPABASE_SECRET_KEY`**(legacy `SUPABASE_SERVICE_ROLE_KEY` 폐기). 검증: apps/web typecheck OK·루트 build 회귀 0·vitest **233 passed**(+5 skip = 통합 테스트 대기).
+- [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 Auth 게이트 후 콘솔 UI에서 zip→업로드→complete 왕복)
 - [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
 - [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
 - [ ] W5 spec GET/PUT·asset·export 함수 이식
@@ -90,6 +90,30 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-24 — 서버 Supabase 키 secret 체계 통일 + W2 통합 테스트
+- 완료:
+  - **env 리네임**: `SUPABASE_SERVICE_ROLE_KEY` → **`SUPABASE_SECRET_KEY`** — `admin.ts`·`.env.example`·`.env.local`(변수명만, 값은 사용자 TODO). publishable(`sb_publishable_`)과 동일한 신 API Keys 체계.
+  - **주석**: `admin.ts`·`tokenStore.ts` — "secret 키(service_role 권한)" 표기.
+  - **W2 통합 테스트**: `lib/store/supabase.integration.test.ts` — ephemeral Auth 사용자 + user-scoped 클라이언트로 project/export store 왕복, admin(secret)으로 `verifyToken`·RLS 우회 확인. `lib/test/load-env.ts`가 `.env.local` 로드.
+- 검증: apps/web `tsc --noEmit`·루트 `npm run build` 회귀 0, vitest **233 passed | 5 skipped**(통합 — `SUPABASE_SECRET_KEY` 미설정 시 skip). `grep '^SUPABASE_SECRET_KEY=.\+' apps/web/.env.local` → **not set**(사용자가 Dashboard → Settings > API Keys에서 `sb_secret_...` 발급·입력 후 `npm test` 재실행하면 W2 완료).
+- 다음 할 일: **`SUPABASE_SECRET_KEY` 설정** → 통합 테스트 5건 green 확인 후 W2 `[x]` 처리. 이어서 **W7**(Auth 게이트·콘솔) 또는 **W4**(목업 서빙).
+- 막힌 지점: 없음. (secret 키는 사용자 대시보드 작업 — legacy JWT service_role 넣지 말 것.)
+
+### 2026-07-24 — W3 착수: 브라우저 unzip·주입·Storage 업로드·manifest 검증 API
+- 전제: `service_role` 키 미설정(`.env.local` placeholder) → W2 통합 테스트는 계속 대기. Auth 독립 경로로 **W3** 먼저 착수.
+- 완료:
+  - **`lib/inject.ts`**: `injectSdkTag`·`setBaseHref`(기존 base 교체)·`injectMockupHtml`·`assertInjectedHtml` — server `inject.ts` 계약 + open-service `/m/{id}/` base.
+  - **`lib/intake/extract.ts`**: fflate 기반 브라우저 unzip — zip-slip·제외 필터·최상위 언랩(server `extractZip`과 동일 규칙).
+  - **`lib/intake/process.ts`**: HTML 주입 + manifest 조립(`prepareZipIntake`).
+  - **`lib/intake/upload.ts`**: Storage 직업로드·`completeMockupIntake` fetch 헬퍼(W7 콘솔 UI가 호출).
+  - **`lib/intake/validate.ts`**: manifest 형식·Storage 존재·SDK/base 주입 검증·실패 시 mockup prefix 정리.
+  - **API**: `POST /api/projects`(프로젝트 생성), `POST /api/projects/[id]/mockup/complete`(검증만 — D5·D6).
+  - **`ids.ts`**: `mockupObjectPath` 추가.
+  - **의존성**: `fflate`(런타임), `jszip`(vitest fixture).
+- 검증: apps/web `tsc --noEmit` 통과, vitest **233 passed**(+14, inject·extract·process·validate).
+- 다음 할 일: **W7**(Auth 게이트·콘솔 UI Next 이식) — Auth가 생기면 W3 E2E(zip→업로드→complete)를 인증 세션으로 닫을 수 있음. **`SUPABASE_SECRET_KEY`** 설정 시 W2 통합 테스트도 즉시 실행 가능. **W4** 목업 서빙 `/m/{id}/*`는 W3 업로드본을 실제로 열기 위해 W7 직후 또는 병행 착수.
+- 막힌 지점: 없음. (런타임 E2E는 Auth·service_role 대기 — 코드·단위 테스트는 완료.)
 
 ### 2026-07-22 — W2 착수: apps/web 스캐폴드 + 스토어 Supabase 어댑터
 - 완료(구조 = monorepo + 새 앱, 워크트리에서 작업):

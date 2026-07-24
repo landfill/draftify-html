@@ -10,7 +10,7 @@ import type { Db } from "./ids.js";
  *  - issue·revoke·has: 콘솔에서 소유자가 호출 → 요청 스코프 클라이언트(RLS owner). project_tokens
  *    RLS가 부모 projects 소유권을 검증한다.
  *  - verify: 경로 D 저장 요청은 사용자 세션 없이 Bearer 토큰만 갖는다 → RLS로 못 읽으므로
- *    호출자가 **관리 클라이언트(service_role)**를 넘겨야 한다(W6에서 배선). 어댑터는 넘어온
+ *    호출자가 **관리 클라이언트(secret 키, service_role 권한)**를 넘겨야 한다(W6에서 배선). 어댑터는 넘어온
  *    클라이언트를 그대로 쓴다.
  */
 
