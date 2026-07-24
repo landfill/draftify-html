@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import type { ProjectListItem } from "@mockspec/shared";
 import { jsonError } from "@/lib/api/errors.js";
-import { createProject } from "@/lib/store/projectStore.js";
-import type { Db } from "@/lib/store/ids.js";
-import { createSupabaseServerClient } from "@/lib/supabase/server.js";
+import { getAuthedContext } from "@/lib/auth/require-user.js";
+import { createProject, listProjects } from "@/lib/store/projectStore.js";
+import { exportSummary } from "@/lib/store/exportStore.js";
 
 function parseOwnerLabel(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
@@ -10,13 +11,23 @@ function parseOwnerLabel(raw: unknown): string | undefined {
   return trimmed || undefined;
 }
 
+/** GET /api/projects — 소유자 프로젝트 목록 + export 요약(T29). */
+export async function GET() {
+  const ctx = await getAuthedContext();
+  if (!ctx) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+
+  const projects = await listProjects(ctx.db);
+  const items: ProjectListItem[] = await Promise.all(
+    projects.map(async (p) => ({ ...p, ...(await exportSummary(ctx.db, p.id)) })),
+  );
+  return NextResponse.json(items);
+}
+
 /** POST /api/projects — 인증된 사용자의 새 프로젝트 행 생성. */
 export async function POST(req: Request) {
-  const db = (await createSupabaseServerClient()) as unknown as Db;
-  const {
-    data: { user },
-  } = await db.auth.getUser();
-  if (!user) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+  const ctx = await getAuthedContext();
+  if (!ctx) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+  const { db } = ctx;
 
   let body: unknown;
   try {

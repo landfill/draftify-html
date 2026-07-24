@@ -28,14 +28,14 @@
 
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
-- [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 개발용 Supabase Redirect URLs 등록은 W7 앱 포트 확정 시
+- [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 Redirect URLs = `http://localhost:3000/auth/callback`(`.env.example` 주석, W7)
 - [x] W2 스토어 4모듈 → Supabase 어댑터 — **완료.** 어댑터 3본 + `SUPABASE_SECRET_KEY` admin 클라이언트. `lib/store/supabase.integration.test.ts` 5건 green(project·asset·export·token 왕복 + admin RLS 우회). Storage RLS 보정 마이그레이션 `20260724150000_fix_storage_object_rls.sql`(SECURITY DEFINER 소유권 검증·INSERT/SELECT 분리). `exportStore` timestamptz→ISO 정규화. vitest **238 passed**.
-- [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 Auth 게이트 후 콘솔 UI에서 zip→업로드→complete 왕복)
+- [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 콘솔 UI에서 zip→업로드→complete 왕복 — 수동 스모크 가능, 자동 E2E는 W9)
 - [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
 - [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
 - [ ] W5 spec GET/PUT·asset·export 함수 이식
 - [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions)
-- [ ] W7 콘솔 UI Next 이식 + Auth 게이트
+- [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
 - [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
 - [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
 
@@ -90,6 +90,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — W7 완료: Auth 게이트 + 콘솔 UI Next 이식
+- 완료:
+  - **Auth 게이트**: `middleware.ts` + `lib/supabase/middleware.ts` — 세션 갱신, 비인증 `/api/*` → 401, 페이지 → `/login`, 로그인 상태 `/login` → `/`. 공개 경로: `/login`, `/auth/*`, `/guide`, `/faq`, `/sample`.
+  - **콜백**: `app/auth/callback/route.ts` — OAuth·매직링크 `code` → 세션 쿠키.
+  - **API**: `getAuthedContext()`로 `GET/POST /api/projects`, `DELETE /api/projects/[id]`, `POST .../mockup/complete` — 요청 스코프 Supabase 클라이언트 → RLS owner.
+  - **UI**: 로그인(Google OAuth + 이메일 OTP), 콘솔 홈(ZIP 업로드→Storage→complete, 목록, 삭제), 셸 헤더(가이드·샘플·FAQ·테마·로그아웃), `/guide`·`/faq`·`/sample`(Express `buildSampleHtml` 재사용).
+  - **빌드**: `next.config.mjs` webpack `extensionAlias`(.js→.ts), `next build` green.
+- 검증: apps/web `tsc --noEmit`·`next build` 통과, 루트 `npm test` **238 passed**.
+- 다음 할 일: **W4** `/m/{id}/*` 목업 서빙 + 소유권 게이트(W7 세션 위에 배선). 선택: W2 통합 테스트를 인증 세션 경로로 한 번 더 확인. **W5** spec PUT·export·마스킹 UI.
+- 막힌 지점: 없음. (로컬 Auth 스모크 = Supabase Redirect URLs·`npm run dev` in `apps/web`)
 
 ### 2026-07-24 — W2 완료: 통합 테스트 5/5 green + Storage RLS 보정
 - 완료: 사용자가 `SUPABASE_SECRET_KEY` 설정·Storage RLS 마이그레이션(`20260724150000_fix_storage_object_rls.sql`) 원격 적용 후 `npm test -- apps/web/lib/store/supabase.integration.test.ts` **5 passed**(admin·projectStore·asset GC·exportStore·tokenStore). W2 체크리스트 `[x]`.

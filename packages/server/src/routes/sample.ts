@@ -276,7 +276,8 @@ const SAMPLE_SNAPSHOTS: SnapshotBundle[] = [
 // Promise를 캐시해 최초 동시 요청에도 빌드가 1회만 수행되고, 실패 시 비워 재시도 (리뷰 반영)
 let cachedHtml: Promise<string> | undefined;
 
-async function buildSampleHtml(): Promise<string> {
+/** 샘플 산출물 HTML — Express `/sample`과 Next `app/sample`이 공유한다. */
+export async function buildSampleHtml(): Promise<string> {
   return buildExportHtml({
     project: SAMPLE_PROJECT,
     snapshots: SAMPLE_SNAPSHOTS,

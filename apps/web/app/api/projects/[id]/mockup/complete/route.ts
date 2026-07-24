@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors.js";
+import { getAuthedContext } from "@/lib/auth/require-user.js";
 import {
   ManifestValidationError,
   removeMockupPrefix,
@@ -7,19 +8,14 @@ import {
 } from "@/lib/intake/validate.js";
 import type { MockupManifest } from "@/lib/intake/types.js";
 import { readSpec } from "@/lib/store/projectStore.js";
-import type { Db } from "@/lib/store/ids.js";
-import { createSupabaseServerClient } from "@/lib/supabase/server.js";
 
 /** POST /api/projects/{id}/mockup/complete — manifest 검증만(D5·D6). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const { id: projectId } = await ctx.params;
-  const db = (await createSupabaseServerClient()) as unknown as Db;
-  const {
-    data: { user },
-  } = await db.auth.getUser();
-  if (!user) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+  const authed = await getAuthedContext();
+  if (!authed) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
 
-  const spec = await readSpec(db, projectId);
+  const { id: projectId } = await ctx.params;
+  const spec = await readSpec(authed.db, projectId);
   if (!spec) return jsonError("NOT_FOUND", `프로젝트 ${projectId}를 찾을 수 없습니다.`);
 
   let manifest: MockupManifest;
@@ -30,9 +26,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 
   try {
-    await validateMockupManifest(db, projectId, manifest);
+    await validateMockupManifest(authed.db, projectId, manifest);
   } catch (err) {
-    await removeMockupPrefix(db, projectId).catch(() => undefined);
+    await removeMockupPrefix(authed.db, projectId).catch(() => undefined);
     if (err instanceof ManifestValidationError) {
       return jsonError("INVALID_REQUEST", err.message);
     }
