@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors.js";
+import { rateLimit } from "@/lib/abuse/guard.js";
+import { userSubject } from "@/lib/abuse/rate-limit.js";
 import { getAuthedContext } from "@/lib/auth/require-user.js";
 import { readSpec } from "@/lib/store/projectStore.js";
 import { issueToken, revokeToken } from "@/lib/store/tokenStore.js";
@@ -10,6 +12,9 @@ type RouteCtx = { params: Promise<{ id: string }> };
 export async function POST(_req: Request, ctx: RouteCtx) {
   const authed = await getAuthedContext();
   if (!authed) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+
+  const limited = await rateLimit(userSubject(authed.user.id), "token");
+  if (limited) return limited;
 
   const { id } = await ctx.params;
   const spec = await readSpec(authed.db, id);
@@ -26,6 +31,9 @@ export async function POST(_req: Request, ctx: RouteCtx) {
 export async function DELETE(_req: Request, ctx: RouteCtx) {
   const authed = await getAuthedContext();
   if (!authed) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+
+  const limited = await rateLimit(userSubject(authed.user.id), "token");
+  if (limited) return limited;
 
   const { id } = await ctx.params;
   const spec = await readSpec(authed.db, id);

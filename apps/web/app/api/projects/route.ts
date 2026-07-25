@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { ProjectListItem } from "@mockspec/shared";
 import { jsonError } from "@/lib/api/errors.js";
+import { rateLimit } from "@/lib/abuse/guard.js";
+import { checkProjectCountQuota } from "@/lib/abuse/quota.js";
+import { userSubject } from "@/lib/abuse/rate-limit.js";
 import { getAuthedContext } from "@/lib/auth/require-user.js";
 import { createProject, listProjects } from "@/lib/store/projectStore.js";
 import { exportSummary } from "@/lib/store/exportStore.js";
@@ -29,6 +32,13 @@ export async function POST(req: Request) {
   const ctx = await getAuthedContext();
   if (!ctx) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
   const { db } = ctx;
+
+  // W8: 생성은 프로젝트 수 쿼터 + 시간당 레이트리밋 둘 다 통과해야 한다.
+  const limited = await rateLimit(userSubject(ctx.user.id), "projectCreate");
+  if (limited) return limited;
+
+  const quotaMessage = await checkProjectCountQuota(db);
+  if (quotaMessage) return jsonError("QUOTA_EXCEEDED", quotaMessage);
 
   let body: unknown;
   try {

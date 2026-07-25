@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors.js";
+import { accessSubject, rateLimit } from "@/lib/abuse/guard.js";
 import {
   EXPORT_INLINE_MAX_BYTES,
   EXPORT_SIZE_WARNING_BYTES,
@@ -22,6 +23,9 @@ export async function POST(req: Request, ctx: RouteCtx) {
   const { id } = await ctx.params;
   const access = await getProjectWriteAccess(req, id);
   if (!access) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+
+  const limited = await rateLimit(accessSubject(access), "export");
+  if (limited) return limited;
 
   const project = access.spec;
 

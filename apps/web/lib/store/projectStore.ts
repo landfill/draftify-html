@@ -9,6 +9,7 @@ import {
   assetObjectPath,
   projectPrefix,
 } from "./ids.js";
+import { removeObjectsUnder } from "./storage-list.js";
 
 /**
  * projectStore Supabase 어댑터 — 기존 파일 기반(packages/server/src/store/projectStore.ts)의
@@ -113,17 +114,9 @@ export async function replaceSpec(
 /** 프로젝트 삭제 — 행(토큰·이력은 FK cascade) + Storage projects/{id}/ 전체. */
 export async function deleteProject(db: Db, id: string): Promise<void> {
   // Storage는 FK cascade 대상이 아니므로 오브젝트를 먼저 나열해 삭제.
-  const prefix = projectPrefix(id);
-  for (const sub of ["mockup", "assets"]) {
-    const { data: files } = await db.storage.from(STORAGE_BUCKET).list(`${prefix}/${sub}`, {
-      limit: 1000,
-    });
-    if (files && files.length > 0) {
-      await db.storage
-        .from(STORAGE_BUCKET)
-        .remove(files.map((f) => `${prefix}/${sub}/${f.name}`));
-    }
-  }
+  // 목업은 중첩 디렉토리(js/·assets/)가 흔하므로 **재귀**로 지운다 — 한 단계만 보면 오브젝트가
+  // 남아 버킷 용량을 계속 먹는다(W8 쿼터 정합성).
+  await removeObjectsUnder(db, projectPrefix(id));
   const { error } = await db.from("projects").delete().eq("id", id);
   if (error) throw new Error(`deleteProject failed: ${error.message}`);
 }

@@ -1,4 +1,5 @@
 import { injectMockupHtml, isHtmlPath } from "../inject.js";
+import { LIMITS, formatMb } from "../abuse/limits.js";
 import type { ExtractResult, MockupManifest, ProcessedFile } from "./types.js";
 import { extractZipBuffer } from "./extract.js";
 
@@ -58,6 +59,44 @@ export interface IntakePrepareResult {
   extract: ExtractResult;
 }
 
+/** 업로드 한도 초과 — 콘솔 UI가 메시지를 그대로 보여준다. */
+export class IntakeLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "IntakeLimitError";
+  }
+}
+
+/**
+ * 해제 결과가 한도 안인지 본다 (W8, 킥오프 §7.5).
+ *
+ * 이 게이트는 **UX용**이다 — 신뢰 경계는 서버의 complete 라우트(technical-spec §7.4). 여기서 막는
+ * 이유는 50MB를 다 올린 뒤 거부당하는 왕복을 없애기 위함이다.
+ */
+export function assertExtractedWithinLimits(files: Map<string, Uint8Array>): void {
+  if (files.size > LIMITS.mockupMaxFileCount) {
+    throw new IntakeLimitError(
+      `목업 파일 수가 한도(${LIMITS.mockupMaxFileCount}개)를 초과합니다 — ${files.size}개.`,
+    );
+  }
+  let totalBytes = 0;
+  for (const data of files.values()) totalBytes += data.byteLength;
+  if (totalBytes > LIMITS.mockupMaxTotalBytes) {
+    throw new IntakeLimitError(
+      `목업 해제 후 총 크기가 한도(${formatMb(LIMITS.mockupMaxTotalBytes)})를 초과합니다 — ${formatMb(totalBytes)}.`,
+    );
+  }
+}
+
+/** zip 원본 크기 게이트 — 해제 전에 본다. */
+export function assertZipWithinLimits(zipBytes: number): void {
+  if (zipBytes > LIMITS.zipMaxBytes) {
+    throw new IntakeLimitError(
+      `zip 파일이 ${formatMb(LIMITS.zipMaxBytes)} 제한을 초과합니다 — ${formatMb(zipBytes)}.`,
+    );
+  }
+}
+
 /**
  * zip → 해제 → HTML 주입까지. Storage 업로드·complete API 호출은 uploadMockupIntake가 담당.
  */
@@ -65,7 +104,9 @@ export async function prepareZipIntake(
   zipBuffer: Uint8Array,
   projectId: string,
 ): Promise<IntakePrepareResult> {
+  assertZipWithinLimits(zipBuffer.byteLength);
   const { files, result } = await extractZipBuffer(zipBuffer);
+  assertExtractedWithinLimits(files);
   if (!files.has("index.html")) {
     throw new Error("index.html required at mockup root");
   }

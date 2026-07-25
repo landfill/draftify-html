@@ -27,8 +27,10 @@ export default function FaqPage() {
           <div className="g-faq-card">
             <FaqItem q="zip 업로드가 거부됩니다.">
               <p>
-                압축 파일 기준 200MB 제한입니다. <code>node_modules</code>를 제외하고 빌드 결과물 폴더만
-                압축하세요. 루트(또는 한 겹 폴더 안)에 <code>index.html</code>이 있어야 합니다.
+                압축 파일 기준 50MB, 압축을 풀었을 때도 50MB·1500개 파일 제한입니다.{" "}
+                <code>node_modules</code>를 제외하고 빌드 결과물 폴더만 압축하세요. 루트(또는 한 겹
+                폴더 안)에 <code>index.html</code>이 있어야 합니다. 한 계정에 프로젝트는 20개까지
+                만들 수 있습니다.
               </p>
             </FaqItem>
             <FaqItem q="로그인은 어떻게 하나요?">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors.js";
+import { accessSubject, rateLimit } from "@/lib/abuse/guard.js";
 import { validatePutSpec } from "@/lib/api/validate-spec.js";
 import { applySnippetPutOverrides } from "@/lib/api/snippet-put-overrides.js";
 import {
@@ -25,6 +26,9 @@ export async function PUT(req: Request, ctx: RouteCtx) {
   const { id } = await ctx.params;
   const access = await getProjectWriteAccess(req, id);
   if (!access) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
+
+  const limited = await rateLimit(accessSubject(access), "write");
+  if (limited) return limited;
 
   let body: unknown;
   try {

@@ -19,9 +19,11 @@ export const makeAssetKey = (): string => `asset_${assetNano()}`;
 
 export const isAssetKey = (key: string): boolean => /^asset_[0-9a-z]+$/.test(key);
 
+export const assetPrefix = (projectId: string): string => `projects/${projectId}/assets`;
+
 /** Storage 오브젝트 경로. RLS 정책이 projects/{id} 소유권을 검증한다. */
 export const assetObjectPath = (projectId: string, key: string): string =>
-  `projects/${projectId}/assets/${key}`;
+  `${assetPrefix(projectId)}/${key}`;
 
 export const mockupPrefix = (projectId: string): string => `projects/${projectId}/mockup`;
 

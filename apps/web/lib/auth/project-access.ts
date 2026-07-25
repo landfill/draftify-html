@@ -11,6 +11,8 @@ export type ProjectAccess = {
   projectId: string;
   spec: SpecProject;
   via: "session" | "token";
+  /** 세션 경로에서만 존재 — 레이트리밋 주체(W8)로 쓴다. */
+  userId?: string;
 };
 
 /**
@@ -25,7 +27,7 @@ export async function getProjectReadAccess(
   if (session) {
     const spec = await readSpec(session.db, projectId);
     if (!spec) return null;
-    return { db: session.db, projectId, spec, via: "session" };
+    return { db: session.db, projectId, spec, via: "session", userId: session.user.id };
   }
 
   const token = parseBearerToken(req);
@@ -61,7 +63,7 @@ export async function getProjectWriteAccess(
         via: "token",
       };
     }
-    return { db: session.db, projectId, spec, via: "session" };
+    return { db: session.db, projectId, spec, via: "session", userId: session.user.id };
   }
 
   if (!token) return null;

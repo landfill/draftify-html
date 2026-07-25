@@ -27,8 +27,9 @@ export default function GuidePage() {
             </li>
           </ol>
           <p className="g-note">
-            zip은 200MB 이하, 루트(또는 한 겹 폴더 안)에 <code>index.html</code>이 있어야 합니다. 업로드
-            시점으로 고정되므로 목업이 바뀌면 새 프로젝트로 다시 올립니다.
+            zip은 50MB 이하(압축을 풀었을 때도 50MB·1500개 파일 이하), 루트(또는 한 겹 폴더 안)에{" "}
+            <code>index.html</code>이 있어야 합니다. 업로드 시점으로 고정되므로 목업이 바뀌면 새
+            프로젝트로 다시 올립니다.
           </p>
         </section>
 

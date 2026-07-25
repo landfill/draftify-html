@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ProjectListItem } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
+import { LIMITS, formatMb } from "@/lib/abuse/limits.js";
 import { uploadMockupZip, completeMockupIntake } from "@/lib/intake/upload.js";
 import type { Db } from "@/lib/store/ids.js";
 
@@ -50,12 +51,16 @@ export function ConsoleHome() {
       setUploadStatus({ kind: "error", text: "zip 파일을 선택해 주세요." });
       return;
     }
-    if (file.size > 200 * 1024 * 1024) {
-      setUploadStatus({ kind: "error", text: "zip 파일이 200MB 제한을 초과합니다." });
+    if (file.size > LIMITS.zipMaxBytes) {
+      setUploadStatus({
+        kind: "error",
+        text: `zip 파일이 ${formatMb(LIMITS.zipMaxBytes)} 제한을 초과합니다.`,
+      });
       return;
     }
 
     setUploading(true);
+    let createdProjectId: string | null = null;
     try {
       const createRes = await fetch("/api/projects", {
         method: "POST",
@@ -73,6 +78,7 @@ export function ConsoleHome() {
       if (!createRes.ok) throw new Error(createBody.error?.message ?? "프로젝트 생성 실패");
 
       const projectId = createBody.project!.id;
+      createdProjectId = projectId;
       const supabase = createSupabaseBrowserClient() as unknown as Db;
       const { manifest, extract } = await uploadMockupZip(supabase, projectId, file);
       const { mockupUrl } = await completeMockupIntake(projectId, manifest);
@@ -87,6 +93,7 @@ export function ConsoleHome() {
         kind: "ok",
         text: `업로드 완료 (${extract.fileCount}개 파일).${stripped}${excluded} `,
       });
+      createdProjectId = null; // 여기까지 오면 목업이 활성화됐다 — 정리 대상이 아니다.
       form.reset();
       await loadProjects();
 
@@ -99,10 +106,18 @@ export function ConsoleHome() {
         statusEl.appendChild(link);
       }
     } catch (err) {
+      // 목업이 활성화되지 못한 프로젝트는 남겨 두면 프로젝트 수 쿼터와 Storage만 잡아먹는다(W8).
+      // 편집이 불가능한 껍데기라 삭제해도 잃을 것이 없다.
+      if (createdProjectId) {
+        await fetch(`/api/projects/${createdProjectId}`, { method: "DELETE" }).catch(
+          () => undefined,
+        );
+      }
       setUploadStatus({
         kind: "error",
         text: err instanceof Error ? err.message : "업로드에 실패했습니다.",
       });
+      await loadProjects().catch(() => undefined);
     } finally {
       setUploading(false);
     }
@@ -138,7 +153,8 @@ export function ConsoleHome() {
             <input id="project-zip" name="zip" type="file" accept=".zip,application/zip" required />
           </div>
           <p className="c-hint">
-            빌드 산출물만 압축하세요(최대 200MB). SPA는 상대 경로 또는 base path 빌드를 권장합니다.
+            빌드 산출물만 압축하세요(최대 {formatMb(LIMITS.zipMaxBytes)}). SPA는 상대 경로 또는 base
+            path 빌드를 권장합니다.
           </p>
           <button type="submit" className="c-btn" disabled={uploading}>
             {uploading ? "업로드 중…" : "업로드"}
