@@ -372,6 +372,20 @@ resolve(anchor):
 | 페이지 CSP | content script 주입이라 대상 페이지 `script-src`와 무관. sdk.js는 확장 번들에 포함(서비스에서 로드하지 않음) |
 | 실데이터 반출 | S2 마스킹 그대로 적용 — 경로 D 스냅샷도 실데이터를 담을 수 있음. SDK 전송 범위는 S1·S2 그대로(NFR-04) |
 
+### 7.4 공개판 남용 방어 (open-service W8 — 킥오프 §7.5가 값의 단일 계약)
+
+사내망·무인증 전제가 사라진 `apps/web`에만 적용된다. 기존 `packages/server`는 손대지 않는다.
+
+| 항목 | 사양 |
+|------|------|
+| 한도 상수 | `apps/web/lib/abuse/limits.ts` 단일 소스. 값은 킥오프 §7.5 표 (프로젝트 20개/zip 50MB/목업 50MB·1500파일/asset 25MB·프로젝트당 100MB) |
+| 레이트리밋 저장소 | Postgres `rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER 함수(원자적 고정 윈도우). **in-memory 금지** — 서버리스는 인스턴스가 갈린다. RLS 정책 없음 = service_role 전용 |
+| 레이트리밋 주체 | 세션 `usr:{uid}`, 경로 D Bearer `prj:{projectId}`. 버킷 4종: `projectCreate` 20/h·`write` 120/min·`export` 30/h·`token` 20/h |
+| 업로드 검증 경계 | 인테이크가 브라우저 unzip + Storage 직업로드(D5·D6)라 클라이언트 게이트는 UX용. **신뢰 경계는 `POST .../mockup/complete`** — manifest 엔트리 수 + Storage 실제 오브젝트 총 바이트를 검증, 초과 시 목업 prefix 정리 후 거부. 압축비 게이트는 기각(킥오프 §7.5 근거) |
+| complete 검증 비용 | HTML 엔트리만 다운로드해 주입 검증(비-HTML은 존재·크기만) — 대용량 바이너리를 서버 메모리로 끌어오지 않는다 |
+| 에러 코드 | ID-10 확장: `QUOTA_EXCEEDED` 403, `TOO_MANY_REQUESTS` 429(+ `Retry-After`) |
+| 확장 `host_permissions` | 와일드카드(`https://*.vercel.app/*`) 금지 — 프로덕션 도메인 확정 시 정확한 호스트 1개만 추가 |
+
 ---
 
 ## 8. 산출물 HTML 조립 사양 (server/routes/export.ts)
@@ -499,7 +513,7 @@ S2 (킥오프 s2 §8 — T1~T10 완료 후):
 | W5 | spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용) | 전체 교체 PUT 왕복 무손실, export 산출물 file:// 네트워크 0건 |
 | W6 | 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가) | 토큰 없는 저장 401, 타 프로젝트 토큰 거부, 확장이 공개 백엔드로 저장 성공 |
 | W7 | 콘솔 UI Next 이식 + Auth 게이트 | 미인증 접근 차단, 로그인 후 기능 동등 |
-| W8 | 남용 방어(쿼터·레이트리밋·업로드 검증) — 공개 필수 최소 셋 | 초과 요청·악성 업로드 형식 거부 |
+| W8 | 남용 방어(쿼터·레이트리밋·업로드 검증) — 공개 필수 최소 셋 (§7.4, 값은 킥오프 §7.5) | 쿼터 초과 403 `QUOTA_EXCEEDED`·레이트 초과 429 `TOO_MANY_REQUESTS`(+`Retry-After`), 목업 총 크기·파일 수 초과가 **complete 라우트에서** 거부되고 부분 업로드가 정리됨, 확장 `host_permissions` 와일드카드 제거 |
 | W9 | E2E: 가입→업로드→편집→export→뷰어 공개 시나리오 | open-service DoD(킥오프 §10) 통과 — 격리 회귀(타 사용자 RLS 차단)·예약 경로 회귀 포함 |
 
 ### 9.3 E2E = S2 Definition of Done (킥오프 s2 §8)
