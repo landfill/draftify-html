@@ -276,12 +276,18 @@ const SAMPLE_SNAPSHOTS: SnapshotBundle[] = [
 // Promise를 캐시해 최초 동시 요청에도 빌드가 1회만 수행되고, 실패 시 비워 재시도 (리뷰 반영)
 let cachedHtml: Promise<string> | undefined;
 
-/** 샘플 산출물 HTML — Express `/sample`과 Next `app/sample`이 공유한다. */
-export async function buildSampleHtml(): Promise<string> {
+/**
+ * 샘플 산출물 HTML — Express `/sample`과 Next `app/sample`이 공유한다.
+ *
+ * `viewerScript`를 넘기면 그것을 쓴다. Next(서버리스)는 뷰어 런타임을 빌드 시점에 문자열로
+ * 인라인하므로(apps/web/lib/export/viewer-script.ts) 런타임 fs 읽기를 하는 `readViewerScript()`를
+ * 태울 수 없다. 인자를 생략하면 기존 Express 동작 그대로다.
+ */
+export async function buildSampleHtml(viewerScript?: string): Promise<string> {
   return buildExportHtml({
     project: SAMPLE_PROJECT,
     snapshots: SAMPLE_SNAPSHOTS,
-    viewerScript: await readViewerScript(),
+    viewerScript: viewerScript ?? (await readViewerScript()),
     generatedAt: SAMPLE_GENERATED_AT,
   });
 }

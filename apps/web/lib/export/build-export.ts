@@ -1,11 +1,11 @@
 import type { SpecProject } from "@mockspec/shared";
 import {
   buildExportHtml,
-  readViewerScript,
   type SnapshotBundle,
 } from "../../../../packages/server/src/routes/export.js";
 import type { Db } from "../store/ids.js";
 import { readAsset } from "../store/projectStore.js";
+import { VIEWER_SCRIPT } from "./viewer-script.js";
 
 /** Vercel 서버리스 응답 본문 한계 회피 — 이보다 크면 Storage+302. */
 export const EXPORT_INLINE_MAX_BYTES = 4 * 1024 * 1024;
@@ -58,7 +58,7 @@ export async function assembleExportHtml(
   const html = buildExportHtml({
     project,
     snapshots,
-    viewerScript: await readViewerScript(),
+    viewerScript: VIEWER_SCRIPT,
   });
 
   return { html, usedMasked };

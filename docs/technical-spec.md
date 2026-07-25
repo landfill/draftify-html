@@ -412,6 +412,19 @@ resolve(anchor):
 - 크기 가드: 조립 결과 50MB 초과 시 경고와 함께 진행
 - 스냅샷 없는 장면: 플레이스홀더 + 경고
 
+**뷰어 런타임을 조립에 넣는 방법 (배포 형태별 — open-service W9 선결 수정, 2026-07-25)**
+
+| 배포 | 방법 |
+|------|------|
+| 사내판 (`packages/server`, Express) | `readViewerScript()` — 런타임에 `packages/viewer/dist/main.js`를 `fs`로 읽는다. `MOCKSPEC_VIEWER_SCRIPT` env로 대체 가능(테스트용) |
+| 공개판 (`apps/web`, 서버리스) | **빌드 시점 문자열 인라인** — `lib/export/viewer-script.ts`가 `?raw` 임포트로 번들에 박는다 (`next.config.mjs`의 `asset/source` 룰) |
+
+공개판이 `readViewerScript()`를 **쓰면 안 되는** 이유: 그 함수는 `fs.readFile(new URL(..., import.meta.url))`
+인데, Next 번들 컨텍스트에서 `import.meta.url`이 재작성되고 `URL`이 다른 realm 클래스가 되어
+`ERR_INVALID_ARG_TYPE`으로 실패한다(`POST .../export`·`GET /sample`이 둘 다 500이었다). 서버리스
+배포 번들에 `packages/viewer/dist/`가 포함된다는 보장도 없다. 빌드 인라인이 두 문제를 함께 없애고
+런타임 파일 접근도 0이 된다. 회귀 방지는 `apps/web/lib/export/viewer-script.test.ts`.
+
 ---
 
 ## 9. 테스트 전략

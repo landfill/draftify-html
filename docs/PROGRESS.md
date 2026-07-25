@@ -12,8 +12,8 @@
 **▶ 다음 세션 시작점 (2026-07-25 갱신) — 활성 트랙: open-service, 이 워크트리에서 W9부터.**
 - 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
 - 진행: **W1~W8 완료**(아래 WBS `[x]`). 남은 것 = **W9 E2E**(공개 DoD, 킥오프 §10). `main` 환류는 W9 완료 후 **사용자 동의 필수**(§6), 대규모 diff·봇 리뷰 다수 예상.
-- **W9 착수 전 반드시 고칠 것 (W8 실서버 스모크가 잡은 기존 결함):**
-  - ⚠️ **export 500 — `POST /api/projects/{id}/export`가 Next 런타임에서 실패한다.** `packages/server/src/routes/export.ts:207`의 `readViewerScript`가 `fs.readFile(new URL(...))`을 호출하고, apps/web 번들 컨텍스트에서 `ERR_INVALID_ARG_TYPE: The "path" argument ... Received an instance of URL`로 죽는다. **W5가 유닛만 보고 완료 처리한 구멍**이며 공개 DoD 4단계(export)가 통째로 막힌다. 수정 방향: `fileURLToPath()`로 경로 변환하거나 apps/web에서 뷰어 스크립트를 자체 로드(`MOCKSPEC_VIEWER_SCRIPT` env 경로도 있음). W9 첫 항목으로 잡을 것.
+- **선결 수정 완료 (2026-07-25)**: export·`/sample` 500(뷰어 런타임 로딩)은 **고쳤다** — 아래 세션 로그 참조. 공개 DoD 4단계(export → file:// 검증)가 이제 성립한다.
+- **W9 착수 시 참고:**
   - 확장 저장 URL: 프로덕션 도메인이 확정되면 `packages/extension/manifest.json` `host_permissions`에 **정확한 호스트 1개** 추가(README 절차). 로컬 패턴은 포트 무관(`http://localhost/*`)으로 되돌려 둠.
   - (선택) spec PUT 내부 항목 스키마 엄격 검증(zod 등) — W8에서 미채택, 강화 항목으로 남김.
 - **W8 코드리뷰 조언 처리 결과**: ① in-memory 금지 → Postgres 카운터로 구현(완료). ② zip bomb → 파일 수·총 크기 게이트 구현, **압축비 게이트는 기각**(fflate가 해제 전 팽창을 알 수 없고, 해제 후에는 총 크기 상한이 상위 개념 — 근거는 킥오프 §7.5 인용문). ③ `*.vercel.app` 와일드카드 제거(완료). ④ zod는 미채택(위 참조).
@@ -110,6 +110,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — export·/sample 500 수정 (W9 선결, 뷰어 런타임 인라인)
+- 브랜치: `feat/open-service-w8-abuse-guard` (W8과 같은 브랜치에 이어 커밋).
+- 증상: `POST /api/projects/{id}/export`와 **공개 페이지 `GET /sample`**(헤더에 링크됨)이 둘 다 500. 원인은 하나 — `packages/server`의 `readViewerScript()`가 `fs.readFile(new URL("../../../viewer/dist/main.js", import.meta.url))`인데, Next 번들 컨텍스트에서 `import.meta.url`이 재작성되고 `URL`이 다른 realm 클래스가 되어 `ERR_INVALID_ARG_TYPE`으로 죽는다. 서버리스 배포 번들에 뷰어 dist가 포함된다는 보장도 없다.
+- 완료: `apps/web/lib/export/viewer-script.ts` 신설 — `?raw` 임포트로 뷰어 번들을 **빌드 시점 문자열 인라인**(`next.config.mjs`에 `asset/source` 룰, `types/raw-modules.d.ts` 선언). sourceMappingURL 주석 제거는 여기서 한다. `build-export.ts`가 이 상수를 쓰고, `/sample`은 `buildSampleHtml(VIEWER_SCRIPT)`로 넘긴다.
+- 완료: `packages/server/src/routes/sample.ts`의 `buildSampleHtml`에 **선택 인자** `viewerScript?` 추가(생략 시 기존 Express 동작 그대로 — 사내판 무영향). 이것이 packages/server에 대한 유일한 변경.
+- 스펙 반영: technical-spec §8에 "배포 형태별 뷰어 런타임 주입 방법" 표 + 공개판이 `readViewerScript()`를 쓰면 안 되는 이유. 킥오프 §11 이력 1행.
+- 검증: `npm test` **339 passed**(+4: `viewer-script.test.ts` — 인라인 여부·sourceMappingURL 부재·스냅샷 base64 조립·마스킹본 우선·외부 참조 0). `npm run build`·`next build`·`tsc --noEmit` green, **E2E 4본 통과**(Express 경로 회귀 없음).
+- **실 서버 검증(dev + 실 Supabase, 경로 D Bearer)**: 스냅샷 asset 업로드 → 화면 1·어노테이션 1 spec PUT → **export 200(46KB, `Content-Disposition` 정상)**. 산출물을 **Chromium에서 file://로 열어** 페이지 에러 0·**외부 네트워크 요청 0건**·스냅샷 iframe 1개·마커 ① 렌더·페이지 헤더 밴드("주문관리/주문 목록")·작성자 라벨·**산출물에 SCR 코드 미노출**까지 스크린샷으로 확인. `/sample`도 200(56KB)·에러 0·요청 0건·화면 3·어노테이션 8·흐름도 렌더 확인. 검증용 사용자·프로젝트·Storage 오브젝트는 삭제 정리.
+- 다음 할 일: **W9 E2E** — 공개 DoD(가입→업로드→편집→export→뷰어, 격리·예약 경로 회귀 포함) 자동화. 이제 4단계가 실동작하므로 그대로 시나리오화 가능.
+- 막힌 지점: 없음. 참고: DB에 이전 세션 잔재 프로젝트 `prj_dbgtest02`("dbg", 2026-07-24) 1건이 남아 있다 — 내 검증 데이터는 아니라 지우지 않았다.
 
 ### 2026-07-25 — W8 남용 방어 완료 (쿼터·레이트리밋·업로드 검증)
 - 브랜치: `feat/open-service-w8-abuse-guard` (open-service 기준, 미병합).
