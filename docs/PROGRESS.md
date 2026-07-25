@@ -9,14 +9,14 @@
 
 ## 현재 단계
 
-**▶ 다음 세션 시작점 (2026-07-25 핸드오프 — 임의 에이전트) — 활성 트랙: open-service, 이 워크트리에서 W8부터.**
+**▶ 다음 세션 시작점 (2026-07-25 갱신) — 활성 트랙: open-service, 이 워크트리에서 W9부터.**
 - 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
-- 진행: **W1~W7 완료**(아래 WBS `[x]`, 코드리뷰로 소유권·traversal·토큰·dual-auth 견고 확인). 다음 = **W8 남용 방어** → W9 E2E. `main` 환류는 W9 완료 후 **사용자 동의 필수**(§6), 대규모 diff·봇 리뷰 다수 예상.
-- **W8 착수 참고 (2026-07-25 코드리뷰 회수 — 대화에만 있던 조언을 여기 고정):**
-  - ① 레이트리밋은 서버리스라 **in-memory 카운터 금지** → Supabase 카운터/edge 방식.
-  - ② 업로드 검증 = **zip bomb 방어**: 해제 후 총 크기·파일 수·압축비 게이트(경로만 보는 `isSafeMockupPath`와 별개).
-  - ③ 확장 manifest `host_permissions`의 `*.vercel.app` 와일드카드 → **프로덕션 확정 도메인으로 좁히고 localhost 정리**(다른 vercel 앱에 토큰 노출 표면).
-  - ④ (선택) spec PUT 내부 항목 스키마 엄격 검증(zod 등)은 강화 항목.
+- 진행: **W1~W8 완료**(아래 WBS `[x]`). 남은 것 = **W9 E2E**(공개 DoD, 킥오프 §10). `main` 환류는 W9 완료 후 **사용자 동의 필수**(§6), 대규모 diff·봇 리뷰 다수 예상.
+- **W9 착수 전 반드시 고칠 것 (W8 실서버 스모크가 잡은 기존 결함):**
+  - ⚠️ **export 500 — `POST /api/projects/{id}/export`가 Next 런타임에서 실패한다.** `packages/server/src/routes/export.ts:207`의 `readViewerScript`가 `fs.readFile(new URL(...))`을 호출하고, apps/web 번들 컨텍스트에서 `ERR_INVALID_ARG_TYPE: The "path" argument ... Received an instance of URL`로 죽는다. **W5가 유닛만 보고 완료 처리한 구멍**이며 공개 DoD 4단계(export)가 통째로 막힌다. 수정 방향: `fileURLToPath()`로 경로 변환하거나 apps/web에서 뷰어 스크립트를 자체 로드(`MOCKSPEC_VIEWER_SCRIPT` env 경로도 있음). W9 첫 항목으로 잡을 것.
+  - 확장 저장 URL: 프로덕션 도메인이 확정되면 `packages/extension/manifest.json` `host_permissions`에 **정확한 호스트 1개** 추가(README 절차). 로컬 패턴은 포트 무관(`http://localhost/*`)으로 되돌려 둠.
+  - (선택) spec PUT 내부 항목 스키마 엄격 검증(zod 등) — W8에서 미채택, 강화 항목으로 남김.
+- **W8 코드리뷰 조언 처리 결과**: ① in-memory 금지 → Postgres 카운터로 구현(완료). ② zip bomb → 파일 수·총 크기 게이트 구현, **압축비 게이트는 기각**(fflate가 해제 전 팽창을 알 수 없고, 해제 후에는 총 크기 상한이 상위 개념 — 근거는 킥오프 §7.5 인용문). ③ `*.vercel.app` 와일드카드 제거(완료). ④ zod는 미채택(위 참조).
 
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
@@ -56,7 +56,7 @@
 - [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 §6 ⓐ). vitest **292 passed**.
 - [x] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions) — **완료.** `project-access`(세션 vs Bearer·admin 해시 검증·projectId 스코프), `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`, 미들웨어 Bearer 우회, manifest `localhost:3000`·`*.vercel.app`. vitest **297 passed**.
 - [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
-- [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
+- [x] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — **완료.** 한도 계약 = 킥오프 §7.5 / 사양 = technical-spec §7.4. 상수 단일 소스 `lib/abuse/limits.ts`(프로젝트 20개·zip 50MB·목업 50MB·1500파일·스냅샷 25MB·asset 총 100MB), 레이트리밋 Postgres 고정 윈도우(`rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER, in-memory 금지·fail-open) 버킷 4종, 업로드 검증 신뢰 경계를 `mockup/complete`로(Storage 실측 총 바이트·오브젝트 수, HTML만 다운로드), 에러 2종(`QUOTA_EXCEEDED` 403·`TOO_MANY_REQUESTS` 429+`Retry-After`), 확장 manifest 와일드카드 제거. vitest **335 passed**(+38), E2E 4본 통과, 실 서버 429 유발 확인
 - [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
@@ -110,6 +110,20 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-25 — W8 남용 방어 완료 (쿼터·레이트리밋·업로드 검증)
+- 브랜치: `feat/open-service-w8-abuse-guard` (open-service 기준, 미병합).
+- **스펙 먼저(§4)**: 킥오프 §7.5 신설(쿼터 6종·레이트리밋 4버킷 값, 저장소·주체 규칙, 업로드 검증 신뢰 경계, 압축비 기각 근거, manifest 와일드카드 금지) + §11 이력 1행. technical-spec §7.4 신설 + §9.2 W8 AC 보강. **값은 스펙이 계약, 코드는 `lib/abuse/limits.ts` 단일 소스** — `limits.test.ts`가 표와의 일치를 못박는다.
+- 완료: **레이트리밋** — 마이그레이션 `20260725090000_rate_limit_counters`(테이블 + `consume_rate_limit()` SECURITY DEFINER 고정 윈도우, RLS 활성·정책 없음 = service_role 전용, `authenticated`·`anon` EXECUTE revoke, 지난 윈도우 행 확률적 청소). `lib/abuse/rate-limit.ts`(admin RPC, **fail-open** — 카운터 고장으로 정상 편집을 끊지 않는다. 보안 경계는 RLS·토큰이 별도로 강제), `guard.ts`의 `rateLimit()`·`accessSubject()`(세션=`usr:{uid}`, 경로 D Bearer=`prj:{id}`). 적용: 프로젝트 생성·PUT spec·assets·complete·export·token.
+- 완료: **쿼터** `lib/abuse/quota.ts` — 사용자당 프로젝트 수(20), 프로젝트당 목업 총 크기(50MB), asset 총 크기(100MB, 신규 크기 합산 사전 판정). 스냅샷 1건은 25MB(기존 50MB에서 축소).
+- 완료: **업로드 검증(zip bomb)** — 신뢰 경계를 `POST .../mockup/complete`로 명확화: Storage **실측** 총 바이트·오브젝트 수 게이트(manifest만 줄여 우회 불가 — manifest 밖 오브젝트까지 합산), 엔트리 존재는 재귀 list로 O(1) 확인, **본문 다운로드는 HTML만**(대용량 바이너리를 서버 메모리로 끌어오지 않음, 20개씩 배치). 클라이언트(브라우저 unzip) 게이트는 UX용으로 `process.ts`에 추가(zip 원본·해제 총 크기·파일 수).
+- 완료: **에러 2종** `QUOTA_EXCEEDED` 403 / `TOO_MANY_REQUESTS` 429 + `Retry-After`(ID-10 확장 선례). 콘솔·가이드·FAQ 문구를 새 한도로 갱신(200MB→50MB, 프로젝트 20개 안내).
+- 완료(부수 결함 2건): ① **`deleteProject`가 Storage를 한 단계만 지웠다** — 목업의 중첩 디렉토리(`js/`·`assets/`) 오브젝트가 영구히 남아 버킷을 먹던 누수. 재귀 나열·삭제 모듈 `lib/store/storage-list.ts`(페이지네이션 포함)로 교체하고 쿼터 집계도 같은 모듈을 쓴다. ② **콘솔 업로드 실패 시 껍데기 프로젝트가 남던 문제** — 목업 미활성 프로젝트는 편집 불가라 남길 이유가 없어 실패 경로에서 삭제.
+- 완료(실버그 발견·수정): **미들웨어가 Bearer 요청을 `/login`으로 307 리다이렉트**해 경로 D API가 전부 막혀 있었다(W6 배선 누락 — `isProtectedApiPath` 분기에서 Bearer는 401만 면제되고 그 아래 페이지 리다이렉트에 걸림). 보호 API 경로는 Bearer가 있으면 라우트로 통과시키도록 수정 + 회귀 테스트 `middleware.test.ts` 6건 신설.
+- 검증: `npm test` **335 passed**(+38: limits 4·quota 6·rate-limit 통합 5·storage-list 4·validate 확장 8·intake 게이트 5·middleware 6). `npm run build`·`next build`·`tsc --noEmit` 전부 green. **E2E 4본 통과**. **레이트리밋 통합 테스트는 실 Supabase에 붙어** 한도 경계·동시 10요청 원자성(카운트 유실 0)·주체/버킷 격리·`anon`의 테이블 읽기 0행·RPC EXECUTE 거부·잘못된 인자 예외까지 확인. 어드바이저: `rate_limit_counters` RLS-정책-없음 INFO는 의도된 설계.
+- **실 서버 스모크(dev + 실 Supabase)**: 토큰 없는 PUT 401 → 유효 Bearer GET 200 → 잘못된 토큰 401 → PUT 140회 병렬로 **429 발생**(`retry-after: 15`, 본문이 ID-10 형식), 카운터 행이 `write` 120/분 윈도우 경계에서 정확히 정산(119+6, 이어서 114+26=140), `export`는 1시간 윈도우 별도 행으로 분리됨을 DB에서 확인. 스모크용 사용자·프로젝트·카운터 행은 전부 삭제 정리.
+- 다음 할 일: **W9 E2E**. 단, 그 전에 배너의 **export 500(`readViewerScript`의 `fs.readFile(URL)`)**을 먼저 고쳐야 공개 DoD 4단계가 성립한다. 이후 트랙 완료 시 main 환류 PR(사용자 동의).
+- 막힌 지점: 없음. 참고 3건: (1) 확장 프로덕션 호스트는 도메인 확정 후 1줄 추가(미확정이라 로컬만). (2) `20260724150000_fix_storage_object_rls.sql`은 원격 마이그레이션 목록에 기록이 없다(적용은 되어 있음 — `storage_object_owned_by_user` 존재 확인) → 이력 정합성만 어긋난 상태. (3) 어드바이저 WARN `storage_object_owned_by_user`가 `authenticated`에게 EXECUTE 열려 있음은 **Storage RLS 정책이 그 함수를 호출하므로 revoke하면 목업 서빙이 깨진다** — 반환값이 "이 오브젝트가 내 것인가" 뿐이라 수용. (4) W2 통합 테스트가 전체 실행 중 1회 Auth JWT 오류로 실패했다가 이후 재현 안 됨(단독·전체 모두 통과) — Supabase Auth 측 일시 오류로 판단.
 
 ### 2026-07-25 — 핸드오프 정리 (다음 세션은 임의 에이전트)
 - 완료: W1~W7 코드리뷰 검증(소유권 RLS·path traversal 방어·토큰 timingSafeEqual·dual-auth 저장 route 일관 — 인증 우회 경로 없음 확인). 이 세션 조언(W8 세부·host_permissions 좁히기)을 "현재 단계" 배너에 회수 고정.
