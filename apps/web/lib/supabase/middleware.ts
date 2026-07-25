@@ -33,11 +33,16 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && isProtectedApiPath(pathname) && !hasBearerAuth(request)) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
-      { status: 401 },
-    );
+  if (!user && isProtectedApiPath(pathname)) {
+    // 경로 D(확장)는 세션 없이 Bearer 토큰만 갖는다 — 토큰 검증은 라우트(project-access)가 한다.
+    // 여기서 리다이렉트로 삼켜 버리면 확장 저장이 통째로 막힌다.
+    if (!hasBearerAuth(request)) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "로그인이 필요합니다." } },
+        { status: 401 },
+      );
+    }
+    return supabaseResponse;
   }
 
   if (!user && !isPublicPath(pathname)) {
