@@ -21,7 +21,9 @@
     "clean": "tsc -b --clean",
     "test": "vitest run",
     "fixtures:zip": "npm run zip -w @mockspec/fixture-todo-app",
-    "test:e2e": "npm run build && npm run fixtures:zip && playwright test"
+    "fixtures:zip:relative": "npm run zip:relative -w @mockspec/fixture-todo-app",
+    "test:e2e": "npm run build && npm run fixtures:zip && playwright test",
+    "test:e2e:web": "npm run build && npm run fixtures:zip:relative && npm run build -w @mockspec/web && playwright test -c playwright.open-service.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",

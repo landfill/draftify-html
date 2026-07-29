@@ -42,5 +42,7 @@ out/
 !.vscode/extensions.json
 *.swp
 
-# E2E fixtures 생성물 (npm run fixtures:zip)
+# E2E fixtures 생성물 (npm run fixtures:zip / fixtures:zip:relative)
 fixtures/todo-app.zip
+fixtures/todo-app-relative.zip
+fixtures/todo-app/dist-relative/

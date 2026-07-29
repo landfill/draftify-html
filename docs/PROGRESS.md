@@ -9,12 +9,16 @@
 
 ## 현재 단계
 
-**▶ 다음 세션 시작점 (2026-07-25 갱신) — 활성 트랙: open-service, 이 워크트리에서 W9부터.**
+**▶ 다음 세션 시작점 (2026-07-29 갱신) — 활성 트랙: open-service, 이 워크트리에서 배포·환류부터.**
 - 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
-- 진행: **W1~W8 완료**(아래 WBS `[x]`). 남은 것 = **W9 E2E**(공개 DoD, 킥오프 §10). `main` 환류는 W9 완료 후 **사용자 동의 필수**(§6), 대규모 diff·봇 리뷰 다수 예상.
-- **선결 수정 완료 (2026-07-25)**: export·`/sample` 500(뷰어 런타임 로딩)은 **고쳤다** — 아래 세션 로그 참조. 공개 DoD 4단계(export → file:// 검증)가 이제 성립한다.
-- **W9 착수 시 참고:**
-  - 확장 저장 URL: 프로덕션 도메인이 확정되면 `packages/extension/manifest.json` `host_permissions`에 **정확한 호스트 1개** 추가(README 절차). 로컬 패턴은 포트 무관(`http://localhost/*`)으로 되돌려 둠.
+- 진행: **W1~W9 전부 완료**(아래 WBS `[x]`). 코드로 남은 워크스트림 없음. 브랜치 `feat/open-service-w8-abuse-guard`(장기 `open-service` 기준, 미푸시 커밋 다수).
+- **남은 것 = 두 가지, 둘 다 사용자 판단이 앞선다:**
+  1. **Vercel 배포 + "실사용 1회" 판정** — 킥오프 §10 종료 조건. 자동 E2E는 로컬 `next start`에서 green이지만, 트랙 종료는 실 배포 1회 사용으로 사용자가 판정한다.
+  2. **`main` 환류 PR** — **사용자 동의 필수**(§6). 대규모 diff·봇 리뷰 다수 예상.
+- **배포 시 선행 작업:**
+  - 확장 저장 URL: 프로덕션 도메인이 확정되면 `packages/extension/manifest.json` `host_permissions`에 **정확한 호스트 1개** 추가(README 절차). 현재는 `http://localhost:3000/*`만.
+  - Supabase Redirect URLs에 프로덕션 `/auth/callback`·`/auth/confirm` 추가(현재 로컬만).
+  - 목업 zip은 **상대 base 빌드**여야 한다 — 공개판은 `/m/{id}/` 경로 접두 서빙이라 루트 base(`/assets/...`)는 접두 밖으로 나가 깨진다(킥오프 §7.1 알려진 제약). 가이드/FAQ 문구 보강은 미착수.
   - (선택) spec PUT 내부 항목 스키마 엄격 검증(zod 등) — W8에서 미채택, 강화 항목으로 남김.
 - **W8 코드리뷰 조언 처리 결과**: ① in-memory 금지 → Postgres 카운터로 구현(완료). ② zip bomb → 파일 수·총 크기 게이트 구현, **압축비 게이트는 기각**(fflate가 해제 전 팽창을 알 수 없고, 해제 후에는 총 크기 상한이 상위 개념 — 근거는 킥오프 §7.5 인용문). ③ `*.vercel.app` 와일드카드 제거(완료). ④ zod는 미채택(위 참조).
 
@@ -57,7 +61,7 @@
 - [x] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions) — **완료.** `project-access`(세션 vs Bearer·admin 해시 검증·projectId 스코프), `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`, 미들웨어 Bearer 우회, manifest `localhost:3000`·`*.vercel.app`. vitest **297 passed**.
 - [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
 - [x] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — **완료.** 한도 계약 = 킥오프 §7.5 / 사양 = technical-spec §7.4. 상수 단일 소스 `lib/abuse/limits.ts`(프로젝트 20개·zip 50MB·목업 50MB·1500파일·스냅샷 25MB·asset 총 100MB), 레이트리밋 Postgres 고정 윈도우(`rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER, in-memory 금지·fail-open) 버킷 4종, 업로드 검증 신뢰 경계를 `mockup/complete`로(Storage 실측 총 바이트·오브젝트 수, HTML만 다운로드), 에러 2종(`QUOTA_EXCEEDED` 403·`TOO_MANY_REQUESTS` 429+`Retry-After`), 확장 manifest 와일드카드 제거. vitest **335 passed**(+38), E2E 4본 통과, 실 서버 429 유발 확인
-- [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
+- [x] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함) — **자동화 완료·green.** `e2e-open-service/open-service-dod.spec.ts` 1본 + 전용 설정 `playwright.open-service.config.ts`(포트 4300, `next start`), 실행 `npm run test:e2e:web`. DoD 7단계 전부(로그인·업로드·화면 2·어노테이션 4·export·file:// 네트워크 0건·마커 ≤2px·타 사용자 격리·예약 경로) 검증. **남은 것 = 실 배포 후 "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단)
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
 
@@ -110,6 +114,17 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-29 — W9 공개 서비스 DoD E2E 자동화 (open-service 트랙 코드 완료)
+- 브랜치: `feat/open-service-w8-abuse-guard` (W8·선결 fix와 같은 브랜치에 이어 커밋).
+- 완료: **`e2e-open-service/open-service-dod.spec.ts` 1본** — 킥오프 §10 DoD 7단계를 한 시나리오로 검증. ① admin API로 **신규 사용자** 생성 → 매직링크 `hashed_token`을 앱의 실제 확인 경로에 태워 로그인, ② ZIP 업로드(브라우저 unzip → Storage 직업로드 → `mockup/complete`), ③ `/m/{id}/`에서 편집 — **화면 2개·어노테이션 4개**(각 제목·설명), ④ export, ⑤ 산출물을 **새 브라우저 컨텍스트에서 `file://`로** 열어 화면 전환·마커 4개 위치 **≤2px**·설명 일치·**네트워크 요청 0건**, ⑥ **격리 회귀**(사용자 B로 A의 spec·목업·asset 접근 차단), ⑦ **예약 경로 회귀**(SDK가 `/__mockspec/sdk.js`로 로드되고 저장이 `/__mockspec/api`로 성립). 테스트가 만든 사용자·프로젝트·Storage 오브젝트는 `afterAll`에서 삭제.
+- 완료: **전용 설정 `playwright.open-service.config.ts`**(포트 4300 — 사내판 4123·dev 3000과 충돌 회피, `next start`, workers 1). 기존 `playwright.config.ts`(사내판 Express)와 **완전 분리** — 대상 서버·인증 방식·저장소가 다르다. 실행은 `npm run test:e2e:web`. `apps/web/.env.local`이 없으면 스펙이 **스스로 스킵**(CI 안전).
+- 완료: **fixture 상대 base 변형** — `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`(`vite build --base=./ --outDir dist-relative`). 공개판은 `/m/{id}/` 경로 접두 서빙이라 루트 base 빌드의 `/assets/...`가 접두 밖으로 나가 깨진다(킥오프 §7.1). 사내판은 서브도메인이라 기존 루트 base fixture를 그대로 쓴다 — 두 변형이 공존하는 이유를 `scripts/zip.mjs` 주석에 명시.
+- 완료(실버그 발견·수정, **W9가 잡았다**): **`/__mockspec/sdk.js`가 108바이트 플레이스홀더를 200으로 서빙**하고 있었다. `packages/server`의 `readSdkBundle()`은 `createRequire(import.meta.url)` + `require.resolve()`로 런타임에 경로를 찾고 **실패하면 플레이스홀더 JS를 200으로 반환**한다 — Next 번들 컨텍스트에서 그 해석이 실패해, 편집기가 아예 안 뜨는데 응답은 200인 조용한 파손이었다. `apps/web/lib/sdk-bundle.ts`를 신설해 `?raw` **빌드 시점 인라인**으로 교체(뷰어 런타임과 동일한 처방 — 07-25 세션 참조). 번들이 없으면 **빌드가 실패**하므로 조용한 폴백이 재발할 수 없다.
+- 완료: **`/auth/confirm` 라우트 신설** — `token_hash`를 서버에서 `verifyOtp`로 검증해 세션 쿠키를 심는다. `/auth/callback`(PKCE 코드 교환)은 **링크를 요청한 그 브라우저**에 code_verifier가 있어야 성립해서, 노트북에서 요청하고 휴대폰에서 여는 실사용 케이스가 실패한다. 이 경로가 그걸 덮는다(Supabase 권장 패턴). E2E 로그인도 이 경로를 탄다 — 즉 테스트가 우회로를 쓰지 않고 앱의 실제 확인 경로를 검증한다.
+- 검증: `npm test` **339 passed**(44 파일), **W9 E2E 1본 통과**(실 Supabase, 13.8s), **사내판 E2E 4본 통과**(회귀 없음), `next build` green.
+- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단) → **② `main` 환류 PR(사용자 동의 필수, §6)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
+- 막힌 지점: 없음. 참고 2건: (1) 목업 zip이 **루트 base 빌드면 공개판에서 깨진다** — 코드로 막지 않았고 문서·가이드 안내도 아직 없다(킥오프 §7.1의 알려진 제약). 사용자 유입 전에 콘솔/가이드 문구로 안내할지 판단 필요. (2) 07-25에 적어 둔 잔재 프로젝트 `prj_dbgtest02`는 그대로 둔다(내 데이터 아님).
 
 ### 2026-07-25 — export·/sample 500 수정 (W9 선결, 뷰어 런타임 인라인)
 - 브랜치: `feat/open-service-w8-abuse-guard` (W8과 같은 브랜치에 이어 커밋).
