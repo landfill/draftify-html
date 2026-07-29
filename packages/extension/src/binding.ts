@@ -8,7 +8,7 @@ export interface Binding {
   projectId: string;
   /** 저장 계열 인증 토큰 (T20 게이트). background 경유 저장에 사용 (T23) */
   token: string;
-  /** mockspec 서버 오리진 (기본 http://localhost:3000). 오리진 하드코딩 금지(ID-01) — 사용자 입력 */
+  /** mockspec 서버 오리진 (기본 http://localhost:4000 = 사내판). 오리진 하드코딩 금지(ID-01) — 사용자 입력 */
   serverUrl: string;
 }
 
