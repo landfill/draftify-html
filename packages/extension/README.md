@@ -18,22 +18,20 @@ Chrome → `chrome://extensions` → 개발자 모드 → **압축해제된 확�
 나간다.**
 
 ```json
-"host_permissions": ["http://localhost/*", "http://127.0.0.1/*"]
+"host_permissions": [
+  "https://draftify-html.vercel.app/*",
+  "http://localhost/*",
+  "http://127.0.0.1/*"
+]
 ```
 
 - **로컬은 포트를 적지 않는다.** MV3 match pattern은 포트를 구분하지 않으므로 `http://localhost/*`가
   모든 포트를 덮는다. dev(3000)·E2E(4123)·기타 로컬 기동을 한 줄로 커버하기 위한 것이다.
 - **원격 호스트에 와일드카드를 넣지 않는다.** `https://*.vercel.app/*` 같은 패턴은 *모든* vercel.app
   앱으로 토큰을 보낼 수 있는 표면이 된다(W8 결정 — 킥오프 스펙 §7.5).
-- **프로덕션 배포 시**: 확정된 호스트 **하나**를 정확히 추가한다.
-
-  ```json
-  "host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "https://<확정된-프로덕션-호스트>/*"
-  ]
-  ```
+- **프로덕션 배포 시**: 확정된 호스트 **하나**를 정확히 추가한다. 공개판 첫 배포(2026-07-29)로
+  `https://draftify-html.vercel.app/*`을 등록했다. 도메인이 바뀌면 이 줄을 교체한다(추가가 아니라
+  교체 — 쓰지 않는 호스트를 남겨 두지 않는다).
 
   추가 후 확장을 다시 빌드·로드하고, 팝업의 서버 URL을 그 호스트로 바꾼다. 호스트가 manifest에
   없으면 저장 요청이 조용히 실패하는 대신 fetch 자체가 차단된다.

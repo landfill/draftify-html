@@ -115,6 +115,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-29 — 첫 배포 성공 + 절대경로 제약 실사용 노출 → 안내 문구·확장 호스트 등록
+- **배포 완료: https://draftify-html.vercel.app** (Vercel Hobby, production branch = `open-service`). OAuth 로그인·서비스 기동 확인.
+- 배포까지 걸린 것 3건(전부 대시보드 설정): ① Install Command를 **`cd ../.. && npm install`** 로 오버라이드해야 한다 — Vercel은 Root Directory(`apps/web`)에서 install 해 루트 `node_modules`가 안 생긴다(`tsc: command not found`). ② Framework Preset을 **Next.js**로 지정 — 임포트 시 Root Directory가 `packages/sdk`였던 탓에 `Other`로 잡혀 `No Output Directory named "dist"`로 실패했다. **Output Directory에 `.next`를 수동 지정하면 안 된다**(정적 취급이 되어 Route Handler·미들웨어가 죽는다). ③ Production Branch는 `Settings → Environments → Production → Branch Tracking`(예전 `Settings → Git` 아님).
+- **실사용 1회 시도에서 킥오프 §7.1 "알려진 제약"이 그대로 터졌다**: 루트 절대경로(`/assets/…`)로 빌드된 목업을 올리니 `/m/{id}/` 접두 밖을 가리켜 404 — 화면이 비어 보인다. `<base href="/m/{id}/">`는 주입되지만 **HTML `<base>`는 상대 URL에만 적용**되므로 이 케이스를 못 고친다. 스펙이 "온보딩 제약 문서화로 갈음"(§7.1·비목표 76행)이라 했는데 **실제 문구가 콘솔의 "권장합니다" 한 줄뿐이라 무력했다.**
+- 완료: 안내를 **필수 조건**으로 강화 — 콘솔 업로드 힌트(왜 깨지는지 + `--base=./`), `/guide` 시작하기(예시 명령을 `vite build --base=./`로 교체 + 이유 문단), `/faq`에 신규 문항 "업로드는 됐는데 편집 화면이 비어 있거나 스타일이 깨집니다"(404 증상 → 원인 → 재빌드 방법 → 정상 여부 확인법).
+- 완료: 확장 `host_permissions`에 **`https://draftify-html.vercel.app/*`** 등록(정확한 호스트 1개, 와일드카드 금지 — 킥오프 §7.5). `packages/extension/README.md`도 실제 값으로 갱신(도메인 변경 시 추가가 아니라 **교체**).
+- 검증: `npm test` **339 passed**, `next build` green.
+- 다음 할 일: 상대 base로 재빌드한 목업으로 **실사용 1회 판정 재시도**. Supabase `Authentication → URL Configuration`에 Site URL·Redirect URLs(`/auth/callback`·`/auth/confirm`, 프로덕션+로컬) 등록 필요 — OAuth는 로그인됐으나 매직링크 경로는 미확인.
+- 막힌 지점: **경로 D(확장) 진입점이 콘솔에 없다.** API·토큰 발급은 W6에서 구현됐는데 W7 콘솔 이식 때 등록 UI가 빠져, 공개판에서 경로 D 프로젝트를 만들 수단이 없다. 경로 B(프록시)가 없는 것은 의도된 제외(D2)지만 이건 갭이다. 실사용 판정 이후 처리 예정.
+
 ### 2026-07-29 — Vercel 배포 준비: 워크스페이스 선행 빌드(`vercel-build`)
 - 완료: `apps/web/package.json`에 **`vercel-build`** 추가 — `npm run build --prefix ../.. && next build`. Vercel은 Root Directory(`apps/web`)의 빌드만 돌리는데, `?raw` 인라인 대상인 `packages/viewer/dist/main.js`(루트 `tsc -b`)와 `packages/sdk/dist/sdk.js`(vite)가 없어 빌드가 깨진다. Vercel은 `vercel-build`가 있으면 `build` 대신 실행하므로, 로컬 `build`(= `next build`)는 건드리지 않고 배포 경로에만 선행 빌드를 물린다. technical-spec §8에 근거·검증법 기록.
 - 검증: 두 `dist/`와 `.next`를 **지운 clean 상태**에서 `npm run vercel-build -w @mockspec/web` 통과(산출물 재생성 확인 — sdk 855KB·viewer 36KB), `npm test` **339 passed**(인라인 회귀 테스트 포함).

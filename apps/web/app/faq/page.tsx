@@ -33,6 +33,25 @@ export default function FaqPage() {
                 만들 수 있습니다.
               </p>
             </FaqItem>
+            <FaqItem q="업로드는 됐는데 편집 화면이 비어 있거나 스타일이 깨집니다.">
+              <p>
+                목업이 <b>절대 경로</b>로 빌드된 경우입니다. 브라우저 개발자도구 콘솔에{" "}
+                <code>/assets/…</code> 404가 찍혀 있다면 이 문제입니다.
+              </p>
+              <p>
+                업로드한 목업은 <code>/m/{"{프로젝트ID}"}/</code> 아래에서 열리는데,{" "}
+                <code>/</code>로 시작하는 경로는 그 밖을 가리켜 파일을 찾지 못합니다. HTML{" "}
+                <code>&lt;base&gt;</code>는 상대 경로에만 적용되므로 서비스가 대신 고쳐 줄 수
+                없습니다.
+              </p>
+              <p>
+                <b>상대 경로로 다시 빌드해 새로 업로드하세요.</b> Vite는{" "}
+                <code>vite build --base=./</code>, CRA는 <code>package.json</code>에{" "}
+                <code>&quot;homepage&quot;: &quot;.&quot;</code>를 넣습니다. 빌드 결과의{" "}
+                <code>index.html</code>에서 <code>src=&quot;./assets/…&quot;</code>처럼{" "}
+                <code>./</code>로 시작하면 정상입니다.
+              </p>
+            </FaqItem>
             <FaqItem q="로그인은 어떻게 하나요?">
               <p>
                 Google 계정 또는 이메일 매직링크로 로그인합니다. 프로젝트는 로그인한 계정에만 연결되며, 다른

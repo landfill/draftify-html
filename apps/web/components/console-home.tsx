@@ -153,8 +153,10 @@ export function ConsoleHome() {
             <input id="project-zip" name="zip" type="file" accept=".zip,application/zip" required />
           </div>
           <p className="c-hint">
-            빌드 산출물만 압축하세요(최대 {formatMb(LIMITS.zipMaxBytes)}). SPA는 상대 경로 또는 base
-            path 빌드를 권장합니다.
+            빌드 산출물만 압축하세요(최대 {formatMb(LIMITS.zipMaxBytes)}).{" "}
+            <b>반드시 상대 경로로 빌드해야 합니다</b> — 목업은 <code>/m/{"{id}"}/</code> 아래에서
+            열리므로 <code>/assets/…</code> 같은 절대 경로는 찾지 못해 화면이 비어 보입니다. Vite는{" "}
+            <code>--base=./</code>, CRA는 <code>&quot;homepage&quot;: &quot;.&quot;</code>.
           </p>
           <button type="submit" className="c-btn" disabled={uploading}>
             {uploading ? "업로드 중…" : "업로드"}
