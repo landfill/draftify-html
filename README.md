@@ -24,7 +24,7 @@
 | 구현 | `packages/server` (Express, 파일 저장) | `apps/web` (Next.js, Supabase) |
 | 목업 서빙 | 프로젝트별 **서브도메인 루트** (`{id}.localhost:4000/`) | **경로 접두** (`/m/{id}/`) |
 | `<base>` 주입 | 없음 (루트라 불필요) | `<base href="/m/{id}/">` |
-| **목업 빌드 base** | **절대(기본) 또는 상대** | **상대 필수** — `vite build --base=./` |
+| **목업 빌드 base** | **절대(기본) 또는 상대** | **상대 필수** — `npx vite build --base=./` |
 | 인증 | 없음 (사내망 전제) | Google OAuth · 이메일 매직링크 |
 | 지원 경로 | A(zip) · B(프록시) · D(확장) | **A · D만** (B는 SSRF 표면 제거로 제외) |
 | zip 한도 | 200MB | 50MB (해제 후 50MB·1500파일, 프로젝트 20개) |
@@ -115,9 +115,30 @@ zip 루트가 `dist/` 한 겹으로 감싸져 있으면 서버가 자동으로 �
 |------|------|
 | **필수** | 빌드 루트에 `index.html` (SSR 전용 앱은 정적 export 필요 — Next.js는 `output: 'export'`) |
 | **크기** | zip 파일 기준 200MB 이하. `node_modules/`·`.git/`·`*.map`은 해제 시 자동 제외되지만, 크기 한도는 압축 파일 기준이니 빌드 결과물만 압축하길 권장 |
-| **base** | 사내판은 루트·상대 둘 다 동작. **공개판에 올릴 zip은 상대 필수** — `vite build --base=./` (위 배포 비교표 참조) |
+| **base** | 사내판은 루트·상대 둘 다 동작. **공개판에 올릴 zip은 상대 필수** — `npx vite build --base=./` (위 배포 비교표 참조) |
+
+**한 프로젝트에서 두 배포용 zip을 함께 만들려면** 출력 폴더를 나눈다 — 기존 빌드를 덮어쓰지 않는다:
+
+```bash
+npm run build                                        # → dist/         사내판용 (base=/ 기본)
+npx vite build --base=./ --outDir dist-public        # → dist-public/  공개판용
+zip -r mockup.zip dist  &&  zip -r mockup-public.zip dist-public
+```
+
+반복한다면 목업 프로젝트의 `package.json`에 넣어 둔다:
+
+```json
+"build:public": "vite build --base=./ --outDir dist-public"
+```
+
+> `vite`를 그대로 치면 `command not found`가 난다 — 빌드 도구는 프로젝트에 설치돼 있어 전역
+> PATH에 없다. `npm run`(스크립트) 또는 `npx`(직접 실행)로 부른다.
+>
+> 이 저장소의 [`fixtures/todo-app/package.json`](./fixtures/todo-app/package.json)이 같은 패턴이다
+> (`zip` = 사내판용, `zip:relative` = 공개판용). 두 벌을 이름으로 구분하는 실제 예시다.
 
 > 연습용 샘플이 필요하면 `npm run fixtures:zip` → `fixtures/todo-app.zip`(의존성 0 Todo SPA).
+> 공개판용은 `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`.
 
 ### 3. 업로드 → 편집
 

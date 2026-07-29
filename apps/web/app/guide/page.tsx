@@ -19,7 +19,7 @@ export default function GuidePage() {
           <ol className="g-steps">
             <li>
               목업 프로젝트를 <b>상대 경로로</b> 빌드하고 결과물 폴더만 압축합니다. 예:{" "}
-              <code>vite build --base=./</code> → <code>zip -r mockup.zip dist</code>
+              <code>npx vite build --base=./</code> → <code>zip -r mockup.zip dist</code>
             </li>
             <li>콘솔에서 프로젝트 이름(선택)·작성자 라벨(선택)을 입력하고 zip을 선택해 업로드합니다.</li>
             <li>
@@ -38,6 +38,31 @@ export default function GuidePage() {
             적용되므로 서비스가 대신 고쳐 줄 수 없습니다). 빌드 설정은{" "}
             <code>vite build --base=./</code>, CRA는 <code>package.json</code>에{" "}
             <code>&quot;homepage&quot;: &quot;.&quot;</code>를 넣습니다.
+          </p>
+          <p className="g-note">
+            <b>기존 빌드를 그대로 두고 업로드용만 따로 만들려면</b> 출력 폴더를 분리합니다. 사내
+            서버·다른 호스팅에 이미 절대 경로 빌드를 쓰고 있다면 그쪽을 건드릴 필요가 없습니다.
+          </p>
+          <pre className="g-code">
+            <code>
+              {`# package.json 의 scripts 에 한 줄 추가
+"build:public": "vite build --base=./ --outDir dist-public"
+
+# 기존 dist/ 는 그대로 두고 업로드용만 추가로 빌드
+npm run build:public
+zip -r mockup-public.zip dist-public`}
+            </code>
+          </pre>
+          <p className="g-note">
+            빌드 도구는 프로젝트에 설치돼 있어 <code>vite</code>를 그대로 치면{" "}
+            <code>command not found</code>가 납니다. 위처럼 <code>npm run</code>으로 실행하거나, 한
+            번만 쓸 거라면 <code>npx vite build --base=./ --outDir dist-public</code>처럼{" "}
+            <code>npx</code>를 붙입니다.
+          </p>
+          <p className="g-note">
+            어느 폴더가 업로드용인지 헷갈릴 때는 <code>index.html</code>을 열어{" "}
+            <code>src=&quot;./assets/…&quot;</code>(업로드용) 인지{" "}
+            <code>src=&quot;/assets/…&quot;</code>(아님) 인지 보면 됩니다.
           </p>
         </section>
 

@@ -8,7 +8,7 @@
 >
 > | | 이 문서(사내판) | 공개판 |
 > |---|---|---|
-> | 목업 빌드 base | 절대(기본)·상대 둘 다 | **상대 필수** (`vite build --base=./`) |
+> | 목업 빌드 base | 절대(기본)·상대 둘 다 | **상대 필수** (`npx vite build --base=./`) |
 > | 지원 경로 | A·B·D 셋 | **A·D만** (B 프록시 제외) |
 > | zip 한도 | 200MB | 50MB |
 > | 콘솔 주소 | `http://localhost:4000` | `https://draftify-html.vercel.app` |

@@ -481,6 +481,27 @@ form > .c-btn[type="submit"] {
   color: var(--c-text-2);
 }
 
+/* 여러 줄 명령 블록. 좁은 화면에서 페이지가 아니라 이 블록만 가로 스크롤한다. */
+.g-code {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.g-section .g-code code {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  white-space: pre;
+  line-height: 1.7;
+  color: var(--c-text-2);
+}
+
 .g-section a {
   color: var(--c-accent);
   text-decoration: none;

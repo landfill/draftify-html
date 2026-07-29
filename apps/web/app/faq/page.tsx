@@ -46,7 +46,7 @@ export default function FaqPage() {
               </p>
               <p>
                 <b>상대 경로로 다시 빌드해 새로 업로드하세요.</b> Vite는{" "}
-                <code>vite build --base=./</code>, CRA는 <code>package.json</code>에{" "}
+                <code>npx vite build --base=./</code>, CRA는 <code>package.json</code>에{" "}
                 <code>&quot;homepage&quot;: &quot;.&quot;</code>를 넣습니다. 빌드 결과의{" "}
                 <code>index.html</code>에서 <code>src=&quot;./assets/…&quot;</code>처럼{" "}
                 <code>./</code>로 시작하면 정상입니다.
