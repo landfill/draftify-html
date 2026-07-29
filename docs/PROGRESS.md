@@ -122,6 +122,7 @@
 - 완료: 안내를 **필수 조건**으로 강화 — 콘솔 업로드 힌트(왜 깨지는지 + `--base=./`), `/guide` 시작하기(예시 명령을 `vite build --base=./`로 교체 + 이유 문단), `/faq`에 신규 문항 "업로드는 됐는데 편집 화면이 비어 있거나 스타일이 깨집니다"(404 증상 → 원인 → 재빌드 방법 → 정상 여부 확인법).
 - 완료: 확장 `host_permissions`에 **`https://draftify-html.vercel.app/*`** 등록(정확한 호스트 1개, 와일드카드 금지 — 킥오프 §7.5). `packages/extension/README.md`도 실제 값으로 갱신(도메인 변경 시 추가가 아니라 **교체**).
 - 검증: `npm test` **339 passed**, `next build` green.
+- 완료(문서, 사용자 요청): **배포가 둘이라는 사실을 최상단에 못박았다.** ① 루트 `README.md` 최상단에 **사내판 vs 공개판 비교표**(주소·서빙 방식·`<base>` 주입 유무·**목업 빌드 base**·지원 경로·한도·설명서 위치) — 핵심은 "공개판 zip은 상대 base 필수", 덧붙여 **상대 빌드를 사내판에 쓸 때의 역방향 함정**(사내판은 `<base>` 미주입이라 깊은 URL 새로고침 시 자산 경로가 어긋난다)도 명시. ② `README.md`에 **공개판 배포 절** 신설 — Vercel 4개 설정(Production Branch·Root Directory·**Framework Preset=Next.js**·**Install Command `cd ../.. && npm install`**)과 기본값으로 뒀을 때의 증상, 환경변수 3종(`SUPABASE_SECRET_KEY` 접두 금지 경고), Supabase URL Configuration, 도메인 변경 시 manifest 교체 절차. ③ `docs/user-guide.md` 최상단에 **"사내판 전용" 경고 블록** — 이 문서는 2026-07-12 작성이라 배포가 하나뿐이던 시절 기준이고, 공개판 안내로 오독하면 목업이 안 열린다.
 - 다음 할 일: 상대 base로 재빌드한 목업으로 **실사용 1회 판정 재시도**. Supabase `Authentication → URL Configuration`에 Site URL·Redirect URLs(`/auth/callback`·`/auth/confirm`, 프로덕션+로컬) 등록 필요 — OAuth는 로그인됐으나 매직링크 경로는 미확인.
 - 막힌 지점: **경로 D(확장) 진입점이 콘솔에 없다.** API·토큰 발급은 W6에서 구현됐는데 W7 콘솔 이식 때 등록 UI가 빠져, 공개판에서 경로 D 프로젝트를 만들 수단이 없다. 경로 B(프록시)가 없는 것은 의도된 제외(D2)지만 이건 갭이다. 실사용 판정 이후 처리 예정.
 
