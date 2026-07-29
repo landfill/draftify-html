@@ -13,6 +13,34 @@
 
 ---
 
+## ⚠️ 배포가 둘이다 — 목업 빌드 방법이 다르다
+
+같은 제품의 두 배포가 **목업을 서빙하는 방식이 달라서, 목업 zip을 만드는 방법도 다르다.**
+한쪽에서 되던 zip이 다른 쪽에서 안 열리는 일이 실제로 발생하므로 먼저 읽는다.
+
+| | **사내판** (이 README의 기본) | **공개판** |
+|---|---|---|
+| 주소 | `http://localhost:4000` (로컬 실행) | **https://draftify-html.vercel.app** |
+| 구현 | `packages/server` (Express, 파일 저장) | `apps/web` (Next.js, Supabase) |
+| 목업 서빙 | 프로젝트별 **서브도메인 루트** (`{id}.localhost:4000/`) | **경로 접두** (`/m/{id}/`) |
+| `<base>` 주입 | 없음 (루트라 불필요) | `<base href="/m/{id}/">` |
+| **목업 빌드 base** | **절대(기본) 또는 상대** | **상대 필수** — `npx vite build --base=./` |
+| 인증 | 없음 (사내망 전제) | Google OAuth · 이메일 매직링크 |
+| 지원 경로 | A(zip) · B(프록시) · D(확장) | **A · D만** (B는 SSRF 표면 제거로 제외) |
+| zip 한도 | 200MB | 50MB (해제 후 50MB·1500파일, 프로젝트 20개) |
+| 사용 설명서 | [docs/user-guide.md](./docs/user-guide.md) | 서비스 내 `/guide` · `/faq` |
+
+**공개판에 올릴 zip은 반드시 상대 경로로 빌드한다.** `/assets/app.js` 같은 절대 경로는
+`/m/{id}/` 접두 밖을 가리켜 404가 나고, 화면이 빈 채로 열린다. HTML `<base>`는 상대 URL에만
+적용되므로 서비스가 대신 고쳐 줄 수 없다. 빌드 후 `dist/index.html`에서 `src="./assets/…"`처럼
+`./`로 시작하면 정상이다.
+
+> 반대로 **상대 경로 빌드를 사내판에 쓸 때**는 주의한다. 사내판은 `<base>`를 주입하지 않아서,
+> `/todo/1` 같은 깊은 URL로 직접 진입하거나 새로고침하면 자산 경로가 어긋난다. 두 배포를 함께
+> 쓴다면 **공개판용 zip을 따로 빌드**하는 편이 안전하다.
+
+---
+
 ## 요구 환경
 
 - **Node.js 20+**
@@ -87,9 +115,30 @@ zip 루트가 `dist/` 한 겹으로 감싸져 있으면 서버가 자동으로 �
 |------|------|
 | **필수** | 빌드 루트에 `index.html` (SSR 전용 앱은 정적 export 필요 — Next.js는 `output: 'export'`) |
 | **크기** | zip 파일 기준 200MB 이하. `node_modules/`·`.git/`·`*.map`은 해제 시 자동 제외되지만, 크기 한도는 압축 파일 기준이니 빌드 결과물만 압축하길 권장 |
-| **base** | 루트 또는 상대 base(`vite build --base ./`) 권장 |
+| **base** | 사내판은 루트·상대 둘 다 동작. **공개판에 올릴 zip은 상대 필수** — `npx vite build --base=./` (위 배포 비교표 참조) |
+
+**한 프로젝트에서 두 배포용 zip을 함께 만들려면** 출력 폴더를 나눈다 — 기존 빌드를 덮어쓰지 않는다:
+
+```bash
+npm run build                                        # → dist/         사내판용 (base=/ 기본)
+npx vite build --base=./ --outDir dist-public        # → dist-public/  공개판용
+zip -r mockup.zip dist  &&  zip -r mockup-public.zip dist-public
+```
+
+반복한다면 목업 프로젝트의 `package.json`에 넣어 둔다:
+
+```json
+"build:public": "vite build --base=./ --outDir dist-public"
+```
+
+> `vite`를 그대로 치면 `command not found`가 난다 — 빌드 도구는 프로젝트에 설치돼 있어 전역
+> PATH에 없다. `npm run`(스크립트) 또는 `npx`(직접 실행)로 부른다.
+>
+> 이 저장소의 [`fixtures/todo-app/package.json`](./fixtures/todo-app/package.json)이 같은 패턴이다
+> (`zip` = 사내판용, `zip:relative` = 공개판용). 두 벌을 이름으로 구분하는 실제 예시다.
 
 > 연습용 샘플이 필요하면 `npm run fixtures:zip` → `fixtures/todo-app.zip`(의존성 0 Todo SPA).
+> 공개판용은 `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`.
 
 ### 3. 업로드 → 편집
 
@@ -162,7 +211,49 @@ zip 루트가 `dist/` 한 겹으로 감싸져 있으면 서버가 자동으로 �
 npm test           # vitest (unit + API)
 npm run test:e2e   # Playwright — 빌드·fixtures zip·서버 기동까지 자체 수행
                    # 최초 1회: npx playwright install chromium
+npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.env.local 없으면 스킵)
 ```
+
+---
+
+## 공개판 배포 (Vercel + Supabase)
+
+**https://draftify-html.vercel.app** — `open-service` 브랜치가 프로덕션이다.
+아래는 대시보드에서 한 번 설정하는 값이며, **기본값으로 두면 빌드가 실패한다.**
+
+### Vercel 프로젝트 설정
+
+| 항목 | 값 | 기본값으로 두면 |
+|------|-----|----------------|
+| Production Branch<br>(`Settings → Environments → Production → Branch Tracking`) | `open-service` | `main`에는 `apps/web`이 없어 배포 대상이 없다 |
+| Root Directory | `apps/web` | 임포트 시 `packages/sdk`가 잡힌다 |
+| **Framework Preset** | **Next.js** | `Other`로 잡히면 `No Output Directory named "dist"`로 실패. **Output Directory에 `.next`를 수동 지정하지 말 것** — 정적 취급이 되어 API 라우트·미들웨어가 죽는다 |
+| **Install Command** (Override) | **`cd ../.. && npm install`** | Root Directory에서만 install 해 루트 `node_modules`가 없다 → `tsc: command not found` |
+| Build Command | 비워 둔다 | `apps/web`의 `vercel-build`가 자동 실행된다(루트 선행 빌드 → `next build`) |
+
+`vercel-build`가 필요한 이유: `apps/web`은 `packages/viewer/dist/main.js`와 `packages/sdk/dist/sdk.js`를
+`?raw`로 인라인하는데, 이 산출물은 다른 워크스페이스가 만든다(technical-spec §8).
+
+### 환경변수 (Production)
+
+| 키 | 비고 |
+|----|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | 공개 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개 |
+| `SUPABASE_SECRET_KEY` | **서버 전용 — `NEXT_PUBLIC_` 접두를 붙이면 브라우저 번들에 실려 RLS가 무력화된다** |
+
+### Supabase (`Authentication → URL Configuration`)
+
+- **Site URL**: `https://draftify-html.vercel.app`
+- **Redirect URLs**: 프로덕션·로컬 각각 `/auth/callback`과 `/auth/confirm` — 총 4개.
+  `/auth/confirm`은 매직링크를 **다른 기기에서 열 때** 쓰는 경로라 빠지면 그 케이스만 조용히 실패한다.
+- Google OAuth는 Supabase가 중개하므로 **Google Cloud 쪽에 배포 도메인을 추가할 필요는 없다**
+  (`https://<ref>.supabase.co/auth/v1/callback` 하나면 된다).
+
+### 도메인이 바뀌면
+
+`packages/extension/manifest.json`의 `host_permissions`를 **교체**한다(추가 아님, 와일드카드 금지 —
+[packages/extension/README.md](./packages/extension/README.md) 절차).
 
 ---
 

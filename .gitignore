@@ -23,6 +23,18 @@ npm-debug.log*
 .env.*
 !.env.example
 
+# Next.js (apps/web)
+.next/
+next-env.d.ts
+out/
+
+# Vercel
+.vercel
+
+# Supabase CLI 로컬 산출물 (마이그레이션 SQL은 커밋 대상)
+**/supabase/.branches/
+**/supabase/.temp/
+
 # 에디터·OS
 .DS_Store
 .idea/
@@ -30,5 +42,7 @@ npm-debug.log*
 !.vscode/extensions.json
 *.swp
 
-# E2E fixtures 생성물 (npm run fixtures:zip)
+# E2E fixtures 생성물 (npm run fixtures:zip / fixtures:zip:relative)
 fixtures/todo-app.zip
+fixtures/todo-app-relative.zip
+fixtures/todo-app/dist-relative/

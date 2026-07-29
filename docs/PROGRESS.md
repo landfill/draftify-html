@@ -9,9 +9,16 @@
 
 ## 현재 단계
 
-**▶ 활성 작업은 `open-service` 트랙입니다 (2026-07-25 기준).** 이 파일(main)이 아니라
-**`/Users/h0977/dev/Draftify-open-service` 워크트리(`open-service` 브랜치)의 `docs/PROGRESS.md`** 최상단 배너를 보고 이어가세요 — 그쪽이 진행의 단일 진실입니다.
-공개 서비스 개편(엄브렐라 #34): W1~W7 완료, **다음 = W8 남용 방어 → W9 E2E.** 트랙 완료 후 그 브랜치를 main으로 환류(사용자 동의, §6). main 트랙 자체는 아래 기록대로 안정 상태.
+**▶ 다음 세션 시작점 (2026-07-29 갱신) — open-service 트랙 main 병합 완료. 배포 운영 단계.**
+- 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
+- **이제 배포가 둘이다. 어느 쪽을 건드리는지 항상 확인한다** — 서빙 방식이 달라 제약이 정반대인 항목이 있다(README 최상단 비교표):
+  - **사내판** `packages/server`(Express·파일 저장), 로컬 `localhost:4000`, 목업은 서브도메인 루트 서빙
+  - **공개판** `apps/web`(Next·Supabase), **https://draftify-html.vercel.app**, 목업은 `/m/{id}/` 경로 접두 → **목업 zip은 상대 base 빌드 필수**
+- 상태: W1~W9 완료 + 프로덕션 배포 + **실사용 1회 판정 완료**(킥오프 §10 종료 조건 충족, §11 기록). **PR #44로 main 병합**(merge commit, CI green — CodeRabbit은 101파일 > 100 한도로 리뷰 스킵).
+- **다음 할 일: 이슈 #43 — 공개판 사용자용 확장 배포 경로.** 경로 D 진입점은 #42로 콘솔에 생겼지만, 공개 사용자는 확장 자체를 받을 방법이 없다(현 안내가 저장소 clone·빌드 전제). 선택지 A(웹스토어)·B(사이트에서 zip 다운로드)와 구현 고려사항은 이슈에 정리돼 있다.
+- **작업 브랜치 판단이 필요하다**: `open-service`는 장기 브랜치로 유지되고 **Vercel Production Branch도 아직 `open-service`**다. 공개판 수정은 그 브랜치에 하고 main으로 병합하는 흐름이 이어진다 — Vercel을 `main`으로 전환할지는 사용자 결정 사항(전환하면 main 푸시가 곧 배포가 된다).
+- **PR #44 Codex 리뷰 5건 처리**: 오픈 리다이렉트(P2)만 **병합 전 수정**(`lib/auth/safe-next.ts` — `next`를 같은 오리진 경로로 제한, 절대·프로토콜상대·백슬래시 변형 차단, 단위 테스트 6건). 나머지 4건은 이슈로: **#45(P1×2 — 브라우저가 DB·Storage에 직접 써서 쿼터·레이트리밋을 우회할 수 있다. 공개 가입 서비스라 사용자 늘기 전에 닫아야 함)**, #46(매직링크가 여전히 callback으로 가 크로스 디바이스 미해결 — 이메일 템플릿 설정), #47(토큰 재발급 비원자성 — #42로 버튼이 생겨 노출 증가).
+- 열린 이슈: **#45(보안·우선)** · #43(확장 배포 경로, 내일 작업) · #46 · #47 · #42 잔여(snippet 콘솔 내보내기) · #34(엄브렐라) · #13·#12(실수요 대기)
 
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
@@ -43,16 +50,16 @@
 
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
 
-- [ ] W1 Supabase 프로젝트·Auth(Google OAuth + 이메일 매직링크)·스키마·RLS(테이블 3종 + 파생컬럼 트리거 + Storage 오브젝트 정책 단일 버킷 + 버킷 비공개)
-- [ ] W2 스토어 4모듈(project·export·token·paths) → Supabase 어댑터 교체
-- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체
-- [ ] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존
-- [ ] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*`
-- [ ] W5 spec GET/PUT·asset·export 함수 이식
-- [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions)
-- [ ] W7 콘솔 UI Next 이식 + Auth 게이트
-- [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증)
-- [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함)
+- [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 Redirect URLs = `http://localhost:3000/auth/callback`(`.env.example` 주석, W7)
+- [x] W2 스토어 4모듈 → Supabase 어댑터 — **완료.** 어댑터 3본 + `SUPABASE_SECRET_KEY` admin 클라이언트. `lib/store/supabase.integration.test.ts` 5건 green(project·asset·export·token 왕복 + admin RLS 우회). Storage RLS 보정 마이그레이션 `20260724150000_fix_storage_object_rls.sql`(SECURITY DEFINER 소유권 검증·INSERT/SELECT 분리). `exportStore` timestamptz→ISO 정규화. vitest **238 passed**.
+- [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 콘솔 UI에서 zip→업로드→complete 왕복 — 수동 스모크 가능, 자동 E2E는 W9)
+- [x] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존 — **완료.** `app/m/[id]/[[...path]]/route.ts` + `lib/mockup/serve.ts`(readSpec RLS 소유권·Storage 스트림·확장자 없는 미존재 경로→index.html). per-request 주입 없음(D6).
+- [x] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*` — **완료.** `GET /__mockspec/sdk`(rewrite→`sdk.js`)·`next.config` rewrite `/__mockspec/api/:path*`→`/api/:path*`. 미들웨어 `isProtectedApiPath`로 브리지도 인증 필수.
+- [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 §6 ⓐ). vitest **292 passed**.
+- [x] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions) — **완료.** `project-access`(세션 vs Bearer·admin 해시 검증·projectId 스코프), `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`, 미들웨어 Bearer 우회, manifest `localhost:3000`·`*.vercel.app`. vitest **297 passed**.
+- [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
+- [x] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — **완료.** 한도 계약 = 킥오프 §7.5 / 사양 = technical-spec §7.4. 상수 단일 소스 `lib/abuse/limits.ts`(프로젝트 20개·zip 50MB·목업 50MB·1500파일·스냅샷 25MB·asset 총 100MB), 레이트리밋 Postgres 고정 윈도우(`rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER, in-memory 금지·fail-open) 버킷 4종, 업로드 검증 신뢰 경계를 `mockup/complete`로(Storage 실측 총 바이트·오브젝트 수, HTML만 다운로드), 에러 2종(`QUOTA_EXCEEDED` 403·`TOO_MANY_REQUESTS` 429+`Retry-After`), 확장 manifest 와일드카드 제거. vitest **335 passed**(+38), E2E 4본 통과, 실 서버 429 유발 확인
+- [x] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함) — **자동화 완료·green.** `e2e-open-service/open-service-dod.spec.ts` 1본 + 전용 설정 `playwright.open-service.config.ts`(포트 4300, `next start`), 실행 `npm run test:e2e:web`. DoD 7단계 전부(로그인·업로드·화면 2·어노테이션 4·export·file:// 네트워크 0건·마커 ≤2px·타 사용자 격리·예약 경로) 검증. **남은 것 = 실 배포 후 "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단)
 
 ## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
 
@@ -105,6 +112,180 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-29 — 이슈 #42 경로 D(확장) 콘솔 진입점 구현
+- 배경: 백엔드는 W6에서 완비(snippet 생성·토큰 발급/폐기·Bearer 스코프)인데 **W7 콘솔 이식에서 UI만 빠져** 공개판에서 경로 D 프로젝트를 만들 수단이 없었다. W9 DoD가 경로 A 시나리오라 못 잡은 갭.
+- 완료(`components/console-home.tsx`): ① **생성 카드 신설** — 이름·작성자 라벨 → `POST /api/projects {source:'snippet'}` → 응답의 평문 토큰으로 **연결 코드 즉시 생성·클립보드 복사**(`shared/connection.ts`의 `encodeConnection` 재사용 — 확장이 파싱하는 형식 그대로, `serverUrl`은 `window.location.origin`이라 오리진 하드코딩 없음). ② **연결 코드 복사**·**토큰 재발급**(확인 다이얼로그 → 새 코드 자동 복사) 버튼을 목록 행에. ③ **목록 구분** — 배지 `확장 — 내 화면에서 편집`, snippet은 서버에 목업이 없으므로 **"편집 열기" 링크·이름 링크를 주지 않는다**. ④ 클립보드 실패 시 `window.prompt`로 값을 노출(연결 코드는 재발급 없이 복원 불가라 복사 실패로 잃게 두지 않는다).
+- **토큰 보관 정책**: 서버는 해시만 보관하므로 평문은 **이 세션(React state)에만** 둔다. 새로고침하면 사라지고, 그때는 [토큰 재발급](기존 토큰 즉시 무효). 사내판 콘솔과 동일한 계약.
+- 완료(E2E): `open-service-dod.spec.ts`에 **경로 D 시나리오 추가** — 생성 → 연결 코드 형식·파싱·`serverUrl` 검증 → 목록 배지·"편집 열기" 부재 → 무인증 401 → 유효 토큰 200 → 재발급 후 **구 토큰 401·새 토큰 200**. 진입점 자체를 회귀 고정해 같은 갭이 다시 생기지 않게 했다.
+- **E2E 작성 중 발견한 함정**: `context.request`는 **브라우저 세션 쿠키를 공유**한다 — snippet GET은 세션도 허용하므로(`project-access.ts`) Bearer가 틀려도 200이 나와 토큰 검증이 무의미해진다. 세션 없는 `request.newContext()`로 바꿔야 실제로 토큰을 검증한다(주석으로 못박음).
+- 완료(문서): `/guide`에 "zip을 만들 수 없다면 — 확장으로 내 화면 편집" 섹션 신설(연결 3단계·토큰이 곧 쓰기 권한·실데이터가 산출물에 들어간다는 경고).
+- 검증: `npm test` **339 passed**, `next build`·`tsc --noEmit` green, **E2E 2본 통과**(기존 DoD + 경로 D).
+- **후속 이슈 #43 신설 (2026-07-29, 사용자 지적)**: **공개판 사용자에게 확장 배포 경로가 없다.** 진입점(#42)은 생겼지만 `/guide`가 "저장소 `packages/extension` 빌드본을 개발자 모드로 로드"를 전제해, 저장소를 clone·빌드할 수 있는 사람만 쓸 수 있다 — 대상 사용자(기획자)에게는 막힌 길. 선택지 A(Chrome 웹스토어 게시)·B(사이트에서 zip 다운로드 + 개발자 모드 안내) 비교와 B 구현 시 고려사항(`vercel-build`에서 확장 dist를 zip으로 묶어 `apps/web/public/`에 서빙, `host_permissions` 값이 박힌 상태로 배포, manifest `version` 갱신 규칙, 안내 순서를 "확장 설치 → 프로젝트 생성"으로)을 이슈에 정리. **다음 세션 작업 예정.**
+- 남은 것(#42에 남김): **snippet 프로젝트의 콘솔 내보내기** — 공개판 콘솔에는 export 버튼 자체가 없고(SDK 패널에서 한다) snippet은 세션이 아니라 Bearer가 필요해 별도 토큰 입력 흐름이 필요하다. 진입점 복구가 이슈의 본질이라 여기서 끊었다.
+
+### 2026-07-29 — 첫 배포 성공 + 절대경로 제약 실사용 노출 → 안내 문구·확장 호스트 등록
+- **배포 완료: https://draftify-html.vercel.app** (Vercel Hobby, production branch = `open-service`). OAuth 로그인·서비스 기동 확인.
+- 배포까지 걸린 것 3건(전부 대시보드 설정): ① Install Command를 **`cd ../.. && npm install`** 로 오버라이드해야 한다 — Vercel은 Root Directory(`apps/web`)에서 install 해 루트 `node_modules`가 안 생긴다(`tsc: command not found`). ② Framework Preset을 **Next.js**로 지정 — 임포트 시 Root Directory가 `packages/sdk`였던 탓에 `Other`로 잡혀 `No Output Directory named "dist"`로 실패했다. **Output Directory에 `.next`를 수동 지정하면 안 된다**(정적 취급이 되어 Route Handler·미들웨어가 죽는다). ③ Production Branch는 `Settings → Environments → Production → Branch Tracking`(예전 `Settings → Git` 아님).
+- **실사용 1회 시도에서 킥오프 §7.1 "알려진 제약"이 그대로 터졌다**: 루트 절대경로(`/assets/…`)로 빌드된 목업을 올리니 `/m/{id}/` 접두 밖을 가리켜 404 — 화면이 비어 보인다. `<base href="/m/{id}/">`는 주입되지만 **HTML `<base>`는 상대 URL에만 적용**되므로 이 케이스를 못 고친다. 스펙이 "온보딩 제약 문서화로 갈음"(§7.1·비목표 76행)이라 했는데 **실제 문구가 콘솔의 "권장합니다" 한 줄뿐이라 무력했다.**
+- 완료: 안내를 **필수 조건**으로 강화 — 콘솔 업로드 힌트(왜 깨지는지 + `--base=./`), `/guide` 시작하기(예시 명령을 `vite build --base=./`로 교체 + 이유 문단), `/faq`에 신규 문항 "업로드는 됐는데 편집 화면이 비어 있거나 스타일이 깨집니다"(404 증상 → 원인 → 재빌드 방법 → 정상 여부 확인법).
+- 완료: 확장 `host_permissions`에 **`https://draftify-html.vercel.app/*`** 등록(정확한 호스트 1개, 와일드카드 금지 — 킥오프 §7.5). `packages/extension/README.md`도 실제 값으로 갱신(도메인 변경 시 추가가 아니라 **교체**).
+- 검증: `npm test` **339 passed**, `next build` green.
+- 완료(문서, 사용자 요청): **배포가 둘이라는 사실을 최상단에 못박았다.** ① 루트 `README.md` 최상단에 **사내판 vs 공개판 비교표**(주소·서빙 방식·`<base>` 주입 유무·**목업 빌드 base**·지원 경로·한도·설명서 위치) — 핵심은 "공개판 zip은 상대 base 필수", 덧붙여 **상대 빌드를 사내판에 쓸 때의 역방향 함정**(사내판은 `<base>` 미주입이라 깊은 URL 새로고침 시 자산 경로가 어긋난다)도 명시. ② `README.md`에 **공개판 배포 절** 신설 — Vercel 4개 설정(Production Branch·Root Directory·**Framework Preset=Next.js**·**Install Command `cd ../.. && npm install`**)과 기본값으로 뒀을 때의 증상, 환경변수 3종(`SUPABASE_SECRET_KEY` 접두 금지 경고), Supabase URL Configuration, 도메인 변경 시 manifest 교체 절차. ③ `docs/user-guide.md` 최상단에 **"사내판 전용" 경고 블록** — 이 문서는 2026-07-12 작성이라 배포가 하나뿐이던 시절 기준이고, 공개판 안내로 오독하면 목업이 안 열린다.
+- 완료(문서 2차, 실사용 피드백 반영): ① **두 배포용 zip을 한 프로젝트에서 만드는 법** — `--outDir`로 출력 폴더를 나눠 기존 빌드를 덮어쓰지 않는다(`dist/` 사내판 · `dist-public/` 공개판). README zip 준비 절 + `/guide`에 명령 블록으로 넣고, 참고 구현으로 `fixtures/todo-app`(zip/zip:relative 두 벌)을 가리켰다. ② **`vite: command not found` 함정** — 빌드 도구는 프로젝트 로컬 설치라 전역 PATH에 없다. 문서의 모든 `vite build`를 **`npx vite build`**로 교체하고(README·user-guide·`/faq`·`/guide`), `npm run` 스크립트 방식을 1순위로 안내. 사용자가 실제로 이 오류를 만나 드러난 문제다. ③ `/guide`에 여러 줄 명령 블록용 `.g-code` 스타일 신설(좁은 화면에서 페이지가 아니라 블록만 가로 스크롤).
+- **🏁 실사용 1회 판정 완료 (2026-07-29, 사용자) — open-service v1 종료 조건 충족.** 킥오프 §10이 요구한 기록은 §11 이력 행에 남겼다(§10은 "§11에 기록하면 종료"라고 규정).
+- 완료(이슈 처리): **#36 종결** — `docs/user-guide.md` §1에 "빌드 base 설정" 소절 신설(도구별 상대 경로 빌드 표·`npx` 함정·두 배포용 병행 빌드·판별법). 이슈가 요구한 마지막 항목이었다. **#42 신설** — 경로 D 콘솔 UI 누락(아래 참조).
+- 확인(이슈 아님): **신규 화면 등록 시 직전 화면의 `pageSectionLabel` 프리필은 의도된 동작이다.** 킥오프 s1 §11 18차(2026-07-24, 사용자 결정)에 "신규 장면 등록 시 직전 장면 값 프리필 UX"로 명시, `packages/sdk/src/state.ts:69` 구현 + `state.test.ts:71` 회귀 테스트로 고정. 기획서에서 같은 섹션에 화면이 연속되는 패턴을 전제한 것 — 값을 지우거나 바꾸면 그대로 저장된다.
+- 막힌 지점: **경로 D(확장) 진입점이 콘솔에 없다 → 이슈 #42로 등록.** 백엔드는 W6에서 완비(snippet 생성·토큰 발급/폐기·Bearer 스코프·PUT/assets/export 분기 + 확장 manifest 프로덕션 호스트)인데 **W7 콘솔 이식에서 UI만 빠졌다** — 공개판에서 경로 D 프로젝트를 만들 수단이 없다. 누락 항목 5개(생성·연결 코드·토큰 재발급·목록 구분·snippet export 토큰 입력)와 사내판 참조 구현(`packages/server/src/routes/console.ts`), 재사용 가능한 `shared/connection.ts`를 이슈에 정리. 경로 B(프록시) 부재는 의도된 제외(D2)라 무관.
+
+### 2026-07-29 — Vercel 배포 준비: 워크스페이스 선행 빌드(`vercel-build`)
+- 완료: `apps/web/package.json`에 **`vercel-build`** 추가 — `npm run build --prefix ../.. && next build`. Vercel은 Root Directory(`apps/web`)의 빌드만 돌리는데, `?raw` 인라인 대상인 `packages/viewer/dist/main.js`(루트 `tsc -b`)와 `packages/sdk/dist/sdk.js`(vite)가 없어 빌드가 깨진다. Vercel은 `vercel-build`가 있으면 `build` 대신 실행하므로, 로컬 `build`(= `next build`)는 건드리지 않고 배포 경로에만 선행 빌드를 물린다. technical-spec §8에 근거·검증법 기록.
+- 검증: 두 `dist/`와 `.next`를 **지운 clean 상태**에서 `npm run vercel-build -w @mockspec/web` 통과(산출물 재생성 확인 — sdk 855KB·viewer 36KB), `npm test` **339 passed**(인라인 회귀 테스트 포함).
+- Vercel 프로젝트 설정(사용자 수작업, 대시보드): Production Branch = **`open-service`**(`Settings → Environments → Production → Branch Tracking` — 예전 `Settings → Git`이 아니다), Root Directory = **`apps/web`**, 도메인은 기본 `*.vercel.app`. 임포트 화면은 default branch(`main`)만 보여주고 `main`에는 `apps/web`이 없어 `packages/sdk`가 잡히므로, **생성 후 브랜치 → 루트 디렉터리 순서로** 바꿔야 한다.
+- 다음 할 일: Vercel 환경변수 3종(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` — 마지막은 서버 전용, `NEXT_PUBLIC_` 접두 금지) 입력 → 배포 → **URL 확정 시 확장 `host_permissions`에 그 호스트 1개 추가**(킥오프 §7.4 와일드카드 금지) + Supabase Redirect URLs에 `/auth/callback`·`/auth/confirm` 추가 → 실사용 1회 판정.
+- **1차 배포 실패로 확인된 것 (2026-07-29)**: Vercel은 Root Directory(`apps/web`)에서 install 한다 — **루트 `node_modules`가 생기지 않아** `tsc: command not found`(exit 127)로 죽었다. 루트 *파일*은 빌드 컨텍스트에 있다(루트 `package.json` 스크립트가 실행됐다) — 없는 것은 의존성뿐. 조치 2개: ① `vercel-build`를 `--prefix ../..` → **`cd ../.. && … && cd apps/web`** 로 교체(npm이 실행 위치에서 PATH를 다시 계산하게 한다), ② **Vercel Install Command를 `cd ../.. && npm install`로 오버라이드**(대시보드 수작업, 이게 핵심 — 스크립트만으로는 루트 의존성이 생기지 않는다).
+- 막힌 지점: 없음.
+
+### 2026-07-29 — W9 공개 서비스 DoD E2E 자동화 (open-service 트랙 코드 완료)
+- 브랜치: `feat/open-service-w8-abuse-guard` (W8·선결 fix와 같은 브랜치에 이어 커밋).
+- 완료: **`e2e-open-service/open-service-dod.spec.ts` 1본** — 킥오프 §10 DoD 7단계를 한 시나리오로 검증. ① admin API로 **신규 사용자** 생성 → 매직링크 `hashed_token`을 앱의 실제 확인 경로에 태워 로그인, ② ZIP 업로드(브라우저 unzip → Storage 직업로드 → `mockup/complete`), ③ `/m/{id}/`에서 편집 — **화면 2개·어노테이션 4개**(각 제목·설명), ④ export, ⑤ 산출물을 **새 브라우저 컨텍스트에서 `file://`로** 열어 화면 전환·마커 4개 위치 **≤2px**·설명 일치·**네트워크 요청 0건**, ⑥ **격리 회귀**(사용자 B로 A의 spec·목업·asset 접근 차단), ⑦ **예약 경로 회귀**(SDK가 `/__mockspec/sdk.js`로 로드되고 저장이 `/__mockspec/api`로 성립). 테스트가 만든 사용자·프로젝트·Storage 오브젝트는 `afterAll`에서 삭제.
+- 완료: **전용 설정 `playwright.open-service.config.ts`**(포트 4300 — 사내판 4123·dev 3000과 충돌 회피, `next start`, workers 1). 기존 `playwright.config.ts`(사내판 Express)와 **완전 분리** — 대상 서버·인증 방식·저장소가 다르다. 실행은 `npm run test:e2e:web`. `apps/web/.env.local`이 없으면 스펙이 **스스로 스킵**(CI 안전).
+- 완료: **fixture 상대 base 변형** — `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`(`vite build --base=./ --outDir dist-relative`). 공개판은 `/m/{id}/` 경로 접두 서빙이라 루트 base 빌드의 `/assets/...`가 접두 밖으로 나가 깨진다(킥오프 §7.1). 사내판은 서브도메인이라 기존 루트 base fixture를 그대로 쓴다 — 두 변형이 공존하는 이유를 `scripts/zip.mjs` 주석에 명시.
+- 완료(실버그 발견·수정, **W9가 잡았다**): **`/__mockspec/sdk.js`가 108바이트 플레이스홀더를 200으로 서빙**하고 있었다. `packages/server`의 `readSdkBundle()`은 `createRequire(import.meta.url)` + `require.resolve()`로 런타임에 경로를 찾고 **실패하면 플레이스홀더 JS를 200으로 반환**한다 — Next 번들 컨텍스트에서 그 해석이 실패해, 편집기가 아예 안 뜨는데 응답은 200인 조용한 파손이었다. `apps/web/lib/sdk-bundle.ts`를 신설해 `?raw` **빌드 시점 인라인**으로 교체(뷰어 런타임과 동일한 처방 — 07-25 세션 참조). 번들이 없으면 **빌드가 실패**하므로 조용한 폴백이 재발할 수 없다.
+- 완료: **`/auth/confirm` 라우트 신설** — `token_hash`를 서버에서 `verifyOtp`로 검증해 세션 쿠키를 심는다. `/auth/callback`(PKCE 코드 교환)은 **링크를 요청한 그 브라우저**에 code_verifier가 있어야 성립해서, 노트북에서 요청하고 휴대폰에서 여는 실사용 케이스가 실패한다. 이 경로가 그걸 덮는다(Supabase 권장 패턴). E2E 로그인도 이 경로를 탄다 — 즉 테스트가 우회로를 쓰지 않고 앱의 실제 확인 경로를 검증한다.
+- 검증: `npm test` **339 passed**(44 파일), **W9 E2E 1본 통과**(실 Supabase, 13.8s), **사내판 E2E 4본 통과**(회귀 없음), `next build` green.
+- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단) → **② `main` 병합 PR(사용자 동의 필수, §6)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
+- 막힌 지점: 없음. 참고 2건: (1) 목업 zip이 **루트 base 빌드면 공개판에서 깨진다** — 코드로 막지 않았고 문서·가이드 안내도 아직 없다(킥오프 §7.1의 알려진 제약). 사용자 유입 전에 콘솔/가이드 문구로 안내할지 판단 필요. (2) 07-25에 적어 둔 잔재 프로젝트 `prj_dbgtest02`는 그대로 둔다(내 데이터 아님).
+
+### 2026-07-25 — export·/sample 500 수정 (W9 선결, 뷰어 런타임 인라인)
+- 브랜치: `feat/open-service-w8-abuse-guard` (W8과 같은 브랜치에 이어 커밋).
+- 증상: `POST /api/projects/{id}/export`와 **공개 페이지 `GET /sample`**(헤더에 링크됨)이 둘 다 500. 원인은 하나 — `packages/server`의 `readViewerScript()`가 `fs.readFile(new URL("../../../viewer/dist/main.js", import.meta.url))`인데, Next 번들 컨텍스트에서 `import.meta.url`이 재작성되고 `URL`이 다른 realm 클래스가 되어 `ERR_INVALID_ARG_TYPE`으로 죽는다. 서버리스 배포 번들에 뷰어 dist가 포함된다는 보장도 없다.
+- 완료: `apps/web/lib/export/viewer-script.ts` 신설 — `?raw` 임포트로 뷰어 번들을 **빌드 시점 문자열 인라인**(`next.config.mjs`에 `asset/source` 룰, `types/raw-modules.d.ts` 선언). sourceMappingURL 주석 제거는 여기서 한다. `build-export.ts`가 이 상수를 쓰고, `/sample`은 `buildSampleHtml(VIEWER_SCRIPT)`로 넘긴다.
+- 완료: `packages/server/src/routes/sample.ts`의 `buildSampleHtml`에 **선택 인자** `viewerScript?` 추가(생략 시 기존 Express 동작 그대로 — 사내판 무영향). 이것이 packages/server에 대한 유일한 변경.
+- 스펙 반영: technical-spec §8에 "배포 형태별 뷰어 런타임 주입 방법" 표 + 공개판이 `readViewerScript()`를 쓰면 안 되는 이유. 킥오프 §11 이력 1행.
+- 검증: `npm test` **339 passed**(+4: `viewer-script.test.ts` — 인라인 여부·sourceMappingURL 부재·스냅샷 base64 조립·마스킹본 우선·외부 참조 0). `npm run build`·`next build`·`tsc --noEmit` green, **E2E 4본 통과**(Express 경로 회귀 없음).
+- **실 서버 검증(dev + 실 Supabase, 경로 D Bearer)**: 스냅샷 asset 업로드 → 화면 1·어노테이션 1 spec PUT → **export 200(46KB, `Content-Disposition` 정상)**. 산출물을 **Chromium에서 file://로 열어** 페이지 에러 0·**외부 네트워크 요청 0건**·스냅샷 iframe 1개·마커 ① 렌더·페이지 헤더 밴드("주문관리/주문 목록")·작성자 라벨·**산출물에 SCR 코드 미노출**까지 스크린샷으로 확인. `/sample`도 200(56KB)·에러 0·요청 0건·화면 3·어노테이션 8·흐름도 렌더 확인. 검증용 사용자·프로젝트·Storage 오브젝트는 삭제 정리.
+- 다음 할 일: **W9 E2E** — 공개 DoD(가입→업로드→편집→export→뷰어, 격리·예약 경로 회귀 포함) 자동화. 이제 4단계가 실동작하므로 그대로 시나리오화 가능.
+- 막힌 지점: 없음. 참고: DB에 이전 세션 잔재 프로젝트 `prj_dbgtest02`("dbg", 2026-07-24) 1건이 남아 있다 — 내 검증 데이터는 아니라 지우지 않았다.
+
+### 2026-07-25 — W8 남용 방어 완료 (쿼터·레이트리밋·업로드 검증)
+- 브랜치: `feat/open-service-w8-abuse-guard` (open-service 기준, 미병합).
+- **스펙 먼저(§4)**: 킥오프 §7.5 신설(쿼터 6종·레이트리밋 4버킷 값, 저장소·주체 규칙, 업로드 검증 신뢰 경계, 압축비 기각 근거, manifest 와일드카드 금지) + §11 이력 1행. technical-spec §7.4 신설 + §9.2 W8 AC 보강. **값은 스펙이 계약, 코드는 `lib/abuse/limits.ts` 단일 소스** — `limits.test.ts`가 표와의 일치를 못박는다.
+- 완료: **레이트리밋** — 마이그레이션 `20260725090000_rate_limit_counters`(테이블 + `consume_rate_limit()` SECURITY DEFINER 고정 윈도우, RLS 활성·정책 없음 = service_role 전용, `authenticated`·`anon` EXECUTE revoke, 지난 윈도우 행 확률적 청소). `lib/abuse/rate-limit.ts`(admin RPC, **fail-open** — 카운터 고장으로 정상 편집을 끊지 않는다. 보안 경계는 RLS·토큰이 별도로 강제), `guard.ts`의 `rateLimit()`·`accessSubject()`(세션=`usr:{uid}`, 경로 D Bearer=`prj:{id}`). 적용: 프로젝트 생성·PUT spec·assets·complete·export·token.
+- 완료: **쿼터** `lib/abuse/quota.ts` — 사용자당 프로젝트 수(20), 프로젝트당 목업 총 크기(50MB), asset 총 크기(100MB, 신규 크기 합산 사전 판정). 스냅샷 1건은 25MB(기존 50MB에서 축소).
+- 완료: **업로드 검증(zip bomb)** — 신뢰 경계를 `POST .../mockup/complete`로 명확화: Storage **실측** 총 바이트·오브젝트 수 게이트(manifest만 줄여 우회 불가 — manifest 밖 오브젝트까지 합산), 엔트리 존재는 재귀 list로 O(1) 확인, **본문 다운로드는 HTML만**(대용량 바이너리를 서버 메모리로 끌어오지 않음, 20개씩 배치). 클라이언트(브라우저 unzip) 게이트는 UX용으로 `process.ts`에 추가(zip 원본·해제 총 크기·파일 수).
+- 완료: **에러 2종** `QUOTA_EXCEEDED` 403 / `TOO_MANY_REQUESTS` 429 + `Retry-After`(ID-10 확장 선례). 콘솔·가이드·FAQ 문구를 새 한도로 갱신(200MB→50MB, 프로젝트 20개 안내).
+- 완료(부수 결함 2건): ① **`deleteProject`가 Storage를 한 단계만 지웠다** — 목업의 중첩 디렉토리(`js/`·`assets/`) 오브젝트가 영구히 남아 버킷을 먹던 누수. 재귀 나열·삭제 모듈 `lib/store/storage-list.ts`(페이지네이션 포함)로 교체하고 쿼터 집계도 같은 모듈을 쓴다. ② **콘솔 업로드 실패 시 껍데기 프로젝트가 남던 문제** — 목업 미활성 프로젝트는 편집 불가라 남길 이유가 없어 실패 경로에서 삭제.
+- 완료(실버그 발견·수정): **미들웨어가 Bearer 요청을 `/login`으로 307 리다이렉트**해 경로 D API가 전부 막혀 있었다(W6 배선 누락 — `isProtectedApiPath` 분기에서 Bearer는 401만 면제되고 그 아래 페이지 리다이렉트에 걸림). 보호 API 경로는 Bearer가 있으면 라우트로 통과시키도록 수정 + 회귀 테스트 `middleware.test.ts` 6건 신설.
+- 검증: `npm test` **335 passed**(+38: limits 4·quota 6·rate-limit 통합 5·storage-list 4·validate 확장 8·intake 게이트 5·middleware 6). `npm run build`·`next build`·`tsc --noEmit` 전부 green. **E2E 4본 통과**. **레이트리밋 통합 테스트는 실 Supabase에 붙어** 한도 경계·동시 10요청 원자성(카운트 유실 0)·주체/버킷 격리·`anon`의 테이블 읽기 0행·RPC EXECUTE 거부·잘못된 인자 예외까지 확인. 어드바이저: `rate_limit_counters` RLS-정책-없음 INFO는 의도된 설계.
+- **실 서버 스모크(dev + 실 Supabase)**: 토큰 없는 PUT 401 → 유효 Bearer GET 200 → 잘못된 토큰 401 → PUT 140회 병렬로 **429 발생**(`retry-after: 15`, 본문이 ID-10 형식), 카운터 행이 `write` 120/분 윈도우 경계에서 정확히 정산(119+6, 이어서 114+26=140), `export`는 1시간 윈도우 별도 행으로 분리됨을 DB에서 확인. 스모크용 사용자·프로젝트·카운터 행은 전부 삭제 정리.
+- 다음 할 일: **W9 E2E**. 단, 그 전에 배너의 **export 500(`readViewerScript`의 `fs.readFile(URL)`)**을 먼저 고쳐야 공개 DoD 4단계가 성립한다. 이후 트랙 완료 시 main 병합 PR(사용자 동의).
+- 막힌 지점: 없음. 참고 3건: (1) 확장 프로덕션 호스트는 도메인 확정 후 1줄 추가(미확정이라 로컬만). (2) `20260724150000_fix_storage_object_rls.sql`은 원격 마이그레이션 목록에 기록이 없다(적용은 되어 있음 — `storage_object_owned_by_user` 존재 확인) → 이력 정합성만 어긋난 상태. (3) 어드바이저 WARN `storage_object_owned_by_user`가 `authenticated`에게 EXECUTE 열려 있음은 **Storage RLS 정책이 그 함수를 호출하므로 revoke하면 목업 서빙이 깨진다** — 반환값이 "이 오브젝트가 내 것인가" 뿐이라 수용. (4) W2 통합 테스트가 전체 실행 중 1회 Auth JWT 오류로 실패했다가 이후 재현 안 됨(단독·전체 모두 통과) — Supabase Auth 측 일시 오류로 판단.
+
+### 2026-07-25 — 핸드오프 정리 (다음 세션은 임의 에이전트)
+- 완료: W1~W7 코드리뷰 검증(소유권 RLS·path traversal 방어·토큰 timingSafeEqual·dual-auth 저장 route 일관 — 인증 우회 경로 없음 확인). 이 세션 조언(W8 세부·host_permissions 좁히기)을 "현재 단계" 배너에 회수 고정.
+- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 병합 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` §1 참조.
+- 막힌 지점: 없음.
+
+### 2026-07-25 — W6 경로 D 토큰 인증 + 확장 host_permissions 전환
+- 완료:
+  - **토큰 인증**: `lib/auth/project-access.ts` — upload=세션(RLS), snippet 저장=Bearer+`verifyToken`(admin·SHA-256 해시·projectId 한정). GET도 세션 또는 Bearer.
+  - **API**: `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`(토큰 1회 반환), PUT/assets/export에 `applySnippetPutOverrides`(lastSeenOrigin).
+  - **미들웨어**: `/api/*`는 Bearer 있으면 세션 없이 통과(W6).
+  - **확장**: manifest `host_permissions` → `localhost:3000`·`*.vercel.app`, popup 기본 서버 `http://localhost:3000`.
+- 검증: `npm run build`·`npm test` **297 passed**.
+- 다음 할 일: **W8** 남용 방어. 수동: 확장 unpacked→snippet 등록·연결→PUT/export Bearer 스모크(Vercel 배포 후 `*.vercel.app` 권한 확인).
+- 막힌 지점: 없음.
+
+### 2026-07-25 — origin/main 병합(#38) + W5 spec·asset·export API
+- 완료:
+  - **병합**: `origin/main` → `open-service` — #38 `pageSectionLabel`·`headerTitle`(shared Scene, JSONB 자동 포함, 마이그레이션 0). merge 커밋 `4f07559`.
+  - **W5**: `GET/PUT /api/projects/{id}` — RLS·`validatePutSpec`·`replaceSpec` orphan GC. `POST /api/projects/{id}/assets`(snapshot 50MB)·`GET .../assets/{key}`. `POST .../export` — `buildExportHtml` 재사용, ≤4MB 인라인+`Content-Disposition`, 초과 시 Storage 업로드→**signed URL 302**(SDK redirect 따라 HTML 저장).
+- 검증: 루트 `npm run build`·`npm test` **292 passed**, apps/web `tsc`·`next build` green.
+- 다음 할 일: **W6** 경로 D 토큰 인증. 수동: 로그인→업로드→`/m/{id}/` 편집·저장·export 스모크.
+- 막힌 지점: 없음.
+
+### 2026-07-25 — 미들웨어 공개 경로 버그 수정 + W4/W4b 목업·예약 경로 서빙
+- 완료:
+  - **미들웨어**: `isPublicPath` — `pathname === base || pathname.startsWith(base + "/")` 경계 매칭(`/guidexyz` 오탐 차단). `isProtectedApiPath`로 `/__mockspec/api/*`도 인증 필수.
+  - **W4**: `lib/mockup/serve.ts` — `getAuthedContext`+`readSpec`(RLS owner)·Storage download·MIME·SPA fallback(FR-ONB-04). `app/m/[id]/[[...path]]/route.ts`.
+  - **W4b**: `GET /__mockspec/sdk`(rewrite→`/__mockspec/sdk.js`), `/__mockspec/api/*`→`/api/*` rewrite.
+  - 단위 테스트 9건(`public-path`·`mockup/paths`).
+- 검증: apps/web `tsc`·`next build` green, vitest **246 passed**(+9, 통합 1건 flaky timeout은 기존 Supabase 네트워크).
+- 다음 할 일: **W5** spec GET/PUT·asset·export API 이식(편집·저장·보내기). W3 E2E(zip→업로드→`/m/{id}/` 편집 열기) 수동 스모크.
+- 막힌 지점: 없음.
+
+### 2026-07-25 — W7 완료: Auth 게이트 + 콘솔 UI Next 이식
+- 완료:
+  - **Auth 게이트**: `middleware.ts` + `lib/supabase/middleware.ts` — 세션 갱신, 비인증 `/api/*` → 401, 페이지 → `/login`, 로그인 상태 `/login` → `/`. 공개 경로: `/login`, `/auth/*`, `/guide`, `/faq`, `/sample`.
+  - **콜백**: `app/auth/callback/route.ts` — OAuth·매직링크 `code` → 세션 쿠키.
+  - **API**: `getAuthedContext()`로 `GET/POST /api/projects`, `DELETE /api/projects/[id]`, `POST .../mockup/complete` — 요청 스코프 Supabase 클라이언트 → RLS owner.
+  - **UI**: 로그인(Google OAuth + 이메일 OTP), 콘솔 홈(ZIP 업로드→Storage→complete, 목록, 삭제), 셸 헤더(가이드·샘플·FAQ·테마·로그아웃), `/guide`·`/faq`·`/sample`(Express `buildSampleHtml` 재사용).
+  - **빌드**: `next.config.mjs` webpack `extensionAlias`(.js→.ts), `next build` green.
+- 검증: apps/web `tsc --noEmit`·`next build` 통과, 루트 `npm test` **238 passed**.
+- 다음 할 일: **W4** `/m/{id}/*` 목업 서빙 + 소유권 게이트(W7 세션 위에 배선). 선택: W2 통합 테스트를 인증 세션 경로로 한 번 더 확인. **W5** spec PUT·export·마스킹 UI.
+- 막힌 지점: 없음. (로컬 Auth 스모크 = Supabase Redirect URLs·`npm run dev` in `apps/web`)
+
+### 2026-07-24 — W2 완료: 통합 테스트 5/5 green + Storage RLS 보정
+- 완료: 사용자가 `SUPABASE_SECRET_KEY` 설정·Storage RLS 마이그레이션(`20260724150000_fix_storage_object_rls.sql`) 원격 적용 후 `npm test -- apps/web/lib/store/supabase.integration.test.ts` **5 passed**(admin·projectStore·asset GC·exportStore·tokenStore). W2 체크리스트 `[x]`.
+- 코드(미커밋): `exportStore.ts` timestamptz `+00:00` → ISO `Z` 정규화, 마이그레이션 SQL·`supabase/config.toml`(CLI push용).
+- 다음 할 일: **W7**(Auth 게이트·콘솔 UI) 또는 **W4**(`/m/{id}/*` 목업 서빙) — W3 Storage 직업로드 경로가 열렸으므로 W4 병행 가능.
+- 막힌 지점: 없음.
+
+### 2026-07-24 — 서버 Supabase 키 secret 체계 통일 + W2 통합 테스트
+- 완료:
+  - **env 리네임**: `SUPABASE_SERVICE_ROLE_KEY` → **`SUPABASE_SECRET_KEY`** — `admin.ts`·`.env.example`·`.env.local`(변수명만, 값은 사용자 TODO). publishable(`sb_publishable_`)과 동일한 신 API Keys 체계.
+  - **주석**: `admin.ts`·`tokenStore.ts` — "secret 키(service_role 권한)" 표기.
+  - **W2 통합 테스트**: `lib/store/supabase.integration.test.ts` — ephemeral Auth 사용자 + user-scoped 클라이언트로 project/export store 왕복, admin(secret)으로 `verifyToken`·RLS 우회 확인. `lib/test/load-env.ts`가 `.env.local` 로드.
+- 검증: apps/web `tsc --noEmit`·루트 `npm run build` 회귀 0, vitest **233 passed | 5 skipped**(통합 — `SUPABASE_SECRET_KEY` 미설정 시 skip). `grep '^SUPABASE_SECRET_KEY=.\+' apps/web/.env.local` → **not set**(사용자가 Dashboard → Settings > API Keys에서 `sb_secret_...` 발급·입력 후 `npm test` 재실행하면 W2 완료).
+- 다음 할 일: **`SUPABASE_SECRET_KEY` 설정** → 통합 테스트 5건 green 확인 후 W2 `[x]` 처리. 이어서 **W7**(Auth 게이트·콘솔) 또는 **W4**(목업 서빙).
+- 막힌 지점: 없음. (secret 키는 사용자 대시보드 작업 — legacy JWT service_role 넣지 말 것.)
+
+### 2026-07-24 — W3 착수: 브라우저 unzip·주입·Storage 업로드·manifest 검증 API
+- 전제: `service_role` 키 미설정(`.env.local` placeholder) → W2 통합 테스트는 계속 대기. Auth 독립 경로로 **W3** 먼저 착수.
+- 완료:
+  - **`lib/inject.ts`**: `injectSdkTag`·`setBaseHref`(기존 base 교체)·`injectMockupHtml`·`assertInjectedHtml` — server `inject.ts` 계약 + open-service `/m/{id}/` base.
+  - **`lib/intake/extract.ts`**: fflate 기반 브라우저 unzip — zip-slip·제외 필터·최상위 언랩(server `extractZip`과 동일 규칙).
+  - **`lib/intake/process.ts`**: HTML 주입 + manifest 조립(`prepareZipIntake`).
+  - **`lib/intake/upload.ts`**: Storage 직업로드·`completeMockupIntake` fetch 헬퍼(W7 콘솔 UI가 호출).
+  - **`lib/intake/validate.ts`**: manifest 형식·Storage 존재·SDK/base 주입 검증·실패 시 mockup prefix 정리.
+  - **API**: `POST /api/projects`(프로젝트 생성), `POST /api/projects/[id]/mockup/complete`(검증만 — D5·D6).
+  - **`ids.ts`**: `mockupObjectPath` 추가.
+  - **의존성**: `fflate`(런타임), `jszip`(vitest fixture).
+- 검증: apps/web `tsc --noEmit` 통과, vitest **233 passed**(+14, inject·extract·process·validate).
+- 다음 할 일: **W7**(Auth 게이트·콘솔 UI Next 이식) — Auth가 생기면 W3 E2E(zip→업로드→complete)를 인증 세션으로 닫을 수 있음. **`SUPABASE_SECRET_KEY`** 설정 시 W2 통합 테스트도 즉시 실행 가능. **W4** 목업 서빙 `/m/{id}/*`는 W3 업로드본을 실제로 열기 위해 W7 직후 또는 병행 착수.
+- 막힌 지점: 없음. (런타임 E2E는 Auth·service_role 대기 — 코드·단위 테스트는 완료.)
+
+### 2026-07-22 — W2 착수: apps/web 스캐폴드 + 스토어 Supabase 어댑터
+- 완료(구조 = monorepo + 새 앱, 워크트리에서 작업):
+  - **`.gitignore`**: Next(.next·next-env.d.ts·out)·Vercel(.vercel)·Supabase CLI 로컬 산출물 추가(마이그레이션 SQL은 커밋 대상). `.env*`는 기존 규칙이 이미 커버.
+  - **`apps/web` 스캐폴드**: `@mockspec/web`(Next 15.1 + React 19), 워크스페이스 등록, tsconfig(noEmit·bundler), next.config(transpilePackages `@mockspec/shared`). 실 앱 라우트(app/)는 W7.
+  - **Supabase 클라이언트 3종**(`lib/supabase/`): `server.ts`(@supabase/ssr, 요청 스코프·쿠키 세션→RLS owner), `client.ts`(브라우저), `admin.ts`(service_role, RLS 우회 — 사용자 세션 없는 경로 D 저장 전용, 키 없으면 명시적 실패). `database.types.ts`는 MCP generate_typescript_types 산출물.
+  - **스토어 어댑터 3본**(`lib/store/`): `projectStore`(create/read/list/replace/delete + asset은 Storage upload/download/remove, replaceSpec는 orphan asset GC), `tokenStore`(issue/verify/revoke/has — sha256 해시만, 활성 1개), `exportStore`(append=단일 INSERT라 파일판의 write 직렬화 불요). `paths.ts`는 Storage 경로 유틸(`ids.ts`)로 흡수 — 4모듈 인터페이스 보존. 전부 요청 스코프 `db: SupabaseClient<Database>`를 받아 RLS 격리.
+  - **환경**: `.env.example`(공개 URL·publishable 키 문서화 + service_role placeholder) 커밋, `.env.local`(gitignore, 실 공개값 채움·service_role은 사용자 TODO).
+  - **owner_id 기본값 마이그레이션**(`20260722080000_projects_owner_default.sql`): `default auth.uid()` — 어댑터 insert가 owner_id 미지정, RLS with check가 위조 차단.
+- 검증: apps/web `tsc --noEmit` 통과(캐스트·쿠키 타입 2차 수정 후), 루트 `npm run build` 회귀 0, 기존 `vitest` **219 passed**. npm audit high 2건 = sharp(Next 이미지 최적화 전이 의존) libvips CVE — 미사용·강제수정(next@9 다운그레이드) 비현실적이라 기록만.
+- 다음 할 일: **W2 잔여 = 왕복 무손실 통합 테스트**(인증 세션 또는 service_role 키 필요 → W7 Auth 배선/키 확보 후 또는 사용자가 service_role 키를 `.env.local`에 채우면 즉시). 이어서 **W3**(브라우저 unzip + Storage 직업로드 + SDK/`<base>` 주입) 또는 **W7**(Auth 게이트·콘솔) 중 선택. 코드는 open-service 브랜치 누적.
+- 막힌 지점: 없음. (통합 테스트는 service_role 키 대기 — 블로커 아님, 코드·타입은 완료.)
+
+### 2026-07-22 — W1 착수: Supabase DB 스키마·RLS·Storage 적용 (draftify-html)
+- 대상: 사용자가 새 Supabase 프로젝트 **`draftify-html`**(ref `dhzojuatkmafgwiwtdwe`, org `landfill72@naver.com's Org`, region ap-northeast-1 도쿄, plan **free**) 생성. free 2개 상한은 기존 `kids` 프로젝트를 정리해 확보(현 활성 = tmdb-quiz + draftify-html). 프로젝트 생성 시 "Enable automatic RLS"는 켜고(public 신규 테이블 RLS 자동), "Branching(GitHub 자동 배포)"은 끔(free는 Pro 기능·레포 브랜치 구조 불일치·MCP/CLI 직접 적용이 더 단순).
+- 완료(마이그레이션 코드로 관리 + MCP `apply_migration` 적용 — 킥오프 §5):
+  - `apps/web/supabase/migrations/20260722072600_init_open_service_schema.sql` — 테이블 3종(`projects`·`project_tokens`·`project_exports`) + RLS(owner_id=auth.uid, 하위는 부모 projects JOIN) + 파생컬럼 트리거 `sync_project_derived`(spec→name·updated_at 강제) + 인덱스 + Storage 비공개 버킷 `mockups` + 오브젝트 정책 `owner_storage_all`(경로 projects/{id} 소유권).
+  - `apps/web/supabase/migrations/20260722073000_harden_security_advisors.sql` — advisor WARN 3건 처리: ① `sync_project_derived` search_path=''로 고정 ② 자동-RLS 헬퍼 `rls_auto_enable()`의 anon/authenticated EXECUTE 회수(이벤트 트리거라 API 노출 불요, 자동 RLS 동작은 유지).
+- 검증: `list_tables` 3종 rls_enabled=true·rows=0 / `execute_sql` 집계 — public 정책 3·storage 정책 1·파생 트리거 1·버킷 존재·public=false / `get_advisors(security)` **0건**(하드닝 전 3건 → 후 0). `apps/web`는 아직 스캐폴드 안 함(supabase/migrations/만 존재) — W7에서 Next 앱 구성 시 config.toml 등 채움.
+- 다음 할 일: **W1 잔여 = Google OAuth provider 설정**(사용자 수작업: Google Cloud OAuth 클라이언트 ID/secret 발급 → Supabase Auth Providers에 입력. redirect URL은 `https://dhzojuatkmafgwiwtdwe.supabase.co/auth/v1/callback`). 이메일 매직링크는 기본 활성이라 별도 작업 없음. 이후 **W2**(스토어 4모듈 → Supabase 어댑터, apps/web) 착수. 마이그레이션은 open-service 브랜치에 커밋(트랙 완료 시 main 병합).
+- 막힌 지점: 없음. (Google OAuth는 외부 콘솔 작업이라 사용자 진행 필요 — 블로커 아님, W2는 이메일 인증만으로도 진행 가능.)
+
+### 2026-07-22 — PR #37 병합 + 구조·작업방식 확정 (monorepo+새앱, worktree)
+- 완료: **PR #37(RFC→킥오프 승격) squash 병합**(`95e5a4d`, main). 리뷰 4건 반영 후 사용자 동의. main·open-service·origin/open-service 전부 `95e5a4d`로 정렬(트리 동일 확인 후 open-service를 병합 main 위로 reset — 내용 손실 0). 리뷰 반영 = Codex P1(export signed URL 다운로드 핸드오프) + CodeRabbit minor 3(PRD SSO 표기·README 상단·PROGRESS 검증). Gemini 종료, PR-Agent compliant.
+- 구조 결정(사용자 확인 질문 2건 해소, 킥오프 §8·§10 갱신): 사용자 우려 = "open-service 개발이 기존 소스를 건드리나 / 별도 레포로 분리해야 하나". 코드 확인 결과 sdk transport가 이미 예약 경로 `/__mockspec/api`를 써서(`transport.ts:45`) 클라이언트 3종은 거의 무변경. 확정 —
+  - **① 구조 = monorepo + 새 앱 `apps/web`(Next.js).** 별도 레포 분리 기각(shared·sdk·viewer 재사용이 전제라 복제·드리프트 비용만 큼). 기존 `packages/server`(Express)는 **손대지 않고 보존**, 새 앱이 워크스페이스 패키지를 import해 서버리스/콘솔/목업서빙 재구현. 두 서비스 한 레포 공존. shared는 additive만(proxy 타입 제거 안 함).
+  - **② 작업 방식 = git worktree.** open-service는 별도 폴더 워크트리 `../Draftify-open-service`(브랜치 open-service)에서 작업, 메인 폴더 `Draftify-Html`은 main 유지(기존 Express 구동·비교용). 워크트리는 같은 `.git` 공유하는 두 번째 폴더일 뿐(별도 레포 아님, PR·히스토리 동일).
+  - 두 결정을 킥오프 §8(코드 영향 표 재작성 + 보존 원칙 확장)·§10(모든 W는 apps/web에 얹힘 주석)에 기록.
+- 워크트리 실제 생성 완료: `git worktree list`에 `Draftify-Html [main]` + `Draftify-open-service [open-service]` 확인.
+- 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 병합).
+- 막힌 지점: 없음.
 
 ### 2026-07-24 — PR #39 main 병합 (이슈 #38 종결)
 - 완료: 사용자 동의 후 PR #39 merge (`338677b`) — 페이지 헤더 밴드 + 산출물 SCR 전역 숨김. 3차 커밋 포함: Codex P2 헤더 필드 입력 중 공백 보존(onBlur trim). `feat/page-header-band` 브랜치 삭제.

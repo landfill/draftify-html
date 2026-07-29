@@ -6,7 +6,8 @@
   "description": "E2E fixtures (ID-12) — 의존성 0의 Todo SPA. 라우트 2개, history 라우팅, 부착 대상 4+",
   "scripts": {
     "build": "vite build",
-    "zip": "vite build && node scripts/zip.mjs"
+    "zip": "vite build && node scripts/zip.mjs",
+    "zip:relative": "vite build --base=./ --outDir dist-relative && node scripts/zip.mjs --variant relative"
   },
   "devDependencies": {
     "jszip": "^3.10.1",
