@@ -115,6 +115,13 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-29 — Vercel 배포 준비: 워크스페이스 선행 빌드(`vercel-build`)
+- 완료: `apps/web/package.json`에 **`vercel-build`** 추가 — `npm run build --prefix ../.. && next build`. Vercel은 Root Directory(`apps/web`)의 빌드만 돌리는데, `?raw` 인라인 대상인 `packages/viewer/dist/main.js`(루트 `tsc -b`)와 `packages/sdk/dist/sdk.js`(vite)가 없어 빌드가 깨진다. Vercel은 `vercel-build`가 있으면 `build` 대신 실행하므로, 로컬 `build`(= `next build`)는 건드리지 않고 배포 경로에만 선행 빌드를 물린다. technical-spec §8에 근거·검증법 기록.
+- 검증: 두 `dist/`와 `.next`를 **지운 clean 상태**에서 `npm run vercel-build -w @mockspec/web` 통과(산출물 재생성 확인 — sdk 855KB·viewer 36KB), `npm test` **339 passed**(인라인 회귀 테스트 포함).
+- Vercel 프로젝트 설정(사용자 수작업, 대시보드): Production Branch = **`open-service`**(`Settings → Environments → Production → Branch Tracking` — 예전 `Settings → Git`이 아니다), Root Directory = **`apps/web`**, 도메인은 기본 `*.vercel.app`. 임포트 화면은 default branch(`main`)만 보여주고 `main`에는 `apps/web`이 없어 `packages/sdk`가 잡히므로, **생성 후 브랜치 → 루트 디렉터리 순서로** 바꿔야 한다.
+- 다음 할 일: Vercel 환경변수 3종(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` — 마지막은 서버 전용, `NEXT_PUBLIC_` 접두 금지) 입력 → 배포 → **URL 확정 시 확장 `host_permissions`에 그 호스트 1개 추가**(킥오프 §7.4 와일드카드 금지) + Supabase Redirect URLs에 `/auth/callback`·`/auth/confirm` 추가 → 실사용 1회 판정.
+- 막힌 지점: 없음. 미검증 사항 — Vercel이 npm workspaces 루트에서 install 하는지는 실제 빌드로만 확인된다. 루트 install이 아니면 `--prefix ../..`가 의존성을 못 찾으므로, 그 경우 Install Command를 루트 기준으로 오버라이드해야 한다.
+
 ### 2026-07-29 — W9 공개 서비스 DoD E2E 자동화 (open-service 트랙 코드 완료)
 - 브랜치: `feat/open-service-w8-abuse-guard` (W8·선결 fix와 같은 브랜치에 이어 커밋).
 - 완료: **`e2e-open-service/open-service-dod.spec.ts` 1본** — 킥오프 §10 DoD 7단계를 한 시나리오로 검증. ① admin API로 **신규 사용자** 생성 → 매직링크 `hashed_token`을 앱의 실제 확인 경로에 태워 로그인, ② ZIP 업로드(브라우저 unzip → Storage 직업로드 → `mockup/complete`), ③ `/m/{id}/`에서 편집 — **화면 2개·어노테이션 4개**(각 제목·설명), ④ export, ⑤ 산출물을 **새 브라우저 컨텍스트에서 `file://`로** 열어 화면 전환·마커 4개 위치 **≤2px**·설명 일치·**네트워크 요청 0건**, ⑥ **격리 회귀**(사용자 B로 A의 spec·목업·asset 접근 차단), ⑦ **예약 경로 회귀**(SDK가 `/__mockspec/sdk.js`로 로드되고 저장이 `/__mockspec/api`로 성립). 테스트가 만든 사용자·프로젝트·Storage 오브젝트는 `afterAll`에서 삭제.

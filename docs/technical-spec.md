@@ -425,6 +425,28 @@ resolve(anchor):
 배포 번들에 `packages/viewer/dist/`가 포함된다는 보장도 없다. 빌드 인라인이 두 문제를 함께 없애고
 런타임 파일 접근도 0이 된다. 회귀 방지는 `apps/web/lib/export/viewer-script.test.ts`.
 
+**그 결과 생기는 배포 제약 — 워크스페이스 산출물이 `next build`보다 먼저 있어야 한다 (2026-07-29)**
+
+빌드 시점 인라인은 대상 파일이 **디스크에 이미 있을 것**을 전제한다. `apps/web`이 `?raw`로 인라인하는
+두 파일은 다른 워크스페이스가 만든다:
+
+| 인라인 대상 | 만드는 명령 |
+|------------|-----------|
+| `packages/viewer/dist/main.js` | 루트 `tsc -b` |
+| `packages/sdk/dist/sdk.js` | `npm run build -w @mockspec/sdk` (vite) |
+
+Vercel은 Root Directory(`apps/web`)의 빌드 스크립트만 실행하므로 두 산출물이 없어 빌드가 깨진다.
+그래서 `apps/web/package.json`에 **`vercel-build`** 를 둔다(Vercel은 이 스크립트가 있으면 `build`
+대신 실행한다):
+
+```
+"vercel-build": "npm run build --prefix ../.. && next build"
+```
+
+루트 `npm run build`(= `tsc -b` + sdk·extension 빌드)를 먼저 돌려 두 산출물을 만든 뒤 `next build`
+한다. 로컬 `build`는 그대로 `next build`만 — dist가 이미 있는 개발 흐름을 늦추지 않는다.
+검증은 두 `dist/`를 지우고 `npm run vercel-build -w @mockspec/web`이 통과하는지로 한다.
+
 ---
 
 ## 9. 테스트 전략
