@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/auth/safe-next.js";
 import { createSupabaseServerClient } from "@/lib/supabase/server.js";
 
 /** Supabase Auth OAuth·매직링크 콜백 — code → 세션 쿠키. */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = safeNextPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createSupabaseServerClient();
