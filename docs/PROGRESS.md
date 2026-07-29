@@ -9,12 +9,12 @@
 
 ## 현재 단계
 
-**▶ 다음 세션 시작점 (2026-07-29 갱신) — 활성 트랙: open-service, 이 워크트리에서 배포·환류부터.**
+**▶ 다음 세션 시작점 (2026-07-29 갱신) — 활성 트랙: open-service, 이 워크트리에서 배포·병합부터.**
 - 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
 - 진행: **W1~W9 전부 완료**(아래 WBS `[x]`). 코드로 남은 워크스트림 없음. 브랜치 `feat/open-service-w8-abuse-guard`(장기 `open-service` 기준, 미푸시 커밋 다수).
 - **남은 것 = 두 가지, 둘 다 사용자 판단이 앞선다:**
   1. **Vercel 배포 + "실사용 1회" 판정** — 킥오프 §10 종료 조건. 자동 E2E는 로컬 `next start`에서 green이지만, 트랙 종료는 실 배포 1회 사용으로 사용자가 판정한다.
-  2. **`main` 환류 PR** — **사용자 동의 필수**(§6). 대규모 diff·봇 리뷰 다수 예상.
+  2. **`main` 병합 PR** — **사용자 동의 필수**(§6). 대규모 diff·봇 리뷰 다수 예상.
 - **배포 시 선행 작업:**
   - 확장 저장 URL: 프로덕션 도메인이 확정되면 `packages/extension/manifest.json` `host_permissions`에 **정확한 호스트 1개** 추가(README 절차). 현재는 `http://localhost:3000/*`만.
   - Supabase Redirect URLs에 프로덕션 `/auth/callback`·`/auth/confirm` 추가(현재 로컬만).
@@ -123,7 +123,7 @@
 - 완료(실버그 발견·수정, **W9가 잡았다**): **`/__mockspec/sdk.js`가 108바이트 플레이스홀더를 200으로 서빙**하고 있었다. `packages/server`의 `readSdkBundle()`은 `createRequire(import.meta.url)` + `require.resolve()`로 런타임에 경로를 찾고 **실패하면 플레이스홀더 JS를 200으로 반환**한다 — Next 번들 컨텍스트에서 그 해석이 실패해, 편집기가 아예 안 뜨는데 응답은 200인 조용한 파손이었다. `apps/web/lib/sdk-bundle.ts`를 신설해 `?raw` **빌드 시점 인라인**으로 교체(뷰어 런타임과 동일한 처방 — 07-25 세션 참조). 번들이 없으면 **빌드가 실패**하므로 조용한 폴백이 재발할 수 없다.
 - 완료: **`/auth/confirm` 라우트 신설** — `token_hash`를 서버에서 `verifyOtp`로 검증해 세션 쿠키를 심는다. `/auth/callback`(PKCE 코드 교환)은 **링크를 요청한 그 브라우저**에 code_verifier가 있어야 성립해서, 노트북에서 요청하고 휴대폰에서 여는 실사용 케이스가 실패한다. 이 경로가 그걸 덮는다(Supabase 권장 패턴). E2E 로그인도 이 경로를 탄다 — 즉 테스트가 우회로를 쓰지 않고 앱의 실제 확인 경로를 검증한다.
 - 검증: `npm test` **339 passed**(44 파일), **W9 E2E 1본 통과**(실 Supabase, 13.8s), **사내판 E2E 4본 통과**(회귀 없음), `next build` green.
-- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단) → **② `main` 환류 PR(사용자 동의 필수, §6)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
+- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단) → **② `main` 병합 PR(사용자 동의 필수, §6)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
 - 막힌 지점: 없음. 참고 2건: (1) 목업 zip이 **루트 base 빌드면 공개판에서 깨진다** — 코드로 막지 않았고 문서·가이드 안내도 아직 없다(킥오프 §7.1의 알려진 제약). 사용자 유입 전에 콘솔/가이드 문구로 안내할지 판단 필요. (2) 07-25에 적어 둔 잔재 프로젝트 `prj_dbgtest02`는 그대로 둔다(내 데이터 아님).
 
 ### 2026-07-25 — export·/sample 500 수정 (W9 선결, 뷰어 런타임 인라인)
@@ -148,12 +148,12 @@
 - 완료(실버그 발견·수정): **미들웨어가 Bearer 요청을 `/login`으로 307 리다이렉트**해 경로 D API가 전부 막혀 있었다(W6 배선 누락 — `isProtectedApiPath` 분기에서 Bearer는 401만 면제되고 그 아래 페이지 리다이렉트에 걸림). 보호 API 경로는 Bearer가 있으면 라우트로 통과시키도록 수정 + 회귀 테스트 `middleware.test.ts` 6건 신설.
 - 검증: `npm test` **335 passed**(+38: limits 4·quota 6·rate-limit 통합 5·storage-list 4·validate 확장 8·intake 게이트 5·middleware 6). `npm run build`·`next build`·`tsc --noEmit` 전부 green. **E2E 4본 통과**. **레이트리밋 통합 테스트는 실 Supabase에 붙어** 한도 경계·동시 10요청 원자성(카운트 유실 0)·주체/버킷 격리·`anon`의 테이블 읽기 0행·RPC EXECUTE 거부·잘못된 인자 예외까지 확인. 어드바이저: `rate_limit_counters` RLS-정책-없음 INFO는 의도된 설계.
 - **실 서버 스모크(dev + 실 Supabase)**: 토큰 없는 PUT 401 → 유효 Bearer GET 200 → 잘못된 토큰 401 → PUT 140회 병렬로 **429 발생**(`retry-after: 15`, 본문이 ID-10 형식), 카운터 행이 `write` 120/분 윈도우 경계에서 정확히 정산(119+6, 이어서 114+26=140), `export`는 1시간 윈도우 별도 행으로 분리됨을 DB에서 확인. 스모크용 사용자·프로젝트·카운터 행은 전부 삭제 정리.
-- 다음 할 일: **W9 E2E**. 단, 그 전에 배너의 **export 500(`readViewerScript`의 `fs.readFile(URL)`)**을 먼저 고쳐야 공개 DoD 4단계가 성립한다. 이후 트랙 완료 시 main 환류 PR(사용자 동의).
+- 다음 할 일: **W9 E2E**. 단, 그 전에 배너의 **export 500(`readViewerScript`의 `fs.readFile(URL)`)**을 먼저 고쳐야 공개 DoD 4단계가 성립한다. 이후 트랙 완료 시 main 병합 PR(사용자 동의).
 - 막힌 지점: 없음. 참고 3건: (1) 확장 프로덕션 호스트는 도메인 확정 후 1줄 추가(미확정이라 로컬만). (2) `20260724150000_fix_storage_object_rls.sql`은 원격 마이그레이션 목록에 기록이 없다(적용은 되어 있음 — `storage_object_owned_by_user` 존재 확인) → 이력 정합성만 어긋난 상태. (3) 어드바이저 WARN `storage_object_owned_by_user`가 `authenticated`에게 EXECUTE 열려 있음은 **Storage RLS 정책이 그 함수를 호출하므로 revoke하면 목업 서빙이 깨진다** — 반환값이 "이 오브젝트가 내 것인가" 뿐이라 수용. (4) W2 통합 테스트가 전체 실행 중 1회 Auth JWT 오류로 실패했다가 이후 재현 안 됨(단독·전체 모두 통과) — Supabase Auth 측 일시 오류로 판단.
 
 ### 2026-07-25 — 핸드오프 정리 (다음 세션은 임의 에이전트)
 - 완료: W1~W7 코드리뷰 검증(소유권 RLS·path traversal 방어·토큰 timingSafeEqual·dual-auth 저장 route 일관 — 인증 우회 경로 없음 확인). 이 세션 조언(W8 세부·host_permissions 좁히기)을 "현재 단계" 배너에 회수 고정.
-- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 환류 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` §1 참조.
+- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 병합 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` §1 참조.
 - 막힌 지점: 없음.
 
 ### 2026-07-25 — W6 경로 D 토큰 인증 + 확장 host_permissions 전환
@@ -243,7 +243,7 @@
   - `apps/web/supabase/migrations/20260722072600_init_open_service_schema.sql` — 테이블 3종(`projects`·`project_tokens`·`project_exports`) + RLS(owner_id=auth.uid, 하위는 부모 projects JOIN) + 파생컬럼 트리거 `sync_project_derived`(spec→name·updated_at 강제) + 인덱스 + Storage 비공개 버킷 `mockups` + 오브젝트 정책 `owner_storage_all`(경로 projects/{id} 소유권).
   - `apps/web/supabase/migrations/20260722073000_harden_security_advisors.sql` — advisor WARN 3건 처리: ① `sync_project_derived` search_path=''로 고정 ② 자동-RLS 헬퍼 `rls_auto_enable()`의 anon/authenticated EXECUTE 회수(이벤트 트리거라 API 노출 불요, 자동 RLS 동작은 유지).
 - 검증: `list_tables` 3종 rls_enabled=true·rows=0 / `execute_sql` 집계 — public 정책 3·storage 정책 1·파생 트리거 1·버킷 존재·public=false / `get_advisors(security)` **0건**(하드닝 전 3건 → 후 0). `apps/web`는 아직 스캐폴드 안 함(supabase/migrations/만 존재) — W7에서 Next 앱 구성 시 config.toml 등 채움.
-- 다음 할 일: **W1 잔여 = Google OAuth provider 설정**(사용자 수작업: Google Cloud OAuth 클라이언트 ID/secret 발급 → Supabase Auth Providers에 입력. redirect URL은 `https://dhzojuatkmafgwiwtdwe.supabase.co/auth/v1/callback`). 이메일 매직링크는 기본 활성이라 별도 작업 없음. 이후 **W2**(스토어 4모듈 → Supabase 어댑터, apps/web) 착수. 마이그레이션은 open-service 브랜치에 커밋(트랙 완료 시 main 환류).
+- 다음 할 일: **W1 잔여 = Google OAuth provider 설정**(사용자 수작업: Google Cloud OAuth 클라이언트 ID/secret 발급 → Supabase Auth Providers에 입력. redirect URL은 `https://dhzojuatkmafgwiwtdwe.supabase.co/auth/v1/callback`). 이메일 매직링크는 기본 활성이라 별도 작업 없음. 이후 **W2**(스토어 4모듈 → Supabase 어댑터, apps/web) 착수. 마이그레이션은 open-service 브랜치에 커밋(트랙 완료 시 main 병합).
 - 막힌 지점: 없음. (Google OAuth는 외부 콘솔 작업이라 사용자 진행 필요 — 블로커 아님, W2는 이메일 인증만으로도 진행 가능.)
 
 ### 2026-07-22 — PR #37 병합 + 구조·작업방식 확정 (monorepo+새앱, worktree)
@@ -253,7 +253,7 @@
   - **② 작업 방식 = git worktree.** open-service는 별도 폴더 워크트리 `../Draftify-open-service`(브랜치 open-service)에서 작업, 메인 폴더 `Draftify-Html`은 main 유지(기존 Express 구동·비교용). 워크트리는 같은 `.git` 공유하는 두 번째 폴더일 뿐(별도 레포 아님, PR·히스토리 동일).
   - 두 결정을 킥오프 §8(코드 영향 표 재작성 + 보존 원칙 확장)·§10(모든 W는 apps/web에 얹힘 주석)에 기록.
 - 워크트리 실제 생성 완료: `git worktree list`에 `Draftify-Html [main]` + `Draftify-open-service [open-service]` 확인.
-- 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 환류).
+- 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 병합).
 - 막힌 지점: 없음.
 
 ### 2026-07-24 — PR #39 main 병합 (이슈 #38 종결)
