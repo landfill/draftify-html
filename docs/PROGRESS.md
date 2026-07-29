@@ -120,7 +120,8 @@
 - 검증: 두 `dist/`와 `.next`를 **지운 clean 상태**에서 `npm run vercel-build -w @mockspec/web` 통과(산출물 재생성 확인 — sdk 855KB·viewer 36KB), `npm test` **339 passed**(인라인 회귀 테스트 포함).
 - Vercel 프로젝트 설정(사용자 수작업, 대시보드): Production Branch = **`open-service`**(`Settings → Environments → Production → Branch Tracking` — 예전 `Settings → Git`이 아니다), Root Directory = **`apps/web`**, 도메인은 기본 `*.vercel.app`. 임포트 화면은 default branch(`main`)만 보여주고 `main`에는 `apps/web`이 없어 `packages/sdk`가 잡히므로, **생성 후 브랜치 → 루트 디렉터리 순서로** 바꿔야 한다.
 - 다음 할 일: Vercel 환경변수 3종(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` — 마지막은 서버 전용, `NEXT_PUBLIC_` 접두 금지) 입력 → 배포 → **URL 확정 시 확장 `host_permissions`에 그 호스트 1개 추가**(킥오프 §7.4 와일드카드 금지) + Supabase Redirect URLs에 `/auth/callback`·`/auth/confirm` 추가 → 실사용 1회 판정.
-- 막힌 지점: 없음. 미검증 사항 — Vercel이 npm workspaces 루트에서 install 하는지는 실제 빌드로만 확인된다. 루트 install이 아니면 `--prefix ../..`가 의존성을 못 찾으므로, 그 경우 Install Command를 루트 기준으로 오버라이드해야 한다.
+- **1차 배포 실패로 확인된 것 (2026-07-29)**: Vercel은 Root Directory(`apps/web`)에서 install 한다 — **루트 `node_modules`가 생기지 않아** `tsc: command not found`(exit 127)로 죽었다. 루트 *파일*은 빌드 컨텍스트에 있다(루트 `package.json` 스크립트가 실행됐다) — 없는 것은 의존성뿐. 조치 2개: ① `vercel-build`를 `--prefix ../..` → **`cd ../.. && … && cd apps/web`** 로 교체(npm이 실행 위치에서 PATH를 다시 계산하게 한다), ② **Vercel Install Command를 `cd ../.. && npm install`로 오버라이드**(대시보드 수작업, 이게 핵심 — 스크립트만으로는 루트 의존성이 생기지 않는다).
+- 막힌 지점: 없음.
 
 ### 2026-07-29 — W9 공개 서비스 DoD E2E 자동화 (open-service 트랙 코드 완료)
 - 브랜치: `feat/open-service-w8-abuse-guard` (W8·선결 fix와 같은 브랜치에 이어 커밋).

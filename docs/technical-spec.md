@@ -440,7 +440,7 @@ Vercel은 Root Directory(`apps/web`)의 빌드 스크립트만 실행하므로 �
 대신 실행한다):
 
 ```
-"vercel-build": "npm run build --prefix ../.. && next build"
+"vercel-build": "cd ../.. && npm run build && cd apps/web && next build"
 ```
 
 루트 `npm run build`(= `tsc -b` + sdk·extension 빌드)를 먼저 돌려 두 산출물을 만든 뒤 `next build`

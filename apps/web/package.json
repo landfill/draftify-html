@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "npm run build --prefix ../.. && next build",
+    "vercel-build": "cd ../.. && npm run build && cd apps/web && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
