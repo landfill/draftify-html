@@ -69,6 +69,32 @@
 | 크기 | zip 200MB 이하 (빌드 결과물만 압축 권장) |
 | 백엔드 없음 | 정적 서빙이므로 목업이 실 API를 부르면 그 요청은 실패한다 — 목업은 mock 데이터 내장이 전제 |
 | 시점 고정 | 업로드 시점의 스냅샷. 목업이 바뀌면 다시 zip 업로드 (프로젝트를 새로 만들어야 함) |
+| base 경로 | 사내판은 절대·상대 **둘 다** 동작(서브도메인 루트라서). 같은 zip을 공개판에도 올릴 거면 **상대 필수** — 아래 참조 |
+
+### 빌드 base 설정 (이슈 #36)
+
+사내판만 쓴다면 기본 빌드 그대로 올려도 된다. 다만 **공개판(`/m/{id}/` 경로 접두)에도 올릴
+계획이면 상대 경로로 빌드해야 한다** — 절대 경로 `/assets/app.js`는 접두 밖을 가리켜 404가 난다.
+HTML `<base>`는 상대 URL에만 적용되므로 서비스가 대신 고쳐 줄 수 없다.
+
+| 빌드 도구 | 상대 경로 빌드 |
+|-----------|---------------|
+| Vite | `npx vite build --base=./` 또는 `vite.config.ts`에 `base: './'` |
+| CRA | `package.json`에 `"homepage": "."` |
+| Next.js | 정적 export(`output: 'export'`)가 전제. `basePath`·`assetPrefix`가 얽혀 상대 경로가 까다롭다 |
+
+빌드 도구는 프로젝트에 설치돼 있어 `vite`를 그대로 치면 `command not found`가 난다.
+`npm run` 스크립트로 부르거나 `npx`를 붙인다.
+
+**두 배포용 zip을 함께 만들 때**는 출력 폴더를 나눠 기존 빌드를 덮어쓰지 않는다:
+
+```bash
+npm run build                                   # → dist/         사내판용
+npx vite build --base=./ --outDir dist-public   # → dist-public/  공개판용
+```
+
+어느 쪽이 어느 배포용인지는 `index.html`에서 확인한다 — `src="./assets/…"`면 공개판용,
+`src="/assets/…"`면 사내판용이다. (참고 구현: `fixtures/todo-app`의 `zip`·`zip:relative` 두 스크립트)
 
 **적합**: 목업 레포를 갖고 있고 빌드할 수 있는 경우. 가장 단순하고 제약이 적다 — 기본 권장 경로.
 
