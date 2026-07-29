@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { decodeConnection } from "@mockspec/shared";
 import {
   test,
   expect,
+  request,
   type BrowserContext,
   type Page,
   type APIRequestContext,
@@ -318,5 +320,73 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     await contextB.close();
     await contextA.close();
+  });
+
+  /**
+   * 이슈 #42 — 경로 D(확장) 진입점. W6에서 백엔드(snippet 생성·토큰·Bearer)를 이식했는데
+   * W7 콘솔 이식에서 UI가 빠져 **공개판에서 경로 D 프로젝트를 만들 수단이 없었다.**
+   * 위 DoD가 경로 A 시나리오만 봐서 놓친 갭이라, 진입점 자체를 여기서 회귀 고정한다.
+   */
+  test("경로 D 콘솔 — 생성·연결 코드·토큰 재발급 (#42)", async ({ browser, baseURL }) => {
+    const user = await createUser(admin, "d");
+    created.userIds.push(user.id);
+
+    // 연결 코드는 클립보드로 나간다 — 읽기 권한이 있어야 코드 내용을 검증할 수 있다.
+    const context = await browser.newContext({
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const page = await signIn(admin, context, user.email, baseURL!);
+
+    await page.locator("#snippet-name").fill("경로 D 회귀");
+    await page.locator("#snippet-owner").fill("QA");
+    await page.getByRole("button", { name: "만들고 연결 코드 복사" }).click();
+    await expect(page.getByText(/연결 코드를 복사했습니다/)).toBeVisible();
+
+    // 연결 코드 = mockspec: + base64url(JSON{p,t,s}) — 확장이 파싱하는 그 형식이어야 한다.
+    const code = await page.evaluate(() => navigator.clipboard.readText());
+    expect(code, "연결 코드 접두").toMatch(/^mockspec:/);
+    const decoded = decodeConnection(code);
+    expect(decoded, "연결 코드 파싱").not.toBeNull();
+    expect(decoded!.projectId).toMatch(/^prj_/);
+    expect(decoded!.token).toMatch(/^tok_/);
+    expect(decoded!.serverUrl, "서버 주소는 접속 오리진").toBe(baseURL);
+    const projectId = decoded!.projectId;
+    created.projectIds.push(projectId);
+
+    // 목록에서 경로 A와 구분되고, 목업이 없으므로 "편집 열기"를 주지 않는다.
+    const row = page.locator(".c-project", { hasText: "경로 D 회귀" });
+    await expect(row.locator(".c-badge")).toHaveText("확장 — 내 화면에서 편집");
+    await expect(row.getByRole("link", { name: "편집 열기" })).toHaveCount(0);
+
+    // 토큰 검증은 **세션 쿠키가 없는** 컨텍스트로 한다. context.request를 쓰면 로그인 쿠키가
+    // 함께 나가고 snippet GET은 세션도 허용하므로, Bearer가 틀려도 200이 나와 검증이 무의미해진다.
+    const api = await request.newContext();
+    const noAuth = await api.get(`${baseURL}/api/projects/${projectId}`);
+    expect(noAuth.status(), "인증 없이 거부").toBe(401);
+    const withToken = await api.get(`${baseURL}/api/projects/${projectId}`, {
+      headers: { Authorization: `Bearer ${decoded!.token}` },
+    });
+    expect(withToken.status(), "유효 토큰 GET").toBe(200);
+
+    // 재발급하면 이전 토큰은 즉시 무효 — 확장을 새 코드로 다시 연결해야 한다.
+    page.once("dialog", (d) => void d.accept());
+    await row.getByRole("button", { name: "토큰 재발급" }).click();
+    await expect(page.getByText(/토큰을 재발급하고 새 연결 코드를 복사했습니다/)).toBeVisible();
+
+    const newCode = await page.evaluate(() => navigator.clipboard.readText());
+    expect(newCode, "재발급 코드는 이전과 다르다").not.toBe(code);
+    const newToken = decodeConnection(newCode)!.token;
+
+    const oldTokenRes = await api.get(`${baseURL}/api/projects/${projectId}`, {
+      headers: { Authorization: `Bearer ${decoded!.token}` },
+    });
+    expect(oldTokenRes.status(), "구 토큰 거부").toBe(401);
+    const newTokenRes = await api.get(`${baseURL}/api/projects/${projectId}`, {
+      headers: { Authorization: `Bearer ${newToken}` },
+    });
+    expect(newTokenRes.status(), "새 토큰 통과").toBe(200);
+
+    await api.dispose();
+    await context.close();
   });
 });

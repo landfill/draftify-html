@@ -115,6 +115,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-29 — 이슈 #42 경로 D(확장) 콘솔 진입점 구현
+- 배경: 백엔드는 W6에서 완비(snippet 생성·토큰 발급/폐기·Bearer 스코프)인데 **W7 콘솔 이식에서 UI만 빠져** 공개판에서 경로 D 프로젝트를 만들 수단이 없었다. W9 DoD가 경로 A 시나리오라 못 잡은 갭.
+- 완료(`components/console-home.tsx`): ① **생성 카드 신설** — 이름·작성자 라벨 → `POST /api/projects {source:'snippet'}` → 응답의 평문 토큰으로 **연결 코드 즉시 생성·클립보드 복사**(`shared/connection.ts`의 `encodeConnection` 재사용 — 확장이 파싱하는 형식 그대로, `serverUrl`은 `window.location.origin`이라 오리진 하드코딩 없음). ② **연결 코드 복사**·**토큰 재발급**(확인 다이얼로그 → 새 코드 자동 복사) 버튼을 목록 행에. ③ **목록 구분** — 배지 `확장 — 내 화면에서 편집`, snippet은 서버에 목업이 없으므로 **"편집 열기" 링크·이름 링크를 주지 않는다**. ④ 클립보드 실패 시 `window.prompt`로 값을 노출(연결 코드는 재발급 없이 복원 불가라 복사 실패로 잃게 두지 않는다).
+- **토큰 보관 정책**: 서버는 해시만 보관하므로 평문은 **이 세션(React state)에만** 둔다. 새로고침하면 사라지고, 그때는 [토큰 재발급](기존 토큰 즉시 무효). 사내판 콘솔과 동일한 계약.
+- 완료(E2E): `open-service-dod.spec.ts`에 **경로 D 시나리오 추가** — 생성 → 연결 코드 형식·파싱·`serverUrl` 검증 → 목록 배지·"편집 열기" 부재 → 무인증 401 → 유효 토큰 200 → 재발급 후 **구 토큰 401·새 토큰 200**. 진입점 자체를 회귀 고정해 같은 갭이 다시 생기지 않게 했다.
+- **E2E 작성 중 발견한 함정**: `context.request`는 **브라우저 세션 쿠키를 공유**한다 — snippet GET은 세션도 허용하므로(`project-access.ts`) Bearer가 틀려도 200이 나와 토큰 검증이 무의미해진다. 세션 없는 `request.newContext()`로 바꿔야 실제로 토큰을 검증한다(주석으로 못박음).
+- 완료(문서): `/guide`에 "zip을 만들 수 없다면 — 확장으로 내 화면 편집" 섹션 신설(연결 3단계·토큰이 곧 쓰기 권한·실데이터가 산출물에 들어간다는 경고).
+- 검증: `npm test` **339 passed**, `next build`·`tsc --noEmit` green, **E2E 2본 통과**(기존 DoD + 경로 D).
+- 남은 것(#42에 남김): **snippet 프로젝트의 콘솔 내보내기** — 공개판 콘솔에는 export 버튼 자체가 없고(SDK 패널에서 한다) snippet은 세션이 아니라 Bearer가 필요해 별도 토큰 입력 흐름이 필요하다. 진입점 복구가 이슈의 본질이라 여기서 끊었다.
+
 ### 2026-07-29 — 첫 배포 성공 + 절대경로 제약 실사용 노출 → 안내 문구·확장 호스트 등록
 - **배포 완료: https://draftify-html.vercel.app** (Vercel Hobby, production branch = `open-service`). OAuth 로그인·서비스 기동 확인.
 - 배포까지 걸린 것 3건(전부 대시보드 설정): ① Install Command를 **`cd ../.. && npm install`** 로 오버라이드해야 한다 — Vercel은 Root Directory(`apps/web`)에서 install 해 루트 `node_modules`가 안 생긴다(`tsc: command not found`). ② Framework Preset을 **Next.js**로 지정 — 임포트 시 Root Directory가 `packages/sdk`였던 탓에 `Other`로 잡혀 `No Output Directory named "dist"`로 실패했다. **Output Directory에 `.next`를 수동 지정하면 안 된다**(정적 취급이 되어 Route Handler·미들웨어가 죽는다). ③ Production Branch는 `Settings → Environments → Production → Branch Tracking`(예전 `Settings → Git` 아님).
