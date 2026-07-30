@@ -353,7 +353,8 @@ input {
   font-size: 10.5px;
 }
 
-.c-extension-download {
+/* `.c-btn`이 아래에서 같은 특정도로 display·padding을 덮으므로 특정도를 올려 고정한다. */
+.c-btn.c-extension-download {
   display: inline-flex;
   align-items: center;
   gap: 7px;
