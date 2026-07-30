@@ -332,10 +332,14 @@ test.describe("공개 서비스 DoD (W9)", () => {
    * `/auth/callback`은 실패한다. 그래서 메일 링크는 `/auth/confirm?token_hash=…&type=…`로
    * 가야 하고, 그 형태는 Supabase **이메일 템플릿 설정**으로만 바뀐다(코드 아님).
    *
-   * 여기서 고정하는 것: `/auth/confirm`이 **`type=signup`과 `type=magiclink` 둘 다** 처리하는가.
-   * `signInWithOtp`는 `shouldCreateUser` 기본값이 true라 **신규 가입자는 `Confirm sign up`
-   * 템플릿**을, 기존 사용자는 `Magic link` 템플릿을 받는다 — 두 type이 모두 성립해야
-   * 공개 서비스의 가입 퍼널이 크로스 디바이스에서 끊기지 않는다.
+   * 여기서 고정하는 것: `/auth/confirm`이 **어떤 `type` 값으로 설정하든 견디는가.**
+   * 라우트는 `type`을 `verifyOtp`에 그대로 넘기므로 세 값이 모두 성립한다.
+   *
+   * **설정할 템플릿은 「Magic link or OTP」 하나뿐이다.** `signInWithOtp`로 자동 생성되는
+   * 신규 사용자도 이 템플릿을 받는다 — `Confirm sign up`은 비밀번호 가입(`/signup`) 경로용이고
+   * 이 앱은 그 경로를 쓰지 않는다. 넣을 값은 Supabase 문서 권장 형태인 **`type=email`**.
+   * `magiclink`는 E2E의 `signIn()` 헬퍼가 쓰는 값이고, `signup`은 라우트 커버리지일 뿐
+   * **프로덕션 로그인 퍼널의 요구사항이 아니다**(설정을 이 값으로 하면 안 된다).
    *
    * 이 테스트는 링크를 **새 브라우저 컨텍스트**에서 연다 = 요청한 기기와 다른 기기.
    */
