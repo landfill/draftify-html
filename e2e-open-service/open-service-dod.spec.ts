@@ -328,6 +328,50 @@ test.describe("공개 서비스 DoD (W9)", () => {
   });
 
   /**
+   * 헤더 로그인 상태가 페이지마다 어긋나던 회귀. `/guide`·`/faq`는 로그인 없이 보는 정적
+   * 페이지라 서버가 `email` prop을 주지 않는데, 헤더가 그 prop만 보고 판단해서 **로그인한
+   * 사용자에게도 [로그인]** 을 보여줬다(콘솔 홈은 [로그아웃]). 헤더가 자기 세션을 직접
+   * 확인하게 고쳤고, 여기서 세 화면의 일관성을 고정한다.
+   */
+  test("헤더 로그인 상태 — 콘솔·가이드·FAQ가 일관되게 [로그아웃]", async ({ browser, baseURL }) => {
+    const user = await createUser(admin, "h");
+    created.userIds.push(user.id);
+
+    const context = await browser.newContext();
+    const page = await signIn(admin, context, user.email, baseURL!);
+
+    for (const path of ["/", "/guide", "/faq"]) {
+      await page.goto(`${baseURL}${path}`);
+      await expect(
+        page.getByRole("button", { name: "로그아웃" }),
+        `${path} 헤더에 로그아웃`,
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "로그인" }),
+        `${path} 헤더에 로그인 링크 없음`,
+      ).toHaveCount(0);
+    }
+
+    // 로그아웃 상태에서는 반대로 나와야 한다 — 정적 페이지도 포함.
+    const anon = await browser.newContext();
+    const anonPage = await anon.newPage();
+    for (const path of ["/guide", "/faq"]) {
+      await anonPage.goto(`${baseURL}${path}`);
+      await expect(
+        anonPage.getByRole("link", { name: "로그인" }),
+        `${path} 비로그인 헤더에 로그인 링크`,
+      ).toBeVisible();
+      await expect(
+        anonPage.getByRole("button", { name: "로그아웃" }),
+        `${path} 비로그인 헤더에 로그아웃 없음`,
+      ).toHaveCount(0);
+    }
+
+    await anon.close();
+    await context.close();
+  });
+
+  /**
    * 이슈 #42 — 경로 D(확장) 진입점. W6에서 백엔드(snippet 생성·토큰·Bearer)를 이식했는데
    * W7 콘솔 이식에서 UI가 빠져 **공개판에서 경로 D 프로젝트를 만들 수단이 없었다.**
    * 위 DoD가 경로 A 시나리오만 봐서 놓친 갭이라, 진입점 자체를 여기서 회귀 고정한다.
