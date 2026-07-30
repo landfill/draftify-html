@@ -140,7 +140,7 @@
 ## 세션 로그 (최신이 위)
 
 ### 2026-07-30 — #47 토큰 재발급 원자성 (UNIQUE 제약 + upsert) — **main 병합 완료 (PR #58)**
-- **병합 결과**: PR #58 → main, merge `00efbbf`. CI 전 항목 green(`verify` ×2 · `pr_agent_job` · Vercel Preview). **봇 리뷰 코멘트는 0건**이었다 — `pr_agent_job`은 통과했으나 리뷰를 게시하지 않았고 CodeRabbit도 달리지 않았다(5파일이라 PR #44의 파일 수 초과 스킵과는 다른 사유). 외부 봇 검토 없이 병합한 셈이다. 병합 후 정리 완료: 원격·로컬 토픽 브랜치 삭제, `main` 동기화, 이슈 #47 CLOSED, 워크트리 1개 유지.
+- **병합 결과**: PR #58 → main, merge `00efbbf`. CI 전 항목 green(`verify` ×2 · `pr_agent_job` · Vercel Preview). **봇 리뷰 코멘트는 0건**이었다 — `pr_agent_job`은 통과했으나 리뷰를 게시하지 않았고 CodeRabbit도 달리지 않았다(5파일이라 PR #44의 파일 수 초과 스킵과는 다른 사유). 외부 봇 검토 없이 병합한 셈이다. **원인은 레이트리밋으로 보인다** — 직후 PR #59에서 CodeRabbit 체크가 `Review rate limited` 사유로 pass 처리되는 것을 확인했다. 즉 워크플로 설정 문제가 아니라 한도 문제이고, 봇 리뷰가 꼭 필요하면 시간을 두고 재요청해야 한다. 병합 후 정리 완료: 원격·로컬 토픽 브랜치 삭제, `main` 동기화, 이슈 #47 CLOSED, 워크트리 1개 유지.
 - **완료(DB)**: `project_tokens.project_id`에 UNIQUE 제약 추가 — 마이그레이션 `20260730070848_project_tokens_unique_project.sql`. **착수 절차대로 중복부터 조회했고 0건**(테이블 자체가 행 0건 — 아직 경로 D 토큰을 쓰는 프로젝트가 프로덕션에 없다)이라 제약 적용이 무손실이었다. 함께 기존 비유일 인덱스 `project_tokens_project_idx`를 제거했다(UNIQUE 인덱스가 같은 조회를 커버).
 - **완료(코드)**: `issueToken()`의 delete → insert 2단계를 **`upsert({ onConflict: "project_id" })` 한 문장**으로 교체. `created_at` 갱신·`revoked_at: null` 리셋을 payload에 포함(재발급이 곧 새 토큰이라는 의미를 행에도 반영).
 - **적용 순서를 반대로 잡았다 — 마이그레이션이 코드보다 먼저다.** PROGRESS에 적혀 있던 "코드 먼저 → 마이그레이션 나중"은 #45(권한 회수)의 성질이고, #47은 **코드가 제약에 의존**한다. 실제로 제약 없이 upsert 코드만 돌려 확인했다: `there is no unique or exclusion constraint matching the ON CONFLICT specification` → **토큰 발급 전면 실패**. 순서를 바꿨다면 프로덕션에서 발급이 죽었다. 이 근거를 마이그레이션 파일 주석에 남겼다.
