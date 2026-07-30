@@ -218,14 +218,14 @@ npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.en
 
 ## 공개판 배포 (Vercel + Supabase)
 
-**https://draftify-html.vercel.app** — `open-service` 브랜치가 프로덕션이다.
+**https://draftify-html.vercel.app** — **`main` 브랜치가 프로덕션이다.** `main`에 병합하는 순간 공개 서비스에 반영된다.
 아래는 대시보드에서 한 번 설정하는 값이며, **기본값으로 두면 빌드가 실패한다.**
 
 ### Vercel 프로젝트 설정
 
 | 항목 | 값 | 기본값으로 두면 |
 |------|-----|----------------|
-| Production Branch<br>(`Settings → Environments → Production → Branch Tracking`) | `open-service` | `main`에는 `apps/web`이 없어 배포 대상이 없다 |
+| Production Branch<br>(`Settings → Environments → Production → Branch Tracking`) | `main` | 기본값이 `main`이라 그대로 두면 된다. (트랙 진행 중에는 `apps/web`이 `main`에 없어 `open-service`를 지정했다 — 2026-07-29 병합으로 `main`으로 되돌렸고 그 브랜치는 삭제됐다) |
 | Root Directory | `apps/web` | 임포트 시 `packages/sdk`가 잡힌다 |
 | **Framework Preset** | **Next.js** | `Other`로 잡히면 `No Output Directory named "dist"`로 실패. **Output Directory에 `.next`를 수동 지정하지 말 것** — 정적 취급이 되어 API 라우트·미들웨어가 죽는다 |
 | **Install Command** (Override) | **`cd ../.. && npm install`** | Root Directory에서만 install 해 루트 `node_modules`가 없다 → `tsc: command not found` |
