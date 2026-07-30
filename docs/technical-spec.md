@@ -445,7 +445,7 @@ Vercel은 Root Directory(`apps/web`)의 빌드 스크립트만 실행하므로 �
 그래서 `apps/web/package.json`에 **`vercel-build`** 를 둔다(Vercel은 이 스크립트가 있으면 `build`
 대신 실행한다):
 
-```
+```jsonc
 "build": "node scripts/package-extension.mjs && next build"
 "vercel-build": "cd ../.. && npm run build && npm run build -w @mockspec/web"
 ```
