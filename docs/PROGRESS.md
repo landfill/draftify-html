@@ -121,7 +121,8 @@
 ### 2026-07-30 — §7.3 오리진 격리를 이슈 #48로 등록 (문서 ↔ 이슈 연결)
 - 배경: 사용자가 "공개용 구현 계획 때 서비스 링크와 목업 링크를 보안 관점에서 분리하는 논의가 있었던 것 같은데 맞나"라고 확인 요청. 맞다 — RFC/킥오프 **§7.3 승격 경로(옵션 1·방법 B)**: Vercel Hobby 프로젝트 2개(`*-console` / `*-usercontent`)로 목업을 콘솔·API와 **다른 오리진**에서 `/m/{id}/` 경로로 서빙. 단 **v1에 구현된 것이 아니라 유보된 계획**이고, 조건은 **§9-8 외부 공유를 열기 전 선행**이다.
 - 한 가지 흔한 오해를 명시해 둔다: 별도 오리진으로 나가는 것은 **export 산출물이 아니라 업로드된 목업**(신뢰불가 임의 JS)이다. 따라서 분리 후에는 **편집 화면 자체가 usercontent 오리진**에서 열리고, 그 대가로 경로 A 편집 SDK의 same-origin 저장이 CORS+토큰으로 전환된다.
-- 완료: **이슈 #48 개설** — 작업 항목 9개(usercontent 프로젝트 신설 / 프로젝트 단위 단기 capability 인증 배관 / SDK 저장 CORS+토큰 전환 / `vercel.json` CORS / 확장 `host_permissions` 호스트 1개 추가 / `<base>`·SPA fallback 검증 / §7.4 부작용 해소 확인 / 두 오리진 E2E)와 완료 조건 포함. 문서 3곳에 교차 참조: `guide/open-service-rfc.md` §7.3·§9-8, `guide/open-service-kickoff-spec.md` §7.3·§9 + §11 이력 행.
+- 완료: **이슈 #48 개설** — 작업 항목 9개(① usercontent Vercel 프로젝트 신설+배포 파이프라인 ② 프로젝트 단위 단기 capability 인증 배관 ③ 편집 SDK 저장 CORS+토큰 전환 ④ `vercel.json`/라우트 핸들러 CORS 헤더 ⑤ 확장 `host_permissions`에 usercontent 호스트 1개 추가(와일드카드 금지) ⑥ `<base href>` 주입이 usercontent 기준으로 맞는지 검증 ⑦ SPA history fallback(FR-ONB-04) 회귀 확인 ⑧ §7.4 오리진 공유 부작용 해소 확인 ⑨ 두 오리진 전 구간 E2E)와 완료 조건 포함. 문서 3곳에 교차 참조: `guide/open-service-rfc.md` §7.3·§9-8, `guide/open-service-kickoff-spec.md` §7.3·§9 + §11 이력 행.
+- 검증 방법: `gh issue view 48`로 본문 체크박스 9개 확인(문서에 적은 수량과 일치), `grep -n "#48" guide/open-service-rfc.md guide/open-service-kickoff-spec.md docs/PROGRESS.md`로 교차 참조 5곳 실재 확인. PR #49에서 CI green(`verify` ×2 / `pr_agent_job` / CodeRabbit / Vercel Preview Ready). 문서만 변경이라 코드 테스트는 해당 없음.
 - 다음 할 일: 변경 없음 — **#43 확장 배포 경로**(착수 전 Vercel Preview 환경변수 3종 확인) → **#45(보안)**. #48은 외부 공유 착수 시점에 열린다.
 - 막힌 지점: 없음. (이전 세션의 정리 대기 1건 — `../Draftify-open-service` 워크트리 제거 전 `apps/web/.env.local` 이동 — 는 그대로 남아 있다.)
 
