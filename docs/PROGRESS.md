@@ -18,7 +18,8 @@
 - **⚠️ 브랜치 운영이 바뀌었다 (2026-07-29): Vercel Production Branch = `main`.**
   - **`main`에 병합하는 순간 공개 서비스에 반영된다.** 이전처럼 `open-service`에 푸시해야 배포되는 구조가 아니다.
   - 작업은 **`main`에서 딴 토픽 브랜치**(`feat/`·`fix/`…) → Preview 배포로 확인 → PR → 병합. 사내판과 같은 흐름이다.
-  - **`open-service` 브랜치·워크트리 정리 완료 (2026-07-30).** 브랜치는 로컬·원격 모두 삭제(고유 커밋 0건 확인 후 — `main`이 전부 포함), 워크트리 `../Draftify-open-service`도 제거. **작업 폴더는 `/Users/h0977/dev/Draftify-Html` 하나뿐이고, 상시 유지하는 워크트리는 없다.** 워크트리를 다시 팔 이유가 없다 — 두 앱이 `main` 안에 공존하므로 한 폴더에서 둘 다 띄운다(사내판을 띄운 채 다른 브랜치를 돌려야 할 때만 임시로 파고 지운다). `apps/web/.env.local`은 main 폴더로 이관 완료(3키 정상, `test:e2e:web` 스킵되지 않음).
+  - **`open-service` 브랜치·워크트리 정리 완료 (2026-07-30).** 브랜치는 로컬·원격 모두 삭제(고유 커밋 0건 확인 후 — `main`이 전부 포함), 워크트리도 제거했다. **이제 상시 유지하는 워크트리는 없다 — 레포 체크아웃 한 곳에서 작업한다.** 워크트리를 다시 팔 이유가 없다: 두 앱이 `main` 안에 공존하므로 한 폴더에서 둘 다 띄운다(사내판을 띄운 채 다른 브랜치를 돌려야 할 때만 임시로 파고 지운다).
+    - **아래는 이 정리를 수행한 로컬 머신(작성자 Mac)에 한정된 사실이다** — 다른 클론·클라우드 세션에는 해당하지 않는다: 워크트리 폴더는 `../Draftify-open-service`였고, `apps/web/.env.local`을 레포 체크아웃으로 이관해 3키가 정상이라 `test:e2e:web`이 스킵되지 않는다. **`.env.local`은 gitignore라 어떤 클론에도 따라오지 않는다** — 새 환경에서 Supabase 연동 E2E를 돌리려면 `apps/web/.env.example`을 복사해 직접 채워야 하고, 없으면 그 테스트는 설계대로 스킵된다.
   - 미확인: **Preview 환경변수.** 세 키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY`)가 Production에만 있으면 토픽 브랜치 Preview는 빌드는 되고 **런타임에 죽는다**. #43 착수 전에 Preview에도 활성화됐는지 확인할 것.
   - **Supabase는 하나뿐이다** — Preview·Production이 같은 DB·Storage를 본다. 마이그레이션은 적용 즉시 프로덕션에도 걸린다. RLS를 좁히는 #45는 **코드 먼저 → 마이그레이션 나중** 순서가 안전하다.
 - **다음 할 일 — 우선순위 재정렬 (2026-07-30, 사용자 결정).** 이전 기록은 `#43 → #45`였다. **화면에 직접 보이는 것을 먼저** 처리한다는 사용자 판단으로 #50·#51을 선두에 두고, 그 뒤를 실피해·비용 순으로 잇는다:
@@ -59,7 +60,7 @@
 
 ## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
 
-> RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행. 엄브렐라 이슈 #34.
+> RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행했다. 엄브렐라 이슈 #34. **트랙 종료(2026-07-29 main 병합)로 그 브랜치는 삭제됐다 — 이후 작업은 `main`에서 딴 토픽 브랜치다.**
 
 - [x] W1 Supabase 프로젝트·Auth·스키마·RLS — **완료.** 프로젝트 `draftify-html`(ref `dhzojuatkmafgwiwtdwe`, ap-northeast-1, free). 마이그레이션 2본(`apps/web/supabase/migrations/`) 적용·검증: 테이블 3종 RLS 활성 + 정책 public 3·storage 1 + 파생 트리거(search_path 고정) + 버킷 `mockups`(비공개) + 어드바이저 0건. Auth = 이메일 매직링크(기본) + **Google OAuth provider 설정 완료**(사용자, 2026-07-22). 로컬 Redirect URLs = `http://localhost:3000/auth/callback`(`.env.example` 주석, W7)
 - [x] W2 스토어 4모듈 → Supabase 어댑터 — **완료.** 어댑터 3본 + `SUPABASE_SECRET_KEY` admin 클라이언트. `lib/store/supabase.integration.test.ts` 5건 green(project·asset·export·token 왕복 + admin RLS 우회). Storage RLS 보정 마이그레이션 `20260724150000_fix_storage_object_rls.sql`(SECURITY DEFINER 소유권 검증·INSERT/SELECT 분리). `exportStore` timestamptz→ISO 정규화. vitest **238 passed**.
