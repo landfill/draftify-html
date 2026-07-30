@@ -9,11 +9,11 @@
 
 ## 현재 단계
 
-**▶ 다음 세션 시작점 (2026-07-30 갱신) — 배포 운영 단계. 다음 작업은 이슈 #43.**
+**▶ 다음 세션 시작점 (2026-07-31 갱신) — #43 Draft PR #67 생성. Preview 실사용 확인과 리뷰가 남음.**
 
 > **핸드오프 요약 (이 줄부터 5줄만 읽어도 이어받을 수 있게)**
 > 1. `main`이 배포 브랜치다. **머지 = 프로덕션 반영.** 작업은 `main`에서 딴 토픽 브랜치 → PR → 머지.
-> 2. **다음 작업 = #43**(착수 전 Vercel **Preview 환경변수 3종** 확인). #47(PR #58)·**#45 A안**(PR #60)은 코드·마이그레이션 모두 프로덕션 반영 완료. #45는 **2번(Storage 직접 업로드)이 남아 이슈가 열려 있다** — 킥오프 §4 절차가 필요한 건이다.
+> 2. **#43 B안(ZIP 다운로드) 구현·로컬 검증 완료, Draft PR #67.** 브랜치 `feat/extension-download-43`, 커밋 `4ca3644`. Vercel **Preview 환경변수 3종은 활성화됐다고 사용자 확인(2026-07-31)**. Preview 배포는 성공했으며, 다음은 로그인된 브라우저에서 실다운로드·unpacked 설치 확인과 리뷰 대응이다. #45는 **2번(Storage 직접 업로드)이 남아 이슈가 열려 있다**.
 > 3. **#46은 대기**(Free 플랜 SMTP 제약). 손대지 말 것 — 사용자 결정이 먼저다.
 > 4. 이 저장소에 **prettier 설정이 없다.** `npx prettier --write` 금지(80칼럼으로 대량 재포맷된다). 포맷은 주변 코드에 맞춰 손으로.
 > 5. 머지는 **건별로 사용자 동의**를 받는다(AGENTS.md §6). 임의 머지 금지.
@@ -27,23 +27,23 @@
   - 작업은 **`main`에서 딴 토픽 브랜치**(`feat/`·`fix/`…) → Preview 배포로 확인 → PR → 병합. 사내판과 같은 흐름이다.
   - **`open-service` 브랜치·워크트리 정리 완료 (2026-07-30).** 브랜치는 로컬·원격 모두 삭제(고유 커밋 0건 확인 후 — `main`이 전부 포함), 워크트리도 제거했다. **이제 상시 유지하는 워크트리는 없다 — 레포 체크아웃 한 곳에서 작업한다.** 워크트리를 다시 팔 이유가 없다: 두 앱이 `main` 안에 공존하므로 한 폴더에서 둘 다 띄운다(사내판을 띄운 채 다른 브랜치를 돌려야 할 때만 임시로 파고 지운다).
     - **아래는 이 정리를 수행한 로컬 머신(작성자 Mac)에 한정된 사실이다** — 다른 클론·클라우드 세션에는 해당하지 않는다: 워크트리 폴더는 `../Draftify-open-service`였고, `apps/web/.env.local`을 레포 체크아웃으로 이관해 3키가 정상이라 `test:e2e:web`이 스킵되지 않는다. **`.env.local`은 gitignore라 어떤 클론에도 따라오지 않는다** — 새 환경에서 Supabase 연동 E2E를 돌리려면 `apps/web/.env.example`을 복사해 직접 채워야 하고, 없으면 그 테스트는 설계대로 스킵된다.
-  - 미확인: **Preview 환경변수.** 세 키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY`)가 Production에만 있으면 토픽 브랜치 Preview는 빌드는 되고 **런타임에 죽는다**. #43 착수 전에 Preview에도 활성화됐는지 확인할 것.
+  - **Preview 환경변수 확인 완료(사용자, 2026-07-31).** 세 키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY`) 모두 Preview에 활성화돼 있다. 단, 이 Windows 클론에는 `apps/web/.env.local`이 없어 실 Supabase Playwright 6본은 조건부 스킵된다.
   - **Supabase는 하나뿐이다** — Preview·Production이 같은 DB·Storage를 본다. 마이그레이션은 적용 즉시 프로덕션에도 걸린다. RLS를 좁히는 #45는 **코드 먼저 → 마이그레이션 나중** 순서가 안전하다.
 - **다음 할 일 — 우선순위 재정렬 (2026-07-30, 사용자 결정).** 이전 기록은 `#43 → #45`였다. **화면에 직접 보이는 것을 먼저** 처리한다는 사용자 판단으로 #50·#51을 선두에 두고, 그 뒤를 실피해·비용 순으로 잇는다:
   1. ~~**#50 + #51**~~ — **완료 (PR #53, merge `32c33e2`).** 이어서 사용자 보고 2건도 완료(PR #54 `08df1dc`: 헤더 로그인 상태 불일치 + 헤더 sticky).
   2. **#46 매직링크 크로스디바이스** — **⛔ 대기: Free 플랜에서 커스텀 SMTP 없이는 템플릿 편집 불가**(2026-07-30 확인, 맨 위 세션 로그 참조). 로그인 퍼널이 깨져 있다(노트북 요청 → 휴대폰 열기 실패). 코드 0줄, Supabase 이메일 템플릿 한 줄. 실검증은 다른 기기에서 수동으로 해야 한다
   3. ~~**#47 토큰 재발급 경합**~~ — **완료·main 병합 (PR #58, merge `00efbbf`).** UNIQUE 제약 마이그레이션은 코드보다 먼저 프로덕션에 적용했다(중복 0건 확인 후). 상세는 맨 위 세션 로그. **다음에 마이그레이션이 딸린 작업을 할 때 재사용할 교훈: 코드가 제약에 의존하면(upsert의 `onConflict` 등) 마이그레이션이 먼저다** — 반대로 하면 그 기능이 프로덕션에서 즉시 죽는다. #45는 성질이 반대(권한 회수 → 코드 먼저).
   4. ~~**#45 남용 방어 우회 — A안**~~ — **완료·main 병합 (PR #60, merge `fa4a53d`).** `projects` INSERT 정책을 없애고 생성을 서버(service_role)로 좁혔다. 적용 순서는 **코드 먼저 → 배포 확인 → 마이그레이션**이었다(#47과 반대). **남은 것 = 2번(Storage 직접 업로드)** — B안은 킥오프 D5·D6과 얽혀 §4 절차가 필요하므로 별도 착수. 이슈는 열려 있다.
-  5. **▶▶ #43 확장 배포 경로 — 여기서 시작한다.** B안(zip 다운로드)만. A(웹스토어)는 심사·비용·개인정보 페이지가 딸려오니 별건. 착수 전 **Preview 환경변수 3종** 확인(아래)
+  5. **#43 확장 배포 경로 — B안 구현·로컬 검증 완료, Draft PR #67.** 사이트 ZIP 다운로드·개발자 모드 설치 가이드·버전 규칙을 `feat/extension-download-43`에 구현했다. A(웹스토어)는 심사·비용·개인정보 페이지가 딸려오므로 별건. 남은 것은 Preview 실다운로드·unpacked 설치와 PR 리뷰.
   - **#48은 지금 하지 않는다** — 외부 공유를 열 때가 조건. 미리 하면 편집 저장 CORS+토큰 전환 비용을 쓸 곳 없이 먼저 지불한다. #12·#13은 `[실수요 대기]` 유지
 - **PR #44 Codex 리뷰 5건 처리**: 오픈 리다이렉트(P2)만 **병합 전 수정**(`lib/auth/safe-next.ts` — `next`를 같은 오리진 경로로 제한, 절대·프로토콜상대·백슬래시 변형 차단, 단위 테스트 6건). 나머지 4건은 이슈로 분리.
-- **열린 이슈 (10건)** — 처리 순서는 위 "다음 할 일":
+- **열린 이슈** — 처리 순서는 위 "다음 할 일":
   - **#63** 토큰 재발급 경합 — 사용자에게 노출된 코드가 이미 무효일 수 있다 (#47 후속: 콘솔 single-flight + 테스트 보강)
   - **#65** 사용 가이드 코드 예시를 터미널 창 UI로 (가독성 개선 — 다크·라이트 처리 결정이 선행)
   - **#64** 문서 인덱스·작업 규약 현행화 (**`AGENTS.md`의 "guide/ 3종"이 실제 7종** 등 사실관계 오류 4건)
   - **#57** 마이그레이션을 최종 배포 스키마 기준으로 통합 관리 — **시점 대기**(사용자 방침: "최종 완료 시")
   - **#45** 브라우저 직접 DB·Storage 쓰기가 쿼터·레이트리밋 우회 — **A안(프로젝트 생성) 완료(PR #60). 남은 것은 2번 Storage 직접 업로드**(킥오프 §4 절차 필요)
-  - **#43** 공개판 확장 배포 경로 (B안=zip 다운로드만. 착수 전 Preview 환경변수 3종 확인) ← **다음 작업**
+  - **#43** 공개판 확장 배포 경로 — **B안 구현·로컬 검증 완료, Draft PR #67.** Preview 실다운로드·리뷰·병합 전이라 이슈는 열려 있음
   - **#46** 매직링크 크로스디바이스 — **⛔ 대기(SMTP 제약, 사용자 결정 필요)**
   - **#48** 목업 오리진 격리 — **조건 대기**(외부 공유를 열 때가 조건. 미리 하면 CORS 전환 비용을 쓸 곳 없이 지불)
   - **#12 · #13** `[실수요 대기]` 유지
@@ -64,6 +64,17 @@
 **공개 서비스 개편 RFC(Vercel+Supabase) — PR #35로 main 병합 완료 (2026-07-21, `42e1784`). 엄브렐라 이슈 #34.**
 **공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·§7.1 open-service 트랙·§7.2 SSO 조건 ①)·technical-spec §9.2(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
 **페이지 헤더 밴드(이슈 #38) — PR #39로 main 병합 완료 (2026-07-24, merge `338677b`, CI green·리뷰 3라운드 반영·브랜치 삭제). Closes #38.**
+
+## 공개판 확장 ZIP 배포 WBS 체크리스트 (이슈 #43, 2026-07-31 착수)
+
+> 범위는 B안(사이트 ZIP 다운로드 + 개발자 모드 설치)만이다. Chrome Web Store 배포는 별도 작업이다.
+
+- [x] T43-1 결정·스펙 동기화 — 설치 선행 흐름, ZIP 구조, `manifest.json.version` 단일 버전 원천, 자동 업데이트 없음
+- [x] T43-2 빌드 파이프라인 — 확장 dist 검증 후 재현 가능한 `mockspec-extension.zip` 생성, Vercel 빌드에 연결
+- [x] T43-3 공개 다운로드 — `/download/mockspec-extension.zip`을 인증 예외로 열고 경계 매칭 회귀 테스트 추가
+- [x] T43-4 UI·가이드 — 경로 D 탭을 `확장 설치 → 프로젝트 연결` 순서로 재구성하고 Chrome·Edge 개발자 모드 절차·버전 표시 추가
+- [x] T43-5 로컬 검증 — vitest·typecheck·Vercel 빌드, HTTP/ZIP 스모크, 데스크톱·모바일 시각 검수 95점
+- [ ] T43-6 배포 검증 — **커밋·푸시·Draft PR #67·Vercel Preview 생성 완료.** 로그인된 Preview에서 실 ZIP 다운로드와 실 Supabase 경로 D E2E 확인 → 리뷰·병합(사용자 동의 필요)
 
 ## 페이지 헤더 밴드 WBS 체크리스트 (이슈 #38, 2026-07-24 착수 — **완료·main 병합**)
 
@@ -141,6 +152,19 @@
 - [x] T10 E2E (Playwright) — S1 Definition of Done 시나리오 자동화 — `npm run test:e2e` 1 passed(4.4s), vitest 68 passed 회귀 없음
 
 ## 세션 로그 (최신이 위)
+
+### 2026-07-31 — #43 공개판 확장 ZIP 다운로드·설치 가이드 구현
+- 완료: 브랜치 `feat/extension-download-43`에서 B안만 구현했다. `packages/extension/dist`를 필수 6파일·SemVer로 검증하고 고정 타임스탬프 ZIP(`mockspec-extension/` 단일 루트)으로 묶는 `apps/web/scripts/package-extension.mjs`를 추가했으며, `vercel-build`가 루트 SDK·확장 빌드 → ZIP 생성 → Next 빌드를 순서대로 실행한다. 산출 ZIP은 생성 파일이라 gitignore 처리하고, 사용자 표시 버전은 `packages/extension/manifest.json`을 단일 원천으로 삼았다.
+- 완료: 공개판 경로 D 탭을 `1 · 확장 설치` → `2 · 프로젝트 연결` 순서로 재구성하고 다운로드 버튼·Chrome/Edge 개발자 모드 5단계 가이드·수동 업데이트 안내를 추가했다. `/download`를 인증 예외에 추가해 최초 스모크에서 발견한 로그인 리다이렉트를 수정했고 접두 오탐(`/download-fake`) 회귀 테스트를 보강했다. Preview 환경변수 3종 활성화는 사용자가 확인했다.
+- 검증: `npm test` **338 passed / 12 skipped (350)**, 루트·web typecheck 통과, `npm run vercel-build -w @mockspec/web` 통과(확장 **v0.1.0·6파일·264,072 bytes**). HTTP 스모크 `/guide` 200, `/download/mockspec-extension.zip` 200 `application/zip`·PK 매직 바이트 확인, ZIP 내부 6파일·manifest 버전·운영 호스트 권한 정확 일치 재검증. Playwright 하네스는 더미 공개키로 기동 성공했으나 이 클론에 실 Supabase secret이 없어 **6 skipped**. `$visual-verdict`는 앵커 헤더 가림을 수정한 2차에서 **95/100 pass**(데스크톱·390px 모바일).
+- 완료(배포 준비): 커밋 `4ca3644`를 `origin/feat/extension-download-43`에 푸시하고 **Draft PR #67**을 열었다. Vercel Preview 배포는 success이며 환경 URL은 커밋마다 갱신되므로 PR의 Vercel 체크를 정본으로 본다.
+- 완료(리뷰·병합 순서 정정): 2차 리뷰어가 PR #67에 리뷰 코멘트 1건을 남겼다(머지 전 2건 = ① `.c-extension-download`가 `.c-btn`보다 **앞에** 선언돼 같은 특정도에서 `display: inline-flex`·`padding`이 덮임 → 모바일 라벨 좌측 정렬, ② E2E의 `suggestedFilename()`이 `<a download>` 속성만 재확인해 산출물 바이트를 검증하지 못함. 선택 5건 = `next dev` ZIP 부재, 공개 배포본 localhost `host_permissions`, `aria-labelledby`가 generic role에서 무시, 미들웨어 matcher의 `.zip` 미제외, fflate/jszip 중복). 아울러 **PR #66이 #67보다 먼저 병합돼야 했다** — 둘 다 `docs/PROGRESS.md`의 같은 hunk를 건드려 GitHub이 각각을 CLEAN으로 표시해도 실제로는 충돌한다(`git merge-tree`로 확인). #66을 먼저 병합(merge `df5bb03`)한 뒤 이 브랜치에서 `origin/main`을 병합해 충돌을 해소했다(열린 이슈 #64·#65 유지, 세션 로그는 "최신이 위" 규약대로 07-31 → 07-30 순). 이어서 **#66에 병합 후 도착한 CodeRabbit 지적 중 1건을 회수**했다 — `열린 이슈 (10건)`의 개수 표기는 같은 문서 07-30 로그의 재발 방지 규칙 "목록이 늘어나는 문서에 개수를 쓰지 않는다"와 모순이라 `(10건)`을 제거했다. 문서 전체를 훑어 같은 성격의 표기가 더 있는지 확인했고, 나머지 개수 표기(환경변수 3종·테이블 3종·"이 세션에서 머지한 PR 4건" 등)는 **늘어나지 않는 확정된 사실**이라 그대로 뒀다.
+- 완료(봇 리뷰 반영): Draft를 해제하자 **Codex 2건·CodeRabbit 5건**이 도착했다(Draft 상태에서는 CodeRabbit이 `Review skipped`, Codex는 트리거 자체가 없어 **578줄이 자동 리뷰를 한 번도 못 받고 있었다** — Draft는 병합 방지 수단으로 쓰지 말 것. AGENTS.md §6의 동의 규약이 이미 그 역할을 한다). **세 리뷰어가 독립적으로 같은 2건에 수렴**했고 그 2건을 고쳤다: ① `.c-extension-download` → `.c-btn.c-extension-download`로 특정도를 올려 `display: inline-flex`·`padding`이 `.c-btn`에 덮이지 않게 했다(≤720px에서 `justify-content: center`가 비로소 동작). ② E2E가 `suggestedFilename()`(= `<a download>` 속성)만 보던 것을 `failure()` null 확인 + JSZip 파싱 + 엔트리 6개 + **화면 표시 버전과 ZIP 내 `manifest.version` 일치**까지 검증하도록 바꿨다. 셋째로 `technical-spec.md`의 무언어 코드 펜스에 `jsonc`를 붙였다(MD040).
+- 판단(반영하지 않은 지적 2건): **`detailed-spec.md` "경로 선택 계약 모순"은 오탐** — "2택"은 `[S2]`, "3번째 선택지"는 `[S2.5]`로 문서 관례인 스프린트 마커가 이미 구분하고, 설치 강제 여부도 "설치 전에도 프로젝트 생성은 막지 않되"로 확정돼 있다. **킥오프 `2026-07-31` 날짜도 오탐** — 커밋 타임스탬프가 `+0900`이라 KST로 07-31이 맞고 봇이 UTC(07-30 16:35)로 읽었다. 둘 다 고치면 AGENTS.md §4 절차가 필요한 결정 변경이 되므로 근거를 달아 회신만 했다.
+- 검증(리뷰 반영분): `npm test` **338 passed / 12 skipped**, 루트·web typecheck 통과, `npx playwright test --list`로 spec 트랜스파일 확인(6 tests). **E2E 다운로드 경로는 이 클론에서 실행되지 않으므로**(`.env.local` 부재로 조건부 스킵) 단언 내용은 실 ZIP을 만들어 따로 대조했다 — 엔트리 6개가 기대값과 정확히 일치, `manifest.version` = `0.1.0`으로 화면 표시(`MockSpec v0.1.0`)와 같다. **이 경로의 실제 실행 검증은 실 secret이 있는 환경에서 T43-6과 함께 해야 한다.**
+- 교훈(패키징 상수를 E2E가 import하지 않는 이유): 처음에는 `package-extension.mjs`의 `REQUIRED_EXTENSION_FILES`를 import해 단일 소스로 두려 했으나, **Playwright의 CJS 로더가 `.mjs`의 `import.meta`를 처리하지 못해 spec 전체가 로드 실패**했다(`--list`로 즉시 발견). spec에 기대값을 따로 적는 쪽으로 바꿨는데, 결과적으로 이게 옳다 — 패키징 스크립트가 잘못 바뀌면 E2E가 잡아야 하는데 같은 상수를 공유하면 함께 바뀌어 못 잡는다.
+- 다음 할 일: 로그인된 브라우저로 PR Preview에서 실제 ZIP 다운로드·압축해제·unpacked 로드와 실 Supabase 경로 D E2E를 확인한다. `main` 병합은 별도 동의를 받는다.
+- 막힌 지점: 코드 블로커 없음. Preview는 Vercel SSO 보호 상태라 비로그인 자동 요청은 SSO로 302된다. 이 Windows 클론의 `apps/web/.env.local` 부재로 실 Supabase E2E 6본도 조건부 스킵됐다. 기존 빌드 경고(`single-file-core` IIFE의 `import.meta`, 홈 디렉터리 lockfile로 인한 Next workspace root 추론)는 이번 변경과 무관하다.
 
 ### 2026-07-30 — 🏁 세션 마감 핸드오프 (다음 세션은 #43부터)
 - **이 세션에서 병합한 PR 5건**: **#58**(#47 토큰 재발급 원자성) · **#60**(#45 A안 projects INSERT 서버 전용) · **#59·#61**(진행 기록) · **#62**(README 개조식 정리 + 봇 지적 반영 + 문서 인덱스 정정). 최종 `main` = `c20c8c0`, 워킹 트리 clean, 브랜치는 `main` 단독.

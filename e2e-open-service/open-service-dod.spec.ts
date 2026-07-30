@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import JSZip from "jszip";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { decodeConnection } from "@mockspec/shared";
 import {
@@ -31,6 +32,24 @@ import {
  * (킥오프 §7.1 알려진 제약 — 사내판은 서브도메인이라 둘 다 동작해서 기존 fixture는 루트 base다).
  */
 const ZIP_PATH = path.resolve("fixtures/todo-app-relative.zip");
+
+/**
+ * #43 — 배포 ZIP이 지켜야 할 계약. 압축을 푼 `mockspec-extension/` 폴더 하나를
+ * chrome://extensions에서 그대로 고를 수 있어야 한다.
+ * 패키징 스크립트(`apps/web/scripts/package-extension.mjs`)의 상수를 import하지 않고
+ * 여기에 따로 적는다 — 스크립트가 잘못 바뀌면 이 테스트가 잡아야 하기 때문이다.
+ */
+const EXTENSION_ARCHIVE_ROOT = "mockspec-extension";
+const EXPECTED_EXTENSION_ENTRIES = [
+  "background.js",
+  "content.js",
+  "manifest.json",
+  "popup.html",
+  "popup.js",
+  "sdk.js",
+]
+  .map((file) => `${EXTENSION_ARCHIVE_ROOT}/${file}`)
+  .sort();
 
 const SCENE1 = [
   { target: "#add-todo", title: "추가 버튼", desc: "클릭 시 입력값이 할 일 목록 맨 아래에 추가된다." },
@@ -454,6 +473,37 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     // 경로 D 폼은 두 번째 탭 안에 있다 (#51 — 기본 탭은 ZIP 업로드).
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
+    await expect(page.getByText("1 · 확장 설치")).toBeVisible();
+    await expect(page.getByText("2 · 프로젝트 연결")).toBeVisible();
+
+    // #43 — 프로젝트 토큰을 만들기 전에 사이트에서 설치 파일을 받을 수 있어야 한다.
+    const extensionDownloadLink = page.getByRole("link", { name: "확장 ZIP 다운로드" });
+    await expect(extensionDownloadLink).toHaveAttribute(
+      "href",
+      "/download/mockspec-extension.zip",
+    );
+    const extensionDownloadPromise = page.waitForEvent("download");
+    await extensionDownloadLink.click();
+    const extensionDownload = await extensionDownloadPromise;
+    expect(extensionDownload.suggestedFilename()).toBe("mockspec-extension.zip");
+
+    // 파일명은 `<a download>` 속성에서 나오므로 산출물이 비었거나 오류 HTML이어도 통과한다.
+    // 실제 바이트를 열어 설치 가능한 ZIP인지까지 봐야 깨진 배포를 잡는다.
+    expect(await extensionDownload.failure(), "다운로드 실패").toBeNull();
+    const downloadedZip = await JSZip.loadAsync(
+      await fs.readFile(await extensionDownload.path()),
+    );
+    const zipEntries = Object.keys(downloadedZip.files).sort();
+    expect(zipEntries, "ZIP 내부 = 단일 루트 폴더 + 필수 파일 전부").toEqual(
+      EXPECTED_EXTENSION_ENTRIES,
+    );
+
+    // 화면에 표시한 버전과 실제 배포본이 어긋나면 사용자는 갱신 여부를 판단할 수 없다.
+    const downloadedManifest = JSON.parse(
+      await downloadedZip.file(`${EXTENSION_ARCHIVE_ROOT}/manifest.json`)!.async("string"),
+    );
+    await expect(page.getByText(`MockSpec v${downloadedManifest.version}`)).toBeVisible();
+
     await page.locator("#snippet-name").fill("경로 D 회귀");
     await page.locator("#snippet-owner").fill("QA");
     await page.getByRole("button", { name: "만들고 연결 코드 복사" }).click();

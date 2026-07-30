@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "mockspec — 내 화면에서 편집",
+  "name": "MockSpec — 내 화면에서 편집",
   "version": "0.1.0",
-  "description": "로그인해 둔 화면 위에 mockspec 편집기를 띄웁니다 (경로 D — 서버는 아무것도 fetch하지 않음).",
+  "description": "로그인해 둔 화면 위에 MockSpec 편집기를 띄웁니다 (경로 D — 서버는 아무것도 fetch하지 않음).",
   "permissions": ["storage", "activeTab", "downloads"],
   "host_permissions": [
     "https://draftify-html.vercel.app/*",
@@ -24,7 +24,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "mockspec"
+    "default_title": "MockSpec"
   },
   "background": {
     "service_worker": "background.js"
