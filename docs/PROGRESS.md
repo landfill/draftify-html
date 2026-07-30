@@ -155,7 +155,7 @@
 - 완료: 브랜치 `feat/extension-download-43`에서 B안만 구현했다. `packages/extension/dist`를 필수 6파일·SemVer로 검증하고 고정 타임스탬프 ZIP(`mockspec-extension/` 단일 루트)으로 묶는 `apps/web/scripts/package-extension.mjs`를 추가했으며, `vercel-build`가 루트 SDK·확장 빌드 → ZIP 생성 → Next 빌드를 순서대로 실행한다. 산출 ZIP은 생성 파일이라 gitignore 처리하고, 사용자 표시 버전은 `packages/extension/manifest.json`을 단일 원천으로 삼았다.
 - 완료: 공개판 경로 D 탭을 `1 · 확장 설치` → `2 · 프로젝트 연결` 순서로 재구성하고 다운로드 버튼·Chrome/Edge 개발자 모드 5단계 가이드·수동 업데이트 안내를 추가했다. `/download`를 인증 예외에 추가해 최초 스모크에서 발견한 로그인 리다이렉트를 수정했고 접두 오탐(`/download-fake`) 회귀 테스트를 보강했다. Preview 환경변수 3종 활성화는 사용자가 확인했다.
 - 검증: `npm test` **338 passed / 12 skipped (350)**, 루트·web typecheck 통과, `npm run vercel-build -w @mockspec/web` 통과(확장 **v0.1.0·6파일·264,072 bytes**). HTTP 스모크 `/guide` 200, `/download/mockspec-extension.zip` 200 `application/zip`·PK 매직 바이트 확인, ZIP 내부 6파일·manifest 버전·운영 호스트 권한 정확 일치 재검증. Playwright 하네스는 더미 공개키로 기동 성공했으나 이 클론에 실 Supabase secret이 없어 **6 skipped**. `$visual-verdict`는 앵커 헤더 가림을 수정한 2차에서 **95/100 pass**(데스크톱·390px 모바일).
-- 완료(배포 준비): 커밋 `4ca3644`를 `origin/feat/extension-download-43`에 푸시하고 **Draft PR #67**을 열었다. Vercel Preview 배포는 success이며 실제 환경 URL은 `https://draftify-html-9mu6f9jdp-landfills-projects.vercel.app`이다.
+- 완료(배포 준비): 커밋 `4ca3644`를 `origin/feat/extension-download-43`에 푸시하고 **Draft PR #67**을 열었다. Vercel Preview 배포는 success이며 환경 URL은 커밋마다 갱신되므로 PR의 Vercel 체크를 정본으로 본다.
 - 다음 할 일: 로그인된 브라우저로 PR Preview에서 실제 ZIP 다운로드·압축해제·unpacked 로드와 실 Supabase 경로 D E2E를 확인하고 리뷰 피드백을 처리한다. `main` 병합은 별도 동의를 받는다.
 - 막힌 지점: 코드 블로커 없음. Preview는 Vercel SSO 보호 상태라 비로그인 자동 요청은 SSO로 302된다. 이 Windows 클론의 `apps/web/.env.local` 부재로 실 Supabase E2E 6본도 조건부 스킵됐다. 기존 빌드 경고(`single-file-core` IIFE의 `import.meta`, 홈 디렉터리 lockfile로 인한 Next workspace root 추론)는 이번 변경과 무관하다.
 
