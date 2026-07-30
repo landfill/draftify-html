@@ -376,6 +376,11 @@ test.describe("공개 서비스 DoD (W9)", () => {
     expect(withToken.status(), "유효 토큰 GET").toBe(200);
 
     // 재발급하면 이전 토큰은 즉시 무효 — 확장을 새 코드로 다시 연결해야 한다.
+    //
+    // 회귀 고정 (#51/PR #53): 목록은 탭 밖에 있으므로 **기본 ZIP 탭으로 돌아간 상태에서**
+    // 누른다. 목록 액션의 피드백을 탭 패널 안에 그리면 숨은 패널(display:none)에 들어가
+    // 버튼이 아무 반응 없어 보였다.
+    await page.getByRole("tab", { name: "ZIP 업로드" }).click();
     page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "토큰 재발급" }).click();
     await expect(page.getByText(/토큰을 재발급하고 새 연결 코드를 복사했습니다/)).toBeVisible();

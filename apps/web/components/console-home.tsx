@@ -57,6 +57,12 @@ export function ConsoleHome() {
   );
   const [creatingSnippet, setCreatingSnippet] = useState(false);
   /**
+   * 프로젝트 목록 액션(연결 코드 복사·토큰 재발급)의 피드백. 탭 패널 안의
+   * `snippetStatus`와 분리한다 — 목록은 탭 밖에 있어서, 숨은 패널에 상태를 그리면
+   * 기본(ZIP) 탭에서 버튼이 아무 반응 없어 보인다 (PR #53 Codex 지적).
+   */
+  const [listStatus, setListStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  /**
    * 이 세션에서 발급·재발급한 평문 토큰. 서버는 해시만 보관하므로 새로고침하면 사라진다 —
    * 그때는 [토큰 재발급]으로 새 코드를 받는다(기존 토큰은 즉시 무효).
    */
@@ -218,7 +224,7 @@ export function ConsoleHome() {
   async function handleCopyConnection(p: ProjectListItem) {
     const token = sessionTokens[p.id];
     if (!token) {
-      setSnippetStatus({
+      setListStatus({
         kind: "error",
         text: `'${p.name}'의 토큰이 이 세션에 없습니다 — [토큰 재발급]을 누르면 새 연결 코드가 만들어집니다.`,
       });
@@ -226,7 +232,7 @@ export function ConsoleHome() {
     }
     const code = encodeConnection({ projectId: p.id, token, serverUrl: window.location.origin });
     const copied = await copyOrPrompt(code, "연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
-    setSnippetStatus({
+    setListStatus({
       kind: "ok",
       text: copied ? "연결 코드를 복사했습니다." : "표시된 연결 코드를 복사하세요.",
     });
@@ -246,7 +252,7 @@ export function ConsoleHome() {
       error?: { message: string };
     };
     if (!res.ok || !body.token) {
-      setSnippetStatus({
+      setListStatus({
         kind: "error",
         text: body.error?.message ?? "토큰 재발급에 실패했습니다.",
       });
@@ -259,7 +265,7 @@ export function ConsoleHome() {
       serverUrl: window.location.origin,
     });
     const copied = await copyOrPrompt(code, "새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
-    setSnippetStatus({
+    setListStatus({
       kind: "ok",
       text: copied
         ? "토큰을 재발급하고 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결]."
@@ -403,6 +409,11 @@ export function ConsoleHome() {
         <h2 className="c-section-title">
           프로젝트 목록 <span className="c-count">{projects.length || ""}</span>
         </h2>
+        {listStatus ? (
+          <p id="list-status" className={`c-status is-${listStatus.kind}`}>
+            {listStatus.text}
+          </p>
+        ) : null}
         {loading ? (
           <p className="c-empty">불러오는 중…</p>
         ) : projects.length === 0 ? (
