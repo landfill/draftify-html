@@ -155,4 +155,32 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
     expect(await hasToken(userDb, project.id)).toBe(false);
     expect(await verifyToken(admin as unknown as Db, project.id, token)).toBe(false);
   });
+
+  // 이슈 #47 — 재발급이 delete + insert 2단계였을 때는 동시 요청이 행을 2개 남겼고,
+  // verifyToken()의 maybeSingle()이 에러를 내 발급된 토큰이 **전부** 무효가 됐다.
+  // (콘솔의 [토큰 재발급] 더블클릭만으로 재현된다.)
+  it("tokenStore 동시 재발급 — 행 1개만 남고 마지막 토큰만 유효 (#47)", async () => {
+    const project = await createProject(userDb, "token 경합", { type: "snippet" });
+    projectIds.push(project.id);
+
+    const tokens = await Promise.all([
+      issueToken(userDb, project.id),
+      issueToken(userDb, project.id),
+      issueToken(userDb, project.id),
+    ]);
+    expect(new Set(tokens).size).toBe(3); // 서로 다른 평문이 발급됐다
+
+    const { count, error } = await admin
+      .from("project_tokens")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", project.id);
+    expect(error).toBeNull();
+    expect(count).toBe(1);
+
+    const valid = await Promise.all(
+      tokens.map((t) => verifyToken(admin as unknown as Db, project.id, t)),
+    );
+    expect(valid.filter(Boolean)).toHaveLength(1);
+    expect(await hasToken(userDb, project.id)).toBe(true);
+  });
 });

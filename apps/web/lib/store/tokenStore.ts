@@ -26,14 +26,20 @@ function hashToken(token: string): string {
 /** 토큰 발급(재발급 시 기존 토큰 대체). 반환 평문은 이 순간뿐. */
 export async function issueToken(db: Db, projectId: string): Promise<string> {
   const token = makeToken();
-  // 활성 토큰 1개 유지 — 기존 토큰 제거 후 신규 삽입.
-  const del = await db.from("project_tokens").delete().eq("project_id", projectId);
-  if (del.error) throw new Error(`issueToken(clear) failed: ${del.error.message}`);
-  const { error } = await db.from("project_tokens").insert({
-    id: `tokmeta_${metaNano()}`,
-    project_id: projectId,
-    token_hash: hashToken(token),
-  });
+  // 활성 토큰 1개 유지 — `project_tokens.project_id` UNIQUE 위에서 한 문장으로 교체한다.
+  // delete + insert 2단계였을 때는 동시 재발급이 행을 2개 남겨 verifyToken()의
+  // maybeSingle()이 에러를 냈고, 그 프로젝트가 인증 불능으로 잠겼다(이슈 #47).
+  // 경합해도 남는 행은 1개이며, 마지막에 쓴 토큰만 유효하다.
+  const { error } = await db.from("project_tokens").upsert(
+    {
+      id: `tokmeta_${metaNano()}`,
+      project_id: projectId,
+      token_hash: hashToken(token),
+      created_at: new Date().toISOString(),
+      revoked_at: null,
+    },
+    { onConflict: "project_id" },
+  );
   if (error) throw new Error(`issueToken failed: ${error.message}`);
   return token;
 }
