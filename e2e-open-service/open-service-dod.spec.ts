@@ -328,6 +328,72 @@ test.describe("공개 서비스 DoD (W9)", () => {
   });
 
   /**
+   * 이슈 #46 — 크로스 디바이스 로그인. 다른 기기에서 링크를 열면 PKCE code_verifier가 없어
+   * `/auth/callback`은 실패한다. 그래서 메일 링크는 `/auth/confirm?token_hash=…&type=…`로
+   * 가야 하고, 그 형태는 Supabase **이메일 템플릿 설정**으로만 바뀐다(코드 아님).
+   *
+   * 여기서 고정하는 것: `/auth/confirm`이 **어떤 `type` 값으로 설정하든 견디는가.**
+   * 라우트는 `type`을 `verifyOtp`에 그대로 넘기므로 세 값이 모두 성립한다.
+   *
+   * **설정할 템플릿은 「Magic link or OTP」 하나뿐이다.** `signInWithOtp`로 자동 생성되는
+   * 신규 사용자도 이 템플릿을 받는다 — `Confirm sign up`은 비밀번호 가입(`/signup`) 경로용이고
+   * 이 앱은 그 경로를 쓰지 않는다. 넣을 값은 Supabase 문서 권장 형태인 **`type=email`**.
+   * `magiclink`는 E2E의 `signIn()` 헬퍼가 쓰는 값이고, `signup`은 라우트 커버리지일 뿐
+   * **프로덕션 로그인 퍼널의 요구사항이 아니다**(설정을 이 값으로 하면 안 된다).
+   *
+   * 이 테스트는 링크를 **새 브라우저 컨텍스트**에서 연다 = 요청한 기기와 다른 기기.
+   */
+  for (const type of ["email", "magiclink", "signup"] as const) {
+    test(`크로스 디바이스 로그인 — /auth/confirm?type=${type} (#46)`, async ({
+      browser,
+      baseURL,
+    }) => {
+      // `type: "signup"`은 **사용자를 새로 만드는** API라 미리 만들어 두면 "already registered"로
+      // 거부된다(그리고 password가 필수다 — 링크 검증에는 쓰이지 않는다). `magiclink`는 반대로
+      // 기존 사용자가 있어야 한다. 두 흐름의 전제가 달라 여기서 갈라 준비한다.
+      let email: string;
+      let userId: string;
+      let tokenHash: string | undefined;
+
+      if (type === "signup") {
+        email = `w9-c46-signup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@draftify.invalid`;
+        const { data, error } = await admin.auth.admin.generateLink({
+          type,
+          email,
+          password: `pw-${Math.random().toString(36).slice(2)}A1!`,
+        });
+        expect(error, "generateLink(signup) 성공").toBeNull();
+        userId = data.user!.id;
+        tokenHash = data.properties?.hashed_token;
+      } else {
+        // `email`은 generateLink의 타입이 아니다(발급은 magiclink). 같은 토큰을 템플릿이 보낼
+        // `type=email`로 검증했을 때도 성립하는지가 이 케이스의 요점이다.
+        const user = await createUser(admin, `c46-${type}`);
+        email = user.email;
+        userId = user.id;
+        const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+        expect(error, "generateLink(magiclink) 성공").toBeNull();
+        tokenHash = data.properties?.hashed_token;
+      }
+      created.userIds.push(userId);
+      expect(tokenHash, `${type} hashed_token 발급`).toBeTruthy();
+
+      // 링크를 요청한 브라우저가 아닌 **다른 컨텍스트**에서 연다 → code_verifier가 없다.
+      const other = await browser.newContext();
+      const page = await other.newPage();
+      await page.goto(`${baseURL}/auth/confirm?token_hash=${tokenHash}&type=${type}`);
+
+      await expect(page, `${type}: 콘솔 홈으로 진입`).toHaveURL(`${baseURL}/`);
+      await expect(
+        page.getByRole("button", { name: "로그아웃" }),
+        `${type}: 세션이 심겼다`,
+      ).toBeVisible();
+
+      await other.close();
+    });
+  }
+
+  /**
    * 헤더 로그인 상태가 페이지마다 어긋나던 회귀. `/guide`·`/faq`는 로그인 없이 보는 정적
    * 페이지라 서버가 `email` prop을 주지 않는데, 헤더가 그 prop만 보고 판단해서 **로그인한
    * 사용자에게도 [로그인]** 을 보여줬다(콘솔 홈은 [로그아웃]). 헤더가 자기 세션을 직접
