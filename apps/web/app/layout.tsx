@@ -1,9 +1,10 @@
+import { EDITION_NAME } from "@mockspec/shared";
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeInitScript } from "@/components/theme-init.js";
 
 export const metadata: Metadata = {
-  title: "Mockspec",
+  title: EDITION_NAME.cloud,
   description: "목업을 등록하면 단독 실행 기획서 HTML을 만들어 주는 서비스",
 };
 

@@ -84,7 +84,12 @@ async function signIn(
     `${baseURL}/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink`,
   );
   await expect(page, "로그인 후 콘솔 홈").toHaveURL(`${baseURL}/`);
-  await expect(page.getByRole("heading", { name: "새 프로젝트 — ZIP 업로드" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "새 프로젝트 시작" })).toBeVisible();
+  // 기본 선택 탭은 ZIP 업로드 (#51).
+  await expect(page.getByRole("tab", { name: "ZIP 업로드" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   return page;
 }
 
@@ -337,6 +342,8 @@ test.describe("공개 서비스 DoD (W9)", () => {
     });
     const page = await signIn(admin, context, user.email, baseURL!);
 
+    // 경로 D 폼은 두 번째 탭 안에 있다 (#51 — 기본 탭은 ZIP 업로드).
+    await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
     await page.locator("#snippet-name").fill("경로 D 회귀");
     await page.locator("#snippet-owner").fill("QA");
     await page.getByRole("button", { name: "만들고 연결 코드 복사" }).click();
@@ -369,6 +376,11 @@ test.describe("공개 서비스 DoD (W9)", () => {
     expect(withToken.status(), "유효 토큰 GET").toBe(200);
 
     // 재발급하면 이전 토큰은 즉시 무효 — 확장을 새 코드로 다시 연결해야 한다.
+    //
+    // 회귀 고정 (#51/PR #53): 목록은 탭 밖에 있으므로 **기본 ZIP 탭으로 돌아간 상태에서**
+    // 누른다. 목록 액션의 피드백을 탭 패널 안에 그리면 숨은 패널(display:none)에 들어가
+    // 버튼이 아무 반응 없어 보였다.
+    await page.getByRole("tab", { name: "ZIP 업로드" }).click();
     page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "토큰 재발급" }).click();
     await expect(page.getByText(/토큰을 재발급하고 새 연결 코드를 복사했습니다/)).toBeVisible();

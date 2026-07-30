@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { encodeConnection, type ProjectListItem } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 import { LIMITS, formatMb } from "@/lib/abuse/limits.js";
@@ -18,6 +18,12 @@ function formatDate(iso: string): string {
 function mockupHref(projectId: string): string {
   return `/m/${projectId}/`;
 }
+
+/**
+ * 새 프로젝트 시작 방식 탭 (#51). 사내판(console.ts)은 3탭이지만 공개판은
+ * `URL 등록`(경로 B 프록시)이 결정 D2로 제외돼 2탭이다.
+ */
+const NEW_PROJECT_TABS = ["ZIP 업로드", "내 화면에서 편집 (확장)"] as const;
 
 function isSnippet(p: ProjectListItem): boolean {
   return p.mockupSource.type === "snippet";
@@ -38,6 +44,8 @@ async function copyOrPrompt(text: string, promptLabel: string): Promise<boolean>
 }
 
 export function ConsoleHome() {
+  const [activeTab, setActiveTab] = useState(0);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadStatus, setUploadStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -48,6 +56,12 @@ export function ConsoleHome() {
     null,
   );
   const [creatingSnippet, setCreatingSnippet] = useState(false);
+  /**
+   * 프로젝트 목록 액션(연결 코드 복사·토큰 재발급)의 피드백. 탭 패널 안의
+   * `snippetStatus`와 분리한다 — 목록은 탭 밖에 있어서, 숨은 패널에 상태를 그리면
+   * 기본(ZIP) 탭에서 버튼이 아무 반응 없어 보인다 (PR #53 Codex 지적).
+   */
+  const [listStatus, setListStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   /**
    * 이 세션에서 발급·재발급한 평문 토큰. 서버는 해시만 보관하므로 새로고침하면 사라진다 —
    * 그때는 [토큰 재발급]으로 새 코드를 받는다(기존 토큰은 즉시 무효).
@@ -210,7 +224,7 @@ export function ConsoleHome() {
   async function handleCopyConnection(p: ProjectListItem) {
     const token = sessionTokens[p.id];
     if (!token) {
-      setSnippetStatus({
+      setListStatus({
         kind: "error",
         text: `'${p.name}'의 토큰이 이 세션에 없습니다 — [토큰 재발급]을 누르면 새 연결 코드가 만들어집니다.`,
       });
@@ -218,7 +232,7 @@ export function ConsoleHome() {
     }
     const code = encodeConnection({ projectId: p.id, token, serverUrl: window.location.origin });
     const copied = await copyOrPrompt(code, "연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
-    setSnippetStatus({
+    setListStatus({
       kind: "ok",
       text: copied ? "연결 코드를 복사했습니다." : "표시된 연결 코드를 복사하세요.",
     });
@@ -238,7 +252,7 @@ export function ConsoleHome() {
       error?: { message: string };
     };
     if (!res.ok || !body.token) {
-      setSnippetStatus({
+      setListStatus({
         kind: "error",
         text: body.error?.message ?? "토큰 재발급에 실패했습니다.",
       });
@@ -251,7 +265,7 @@ export function ConsoleHome() {
       serverUrl: window.location.origin,
     });
     const copied = await copyOrPrompt(code, "새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
-    setSnippetStatus({
+    setListStatus({
       kind: "ok",
       text: copied
         ? "토큰을 재발급하고 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결]."
@@ -271,79 +285,135 @@ export function ConsoleHome() {
     await loadProjects();
   }
 
+  /** tablist 키보드 이동 — 좌우/Home/End (WAI-ARIA tabs 패턴). */
+  function handleTabKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    const last = NEW_PROJECT_TABS.length - 1;
+    let next: number | null = null;
+    if (e.key === "ArrowRight") next = activeTab === last ? 0 : activeTab + 1;
+    else if (e.key === "ArrowLeft") next = activeTab === 0 ? last : activeTab - 1;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = last;
+    if (next === null) return;
+    e.preventDefault();
+    setActiveTab(next);
+    tabRefs.current[next]?.focus();
+  }
+
   return (
     <main className="c-shell">
-      <section className="c-card">
-        <h2 className="c-section-title">새 프로젝트 — ZIP 업로드</h2>
-        <form onSubmit={(e) => void handleUpload(e)}>
-          <div className="c-row">
-            <label htmlFor="project-name">프로젝트 이름</label>
-            <input id="project-name" name="name" type="text" placeholder="비우면 zip 파일명 사용" />
+      <section className="c-section">
+        <h2 className="c-section-title">새 프로젝트 시작</h2>
+        <div className="c-card">
+          <div className="c-tabs" role="tablist" aria-label="새 프로젝트 시작 방식">
+            {NEW_PROJECT_TABS.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                className="c-tab"
+                role="tab"
+                id={`new-tab-${i}`}
+                aria-selected={activeTab === i}
+                aria-controls={`new-panel-${i}`}
+                tabIndex={activeTab === i ? 0 : -1}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                onClick={() => setActiveTab(i)}
+                onKeyDown={handleTabKeyDown}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <div className="c-row">
-            <label htmlFor="project-owner">작성자 라벨</label>
-            <input id="project-owner" name="ownerLabel" type="text" placeholder="선택 — 산출물·목록에 표시" />
-          </div>
-          <div className="c-row">
-            <label htmlFor="project-zip">ZIP 파일</label>
-            <input id="project-zip" name="zip" type="file" accept=".zip,application/zip" required />
-          </div>
-          <p className="c-hint">
-            빌드 산출물만 압축하세요(최대 {formatMb(LIMITS.zipMaxBytes)}).{" "}
-            <b>반드시 상대 경로로 빌드해야 합니다</b> — 목업은 <code>/m/{"{id}"}/</code> 아래에서
-            열리므로 <code>/assets/…</code> 같은 절대 경로는 찾지 못해 화면이 비어 보입니다. Vite는{" "}
-            <code>--base=./</code>, CRA는 <code>&quot;homepage&quot;: &quot;.&quot;</code>.
-          </p>
-          <button type="submit" className="c-btn" disabled={uploading}>
-            {uploading ? "업로드 중…" : "업로드"}
-          </button>
-        </form>
-        {uploadStatus ? (
-          <p id="upload-status" className={`c-status is-${uploadStatus.kind}`}>
-            {uploadStatus.text}
-          </p>
-        ) : null}
-      </section>
 
-      <section className="c-card">
-        <h2 className="c-section-title">새 프로젝트 — 내 화면에서 편집 (확장)</h2>
-        <p className="c-hint">
-          로그인해야 보이는 화면·사내 시스템처럼 <b>zip으로 만들 수 없는 목업</b>에 씁니다. 서버는
-          그 화면에 접근하지 않고, Chrome 확장이 <b>내 브라우저 화면 위에</b> 편집기를 얹습니다.
-          프로젝트를 만들면 <b>연결 코드</b>가 복사되고, 그 코드를 확장 팝업에 붙여넣어 연결합니다.
-        </p>
-        <form onSubmit={(e) => void handleCreateSnippet(e)}>
-          <div className="c-row">
-            <label htmlFor="snippet-name">프로젝트 이름</label>
-            <input id="snippet-name" name="snippetName" type="text" placeholder="필수" required />
+          <div
+            className="c-tabpanel"
+            role="tabpanel"
+            id="new-panel-0"
+            aria-labelledby="new-tab-0"
+            aria-hidden={activeTab !== 0}
+          >
+            <form onSubmit={(e) => void handleUpload(e)}>
+              <div className="c-row">
+                <label htmlFor="project-name">프로젝트 이름</label>
+                <input id="project-name" name="name" type="text" placeholder="비우면 zip 파일명 사용" />
+              </div>
+              <div className="c-row">
+                <label htmlFor="project-owner">작성자 라벨</label>
+                <input id="project-owner" name="ownerLabel" type="text" placeholder="선택 — 산출물·목록에 표시" />
+              </div>
+              <div className="c-row">
+                <label htmlFor="project-zip">ZIP 파일</label>
+                <input id="project-zip" name="zip" type="file" accept=".zip,application/zip" required />
+              </div>
+              <p className="c-hint">
+                빌드 산출물만 압축하세요(최대 {formatMb(LIMITS.zipMaxBytes)}).{" "}
+                <b>반드시 상대 경로로 빌드해야 합니다</b> — 목업은 <code>/m/{"{id}"}/</code> 아래에서
+                열리므로 <code>/assets/…</code> 같은 절대 경로는 찾지 못해 화면이 비어 보입니다. Vite는{" "}
+                <code>--base=./</code>, CRA는 <code>&quot;homepage&quot;: &quot;.&quot;</code>.
+              </p>
+              <button type="submit" className="c-btn" disabled={uploading}>
+                {uploading ? "업로드 중…" : "업로드"}
+              </button>
+            </form>
+            {uploadStatus ? (
+              <p id="upload-status" className={`c-status is-${uploadStatus.kind}`}>
+                {uploadStatus.text}
+              </p>
+            ) : null}
           </div>
-          <div className="c-row">
-            <label htmlFor="snippet-owner">작성자 라벨</label>
-            <input
-              id="snippet-owner"
-              name="snippetOwnerLabel"
-              type="text"
-              placeholder="선택 — 산출물·목록에 표시"
-            />
+
+          <div
+            className="c-tabpanel"
+            role="tabpanel"
+            id="new-panel-1"
+            aria-labelledby="new-tab-1"
+            aria-hidden={activeTab !== 1}
+          >
+            <p className="c-hint">
+              로그인해야 보이는 화면·사내 시스템처럼 <b>zip으로 만들 수 없는 목업</b>에 씁니다. 서버는
+              그 화면에 접근하지 않고, Chrome 확장이 <b>내 브라우저 화면 위에</b> 편집기를 얹습니다.
+              프로젝트를 만들면 <b>연결 코드</b>가 복사되고, 그 코드를 확장 팝업에 붙여넣어 연결합니다.
+            </p>
+            <form onSubmit={(e) => void handleCreateSnippet(e)}>
+              <div className="c-row">
+                <label htmlFor="snippet-name">프로젝트 이름</label>
+                <input id="snippet-name" name="snippetName" type="text" placeholder="필수" required />
+              </div>
+              <div className="c-row">
+                <label htmlFor="snippet-owner">작성자 라벨</label>
+                <input
+                  id="snippet-owner"
+                  name="snippetOwnerLabel"
+                  type="text"
+                  placeholder="선택 — 산출물·목록에 표시"
+                />
+              </div>
+              <p className="c-hint">
+                연결 코드에는 <b>토큰이 들어 있습니다</b> — 코드를 공유하면 그 프로젝트 쓰기 권한을
+                공유하는 것과 같습니다. 코드는 발급 시 한 번만 만들어지며, 이 페이지를 새로고침하면
+                다시 만들 수 없습니다(그때는 [토큰 재발급]).
+              </p>
+              <button type="submit" className="c-btn" disabled={creatingSnippet}>
+                {creatingSnippet ? "만드는 중…" : "만들고 연결 코드 복사"}
+              </button>
+            </form>
+            {snippetStatus ? (
+              <p className={`c-status is-${snippetStatus.kind}`}>{snippetStatus.text}</p>
+            ) : null}
           </div>
-          <p className="c-hint">
-            연결 코드에는 <b>토큰이 들어 있습니다</b> — 코드를 공유하면 그 프로젝트 쓰기 권한을
-            공유하는 것과 같습니다. 코드는 발급 시 한 번만 만들어지며, 이 페이지를 새로고침하면
-            다시 만들 수 없습니다(그때는 [토큰 재발급]).
-          </p>
-          <button type="submit" className="c-btn" disabled={creatingSnippet}>
-            {creatingSnippet ? "만드는 중…" : "만들고 연결 코드 복사"}
-          </button>
-        </form>
-        {snippetStatus ? (
-          <p className={`c-status is-${snippetStatus.kind}`}>{snippetStatus.text}</p>
-        ) : null}
+        </div>
       </section>
 
       <section className="c-card">
         <h2 className="c-section-title">
           프로젝트 목록 <span className="c-count">{projects.length || ""}</span>
         </h2>
+        {listStatus ? (
+          <p id="list-status" className={`c-status is-${listStatus.kind}`}>
+            {listStatus.text}
+          </p>
+        ) : null}
         {loading ? (
           <p className="c-empty">불러오는 중…</p>
         ) : projects.length === 0 ? (

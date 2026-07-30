@@ -1,4 +1,4 @@
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 
 /**
  * 콘솔 계열 페이지(콘솔·가이드·FAQ) 공통 셸 — 테마 변수·헤더·다크 모드 토글.
@@ -154,7 +154,7 @@ export function pageHeader(active?: "guide" | "faq"): string {
   return `
   <header class="c-header">
     <div class="c-header-left">
-      <a href="/" class="c-logo">${WORKING_NAME}</a>
+      <a href="/" class="c-logo">${EDITION_NAME.local}</a>
     </div>
     <div class="c-header-right">
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
