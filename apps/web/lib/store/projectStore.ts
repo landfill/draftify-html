@@ -13,8 +13,9 @@ import { removeObjectsUnder } from "./storage-list.js";
 
 /**
  * projectStore Supabase 어댑터 — 기존 파일 기반(packages/server/src/store/projectStore.ts)의
- * 인터페이스를 owner 스코프로 이식. 모든 함수는 요청 스코프 클라이언트 `db`를 받고, RLS가
+ * 인터페이스를 owner 스코프로 이식. 함수들은 요청 스코프 클라이언트 `db`를 받고, RLS가
  * owner_id = auth.uid() 로 격리한다(어댑터는 소유권을 직접 확인하지 않는다 — DB가 강제).
+ * 예외는 `createProject` 하나 — INSERT 정책을 없앴으므로(#45) 관리 클라이언트로만 만든다.
  *
  * spec(JSONB)이 유일한 원천. name·updated_at 컬럼은 DB 트리거가 spec에서 파생한다.
  */
@@ -44,17 +45,29 @@ function buildSpec(name: string, source: SourceInfo, ownerLabel?: string): SpecP
   };
 }
 
-/** 새 프로젝트 생성. owner_id는 DB 기본값 auth.uid()가 채운다. */
+/**
+ * 새 프로젝트 생성 — **서버 전용 경로**(이슈 #45).
+ *
+ * `projects`에는 INSERT 정책이 없다. 로그인 사용자가 공개 키 + 자기 세션으로 테이블에
+ * 직접 INSERT하면 `checkProjectCountQuota`(프로젝트 20개)와 `projectCreate` 레이트리밋을
+ * 통째로 건너뛸 수 있었기 때문이다. 생성 경로를 `POST /api/projects` 하나로 좁혀 두고,
+ * 한도는 그 라우트가 강제한다(이 함수는 한도를 검사하지 않는다).
+ *
+ * 그 대가로 **관리 클라이언트(service_role)와 명시적 `ownerId`가 필요**하다. admin
+ * 컨텍스트에서는 `owner_id`의 기본값 `auth.uid()`가 null이라 빠뜨리면 not-null 위반으로
+ * 실패한다 — 의도된 안전장치다(소유자 없는 행이 생기지 않는다).
+ */
 export async function createProject(
-  db: Db,
+  admin: Db,
+  ownerId: string,
   name: string,
   source: SourceInfo,
   ownerLabel?: string,
 ): Promise<SpecProject> {
   const spec = buildSpec(name, source, ownerLabel);
-  const { error } = await db
+  const { error } = await admin
     .from("projects")
-    .insert({ id: spec.id, name: spec.name, spec: spec as unknown as Json });
+    .insert({ id: spec.id, owner_id: ownerId, name: spec.name, spec: spec as unknown as Json });
   if (error) throw new Error(`createProject failed: ${error.message}`);
   return spec;
 }

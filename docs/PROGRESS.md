@@ -139,6 +139,16 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-30 — #45 A안: projects INSERT를 서버 전용으로 — **코드 완료 / 마이그레이션은 병합 후 적용**
+- **완료(코드)**: `createProject()`가 **관리 클라이언트 + 명시적 `ownerId`** 를 요구하도록 시그니처를 바꿨다(`createProject(admin, ownerId, name, source, ownerLabel?)`). `POST /api/projects`의 두 생성 지점(upload·snippet)이 `createSupabaseAdminClient()`로 만든다. 쿼터 카운트는 **요청 스코프 유지** — RLS SELECT가 본인 것만 보여주므로 count가 곧 보유 수다.
+- **완료(마이그레이션 파일 — 아직 적용 안 함)**: `20260730130000_projects_insert_server_only.sql`. `owner_rw`(for all)를 `owner_select`·`owner_update`·`owner_delete`로 쪼개고 **INSERT 정책은 만들지 않는다.** 정책이 없으면 authenticated의 INSERT는 전부 거부되고 생성은 service_role만 가능해진다.
+- **⚠️ 적용 순서 — 이번엔 코드가 먼저다(#47과 반대).** 배포된 구 코드는 요청 스코프로 INSERT하므로, 마이그레이션을 먼저 적용하면 그 순간부터 프로덕션에서 **프로젝트 생성이 실패**한다. 그래서 파일만 커밋하고 적용은 **병합·배포 확인 후**로 미뤘다. 순서는 일률적이지 않고 "무엇이 무엇에 의존하는가"로 정한다 — #47은 코드가 제약에 의존해서 마이그레이션이 먼저였다.
+- **검증**: vitest **346 passed / 1 failed (347)** — 실패 1건은 **신규 `projects 직접 INSERT는 요청 스코프 클라이언트로 거부된다 (#45)`** 이고, 마이그레이션 미적용이라 아직 INSERT가 성공하기 때문이다(= 이 테스트가 실제로 무언가를 잡고 있다는 증거). 마이그레이션 적용 후 green이 되어야 한다. 그 외 `npm run build -w @mockspec/web` green, **공개판 E2E 6본**·**사내판 E2E 4본** 통과 — 실제 생성 경로(업로드·경로 D)가 admin 클라이언트로 정상 동작함을 확인했다.
+- 주의로 넣은 것: 그 회귀 테스트는 INSERT가 (회귀로) 성공해 버려도 뒷정리가 되도록 id를 `projectIds`에 **미리** 등록한다. 이번 실행에서 만들어진 행은 `auth.users` 삭제의 cascade로 이미 정리됐음을 확인했다(`projects` 잔여 2건은 기존 실사용 프로젝트).
+- **범위**: 이슈 #45의 **1번(프로젝트 생성)만**. 2번(Storage 직접 업로드)은 킥오프 D5·D6과 얽혀 §4 절차가 필요하므로 분리한다 — 이슈는 그대로 열어 둔다.
+- 다음 할 일: PR 병합 → **Vercel 프로덕션 배포 완료 확인** → 마이그레이션 적용 → 통합 테스트 전체 green 확인(위 실패 1건이 통과로 바뀌는지) → 그 뒤 #43.
+- 막힌 지점: 없음.
+
 ### 2026-07-30 — #47 토큰 재발급 원자성 (UNIQUE 제약 + upsert) — **main 병합 완료 (PR #58)**
 - **병합 결과**: PR #58 → main, merge `00efbbf`. CI 전 항목 green(`verify` ×2 · `pr_agent_job` · Vercel Preview). **봇 리뷰 코멘트는 0건**이었다 — `pr_agent_job`은 통과했으나 리뷰를 게시하지 않았고 CodeRabbit도 달리지 않았다(5파일이라 PR #44의 파일 수 초과 스킵과는 다른 사유). 외부 봇 검토 없이 병합한 셈이다. **원인은 레이트리밋으로 보인다** — 직후 PR #59에서 CodeRabbit 체크가 `Review rate limited` 사유로 pass 처리되는 것을 확인했다. 즉 워크플로 설정 문제가 아니라 한도 문제이고, 봇 리뷰가 꼭 필요하면 시간을 두고 재요청해야 한다. 병합 후 정리 완료: 원격·로컬 토픽 브랜치 삭제, `main` 동기화, 이슈 #47 CLOSED, 워크트리 1개 유지.
 - **완료(DB)**: `project_tokens.project_id`에 UNIQUE 제약 추가 — 마이그레이션 `20260730070848_project_tokens_unique_project.sql`. **착수 절차대로 중복부터 조회했고 0건**(테이블 자체가 행 0건 — 아직 경로 D 토큰을 쓰는 프로젝트가 프로덕션에 없다)이라 제약 적용이 무손실이었다. 함께 기존 비유일 인덱스 `project_tokens_project_idx`를 제거했다(UNIQUE 인덱스가 같은 조회를 커버).

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import type { SpecProject, Scene, Annotation } from "@mockspec/shared";
 import { createSupabaseAdminClient } from "../supabase/admin.js";
-import type { Database } from "../supabase/database.types.js";
+import type { Database, Json } from "../supabase/database.types.js";
 import { loadWebEnvLocal, hasSupabaseIntegrationEnv } from "../test/load-env.js";
 import type { Db } from "./ids.js";
 import {
@@ -76,6 +76,18 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
     if (testUserId) await admin.auth.admin.deleteUser(testUserId).catch(() => undefined);
   }, 30_000);
 
+  /**
+   * 생성은 관리 클라이언트 + 명시적 ownerId로만 가능하다(#45 — projects에 INSERT 정책이 없다).
+   * 읽기·수정·삭제는 그대로 요청 스코프 `userDb`를 써서 RLS 격리를 검증한다.
+   */
+  function newProject(
+    name: string,
+    source: Parameters<typeof createProject>[3],
+    ownerLabel?: string,
+  ) {
+    return createProject(admin as unknown as Db, testUserId, name, source, ownerLabel);
+  }
+
   it("admin 클라이언트가 secret 키로 생성되고 RLS를 우회한다", async () => {
     const { count, error } = await admin.from("projects").select("id", { count: "exact", head: true });
     expect(error).toBeNull();
@@ -83,7 +95,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   });
 
   it("projectStore create/read/list/replace 왕복 무손실", async () => {
-    const project = await createProject(userDb, "통합 테스트", {
+    const project = await newProject("통합 테스트", {
       type: "upload",
       originalFilename: "demo.zip",
     });
@@ -109,7 +121,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   });
 
   it("projectStore asset save/read 및 replaceSpec 고아 GC", async () => {
-    const project = await createProject(userDb, "asset 테스트", { type: "snippet" });
+    const project = await newProject("asset 테스트", { type: "snippet" });
     projectIds.push(project.id);
     const key = await saveAsset(userDb, project.id, new Uint8Array([1, 2, 3]));
     const bytes = await readAsset(userDb, project.id, key);
@@ -126,7 +138,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   });
 
   it("exportStore append/read/summary 왕복 무손실", async () => {
-    const project = await createProject(userDb, "export 테스트", { type: "snippet" });
+    const project = await newProject("export 테스트", { type: "snippet" });
     projectIds.push(project.id);
     const record = await appendExportRecord(userDb, project.id, {
       specUpdatedAt: project.updatedAt,
@@ -142,7 +154,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   });
 
   it("tokenStore issue/has/verify(admin)/revoke", async () => {
-    const project = await createProject(userDb, "token 테스트", { type: "snippet" });
+    const project = await newProject("token 테스트", { type: "snippet" });
     projectIds.push(project.id);
     expect(await hasToken(userDb, project.id)).toBe(false);
 
@@ -160,7 +172,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   // verifyToken()의 maybeSingle()이 에러를 내 발급된 토큰이 **전부** 무효가 됐다.
   // (콘솔의 [토큰 재발급] 더블클릭만으로 재현된다.)
   it("tokenStore 동시 재발급 — 행 1개만 남고 마지막 토큰만 유효 (#47)", async () => {
-    const project = await createProject(userDb, "token 경합", { type: "snippet" });
+    const project = await newProject("token 경합", { type: "snippet" });
     projectIds.push(project.id);
 
     const tokens = await Promise.all([
@@ -182,5 +194,41 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
     );
     expect(valid.filter(Boolean)).toHaveLength(1);
     expect(await hasToken(userDb, project.id)).toBe(true);
+  });
+
+  // 이슈 #45 — `owner_rw`가 for all 이던 시절에는 로그인 사용자가 공개 키 + 자기 세션으로
+  // projects에 직접 INSERT할 수 있었고, 그러면 POST /api/projects가 거는 프로젝트 수 쿼터와
+  // projectCreate 레이트리밋이 통째로 우회됐다. 지금은 INSERT 정책 자체가 없다.
+  it("projects 직접 INSERT는 요청 스코프 클라이언트로 거부된다 (#45)", async () => {
+    const id = `prj_rls${crypto.randomBytes(3).toString("hex")}`;
+    // INSERT가 (회귀로) 성공해 버리는 경우에도 뒷정리가 되도록 미리 등록해 둔다.
+    projectIds.push(id);
+    const now = new Date().toISOString();
+    const spec = {
+      version: 1,
+      id,
+      name: "직접 삽입",
+      createdAt: now,
+      updatedAt: now,
+      mockupSource: { type: "snippet", registeredAt: now },
+      sceneCodeSeq: 1,
+      scenes: [],
+      annotations: [],
+    };
+
+    // 자기 소유로(owner_id = 본인) 넣는 시도 — 소유권 위조가 아니라 한도 우회가 목적이었다.
+    const { error } = await userDb
+      .from("projects")
+      .insert({ id, owner_id: testUserId, name: spec.name, spec: spec as unknown as Json });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("42501"); // RLS: 해당하는 INSERT 정책이 없다
+
+    // 에러 코드만 보고 넘기지 않는다 — 행이 실제로 생기지 않았는지 관리 클라이언트로 확인.
+    const { count } = await admin
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("id", id);
+    expect(count).toBe(0);
   });
 });
