@@ -2,7 +2,17 @@
 
 > 각자가 이미 만든 목업을 등록하면, 그 위에 어노테이션을 달아
 > 단독 실행 가능한 기획서 HTML을 만들어 주는 서비스.
-> (현 배포 = 사내 서비스. 공개 URL 멀티테넌트 전환은 **open-service 트랙** — 아래 §6·§7.)
+
+**배포는 둘이다.**
+
+| | 사내판 | 공개판 |
+|---|---|---|
+| 구현 | `packages/server` (Express·파일 저장) | `apps/web` (Next.js·Supabase) |
+| 주소 | 로컬 실행 `http://localhost:4000` | **https://draftify-html.vercel.app** (`main`이 프로덕션 브랜치 = 병합 즉시 반영) |
+
+- 목업 서빙 방식이 달라 **목업 zip 빌드 방법도 다름** → 루트 [README.md](../README.md)의 비교표 확인 필수
+- 공개 멀티테넌트 전환(open-service 트랙)은 **2026-07-29 `main` 병합으로 종료**, 해당 브랜치도 삭제됨
+- 그 트랙의 근거 문서 = 아래 [원 결정 문서](#원-결정-문서-guide) **6·7번**
 
 **서비스를 실행하는 방법**은 루트 [README.md](../README.md)(빠른 시작),
 **세 가지 연결 방식(경로 A·B·D)의 상세 사용법**은 [user-guide.md](./user-guide.md)(사용 가이드)에 있다.
