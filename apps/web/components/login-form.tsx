@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 
 export function LoginForm({ errorCode }: { errorCode?: string }) {
@@ -46,7 +46,7 @@ export function LoginForm({ errorCode }: { errorCode?: string }) {
 
   return (
     <div className="c-login-card c-card">
-      <h1 className="c-section-title">{WORKING_NAME} — 로그인</h1>
+      <h1 className="c-section-title">{EDITION_NAME.cloud} — 로그인</h1>
       {errorCode === "auth_callback_failed" ? (
         <p className="c-status is-error">로그인 처리에 실패했습니다. 다시 시도해 주세요.</p>
       ) : null}

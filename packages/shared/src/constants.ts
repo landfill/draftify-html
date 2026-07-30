@@ -3,8 +3,26 @@
  * 워킹네임 "mockspec"은 추후 변경 가능 — 코드 어디에도 하드코딩하지 말고 여기서만 참조한다.
  */
 
-/** 서비스 워킹네임 (레포명·패키지 스코프 겸용). */
+/**
+ * 서비스 워킹네임 — **식별자 전용**(레포명·패키지 스코프 `@mockspec/*`·예약 경로 접두).
+ * 화면에 보이는 이름으로 쓰지 말 것: 표시는 아래 `DISPLAY_NAME`·`EDITION_NAME`을 쓴다.
+ */
 export const WORKING_NAME = "mockspec" as const;
+
+/** 표시용 이름(카멜 표기). 사용자에게 보이는 모든 곳의 기본값. */
+export const DISPLAY_NAME = "MockSpec" as const;
+
+/**
+ * 에디션 표시 문자열 — 두 배포를 탭 제목·헤더 로고에서 구분한다 (#50).
+ * 배포마다 엔트리가 다르므로(사내판 = `packages/server`, 공개판 = `apps/web`)
+ * 런타임 감지 없이 각 앱이 자기 값을 고른다.
+ */
+export const EDITION_NAME = {
+  /** 사내 상주 Express 배포. */
+  local: `${DISPLAY_NAME} Local`,
+  /** 공개 Vercel + Supabase 배포. */
+  cloud: `${DISPLAY_NAME} Cloud`,
+} as const;
 
 /** 서버 예약 경로 접두 — 목업 파일과 충돌 시 이 경로가 우선. (technical-spec §3.2) */
 export const RESERVED_PATH_PREFIX = "/__mockspec" as const;

@@ -125,6 +125,15 @@
 
 ## 세션 로그 (최신이 위)
 
+### 2026-07-30 — #50 에디션 타이틀 + #51 공개판 콘솔 탭 (한 PR)
+- **#50 완료.** `constants.ts`에 표시용 상수 신설 — `DISPLAY_NAME = "MockSpec"`, `EDITION_NAME.local/.cloud`. **`WORKING_NAME`은 값을 바꾸지 않았다**(패키지 스코프 `@mockspec/*`·예약 경로 `/__mockspec`·서브도메인 규칙이 물려 있는 식별자라 바꾸면 경로가 깨진다) — 대신 주석에 "식별자 전용, 화면에 쓰지 말 것"을 명시. 교체처 6곳: 사내판 `shell.ts`(로고)·`console.ts`(탭)·`pages.ts`(가이드·FAQ 탭), 공개판 `layout.tsx`(하드코딩 `"Mockspec"` 제거)·`shell-header.tsx`(로고)·`login-form.tsx`(로그인 제목 — 이슈에 없던 사용처를 추적 중 발견). `technical-spec.md` §1.3 동기화.
+- **#51 완료.** 공개판 "새 프로젝트" 카드 2개 세로 스택 → **2탭**(`ZIP 업로드` / `내 화면에서 편집 (확장)`). `URL 등록`은 경로 B라 D2로 제외. 탭 CSS를 `globals.css`에 이식(`c-tab*` 규칙이 0건이었다) + `prefers-reduced-motion` 대응 추가. 상태는 React `useState`(사내판 vanilla JS를 그대로 옮기지 않음), 접근성은 `role=tablist/tab/tabpanel`+`aria-selected`/`aria-controls`/`aria-labelledby` + **좌우·Home·End 키보드 이동**(사내판은 클릭만 처리 — 이식하면서 개선).
+- 검증: `npm run build` + `npm run build -w @mockspec/web` 통과, **vitest 345 passed**(45 파일), **공개판 E2E 2본 통과**, **사내판 E2E 4본 통과**. 실제 화면 확인 — 사내판 `localhost:4100` 탭 제목·로고 `MockSpec Local`, 공개판 `localhost:3000` `MockSpec Cloud`(공개판 콘솔 본문은 로그인이 필요해 E2E의 탭 클릭으로 검증).
+- E2E 갱신 2곳: `open-service-dod.spec.ts` — ① 콘솔 진입 단정이 없어진 제목(`새 프로젝트 — ZIP 업로드`)을 찾고 있었다 → `새 프로젝트 시작` + 기본 탭 `aria-selected` 확인으로 교체 ② 경로 D 테스트가 숨은 패널의 `#snippet-name`을 채우려 해 실패 → 탭 전환 스텝 추가.
+- **주의(다음 세션)**: 이 저장소에는 **prettier 설정이 없다.** `npx prettier --write`를 돌리면 기본 80칼럼으로 재포맷돼 무관한 대량 diff가 생긴다(이번에 겪고 되돌렸다). 포맷은 주변 코드에 맞춰 손으로 맞춘다.
+- 다음 할 일: **#46 매직링크 크로스디바이스**(Supabase 대시보드 이메일 템플릿 + 다른 기기 수동 검증 — 사용자 실행 필요) → #47 → #45(A안) → #43.
+- 막힌 지점: 없음.
+
 ### 2026-07-30 — 워크트리·`open-service` 브랜치 정리 + 워크트리 규약 만료 + 이슈 #50·#51 등록
 - **워크트리 제거**: `apps/web/.env.local`을 main 폴더로 이관(사용자) → 두 사본 내용 동일함을 `diff`로 확인 → `git worktree remove ../Draftify-open-service`. 이제 작업 폴더는 하나뿐이다.
 - **`open-service` 브랜치 삭제 (로컬·원격)**: `git log open-service --not main`이 비어 있음을 로컬·원격 양쪽에서 확인해 유실 커밋 0건을 먼저 검증했다. Vercel Production Branch는 이미 `main`이라 배포에 영향 없음.
@@ -132,7 +141,7 @@
 - **이슈 2건 등록**: **#50**(타이틀 구분 — `MockSpec Local` / `MockSpec Cloud`. `WORKING_NAME`은 패키지 스코프·`/__mockspec` 예약 경로 겸용 식별자라 값을 바꾸지 않고 표시용 `DISPLAY_NAME` 신설. `apps/web/app/layout.tsx:6`이 `"Mockspec"`을 하드코딩해 constants.ts 규약을 어긴 것도 함께) · **#51**(공개판 콘솔 "새 프로젝트"를 탭으로 재구성 — 로컬판은 3탭, 공개판은 카드 2개 세로 스택. 공개판 탭은 `URL 등록`이 D2로 제외돼 **2탭**).
 - **"해상도가 다르다"는 보고는 코드 원인 없음 — 브라우저 줌이었다**(사용자 확인). 확인 과정에서 콘솔 셸 1080px·가이드 셸 860px·`body` 11.5px·viewport meta·`buildExportHtml` 공유까지 양쪽이 동일함을 실측했고, 재조사 방지용으로 그 표를 #51 본문에 남겼다. 실제 차이는 `.c-header-right` gap(로컬 24px ↔ 공개 16px)과 로컬에만 있는 hover transition·말줄임 몇 건뿐 — 정리하려면 별도 이슈.
 - 검증 방법: `git worktree list`가 `Draftify-Html [main]` 한 줄, `git branch -a | grep open-service`가 0건. `.env.local` 3키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` = `sb_secret_` prefix) 정상 → `test:e2e:web` 스킵 조건에 걸리지 않음. `fixtures/todo-app-relative.zip`은 main으로 복사했으나 실은 불필요했다(`test:e2e:web`이 매번 `fixtures:zip:relative`로 재생성).
-- 다음 할 일: **#50 + #51(한 PR — 화면에 직접 보이는 것 먼저, 사용자 결정)** → #46 → #47 → #45(A안) → #43. 위 "현재 단계"의 우선순위 근거 참조.
+- 다음 할 일: **#50 + #51(한 PR — 화면에 직접 보이는 것 먼저, 사용자 결정)** → #46 → #47 → #45(A안) → #43. 위 "현재 단계"의 우선순위 근거 참조. **(#50·#51은 2026-07-30 완료 — 맨 위 세션 로그 참조)**
 - 막힌 지점: 없음. (#46은 Supabase 대시보드 작업 + 다른 기기 수동 검증이라 사용자 실행이 필요하다.)
 
 ### 2026-07-30 — §7.3 오리진 격리를 이슈 #48로 등록 (문서 ↔ 이슈 연결)

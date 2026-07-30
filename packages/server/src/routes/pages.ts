@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { SHELL_CSS, THEME_INIT_JS, THEME_TOGGLE_JS, pageHeader } from "./shell.js";
 
 /**
@@ -97,7 +97,7 @@ function docPage(title: string, active: "guide" | "faq", body: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title} — ${WORKING_NAME}</title>
+  <title>${title} — ${EDITION_NAME.local}</title>
   <script>${THEME_INIT_JS}</script>
   <style>${SHELL_CSS}\n${DOC_CSS}</style>
 </head>

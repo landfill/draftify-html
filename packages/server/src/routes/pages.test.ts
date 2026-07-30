@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { buildApp } from "../app.js";
 import { CONSOLE_HTML } from "./console.js";
 
@@ -11,7 +11,7 @@ describe("안내 페이지 서빙 — 가이드·FAQ", () => {
     const res = await request(app).get("/guide").set("Host", "localhost:4000");
     expect(res.status).toBe(200);
     expect(res.type).toBe("text/html");
-    expect(res.text).toContain(`<title>사용 가이드 — ${WORKING_NAME}</title>`);
+    expect(res.text).toContain(`<title>사용 가이드 — ${EDITION_NAME.local}</title>`);
     // 세 연결 방식(콘솔 탭과 같은 표면 용어)의 기본 구조가 실려 있다
     expect(res.text).toContain("ZIP 업로드");
     expect(res.text).toContain("URL 등록");
@@ -25,14 +25,14 @@ describe("안내 페이지 서빙 — 가이드·FAQ", () => {
     const res = await request(app).get("/faq").set("Host", "localhost:4000");
     expect(res.status).toBe(200);
     expect(res.type).toBe("text/html");
-    expect(res.text).toContain(`<title>FAQ — ${WORKING_NAME}</title>`);
+    expect(res.text).toContain(`<title>FAQ — ${EDITION_NAME.local}</title>`);
     expect(res.text).toContain("g-faq-item");
   });
 
   it("trailing slash가 붙어도 같은 페이지를 반환한다 (/guide/ · /faq/)", async () => {
     const guide = await request(app).get("/guide/").set("Host", "localhost:4000");
     expect(guide.status).toBe(200);
-    expect(guide.text).toContain(`<title>사용 가이드 — ${WORKING_NAME}</title>`);
+    expect(guide.text).toContain(`<title>사용 가이드 — ${EDITION_NAME.local}</title>`);
     const faq = await request(app).get("/faq/").set("Host", "localhost:4000");
     expect(faq.status).toBe(200);
   });

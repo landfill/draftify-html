@@ -84,6 +84,11 @@ mockspec/                        # 신규 레포 (기존 Draftify 코드 이식 
 
 워킹네임 `mockspec`은 추후 변경 가능 — 코드 내 하드코딩 금지, 패키지명과 표시 문자열은 상수 한 곳에서 관리.
 
+**식별자와 표시 문자열은 분리한다 (#50, 2026-07-30).** `packages/shared/src/constants.ts`:
+- `WORKING_NAME = "mockspec"` — **식별자 전용**(레포명·패키지 스코프 `@mockspec/*`·예약 경로 `/__mockspec`). 화면에 쓰지 않는다.
+- `DISPLAY_NAME = "MockSpec"` — 표시용 카멜 표기.
+- `EDITION_NAME.local` = `MockSpec Local`(사내판) / `EDITION_NAME.cloud` = `MockSpec Cloud`(공개판) — 탭 제목·헤더 로고에서 두 배포를 구분한다. 배포마다 엔트리가 달라 런타임 감지 없이 각 앱이 자기 값을 고른다.
+
 ---
 
 ## 2. 데이터 모델 (`packages/shared/src/types.ts`)

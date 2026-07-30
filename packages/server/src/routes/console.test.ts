@@ -4,7 +4,7 @@ import os from "node:os";
 import fs from "node:fs/promises";
 import request from "supertest";
 import JSZip from "jszip";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { buildApp } from "../app.js";
 import { CONSOLE_HTML } from "./console.js";
 
@@ -31,7 +31,7 @@ describe("콘솔 페이지 서빙 (T9)", () => {
     const res = await request(app).get("/").set("Host", "localhost:4000");
     expect(res.status).toBe(200);
     expect(res.type).toBe("text/html");
-    expect(res.text).toContain(`<title>${WORKING_NAME} 콘솔</title>`);
+    expect(res.text).toContain(`<title>${EDITION_NAME.local} 콘솔</title>`);
     expect(res.text).toContain('id="upload-form"');
     expect(res.text).toContain('id="project-list"');
   });

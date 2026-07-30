@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { SHELL_CSS, THEME_INIT_JS, THEME_TOGGLE_JS, pageHeader } from "./shell.js";
 
 /**
@@ -745,7 +745,7 @@ export const CONSOLE_HTML = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${WORKING_NAME} 콘솔</title>
+  <title>${EDITION_NAME.local} 콘솔</title>
   <script>${THEME_INIT_JS}</script>
   <style>${SHELL_CSS}\n${CONSOLE_CSS}</style>
 </head>

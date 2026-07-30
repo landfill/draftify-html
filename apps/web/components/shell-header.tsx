@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { WORKING_NAME } from "@mockspec/shared";
+import { EDITION_NAME } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 
 type NavActive = "home" | "guide" | "faq";
@@ -34,7 +34,7 @@ export function ShellHeader({ active, email }: { active?: NavActive; email?: str
   return (
     <header className="c-header">
       <Link href="/" className="c-logo">
-        {WORKING_NAME}
+        {EDITION_NAME.cloud}
       </Link>
       <div className="c-header-right">
         {email ? <span className="c-user-email">{email}</span> : null}
