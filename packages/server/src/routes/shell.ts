@@ -82,6 +82,8 @@ button, input { font: inherit; }
 .c-header {
   display: flex; justify-content: space-between; align-items: center;
   height: 56px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 0 32px;
+  /* 목록·가이드가 길어져도 메뉴 전환이 가능하게 상단 고정. z-index는 모달 오버레이(100) 아래. */
+  position: sticky; top: 0; z-index: 50;
 }
 .c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; }
 .c-header-right { display: flex; gap: 24px; align-items: center; }

@@ -9,11 +9,37 @@ type NavActive = "home" | "guide" | "faq";
 
 export function ShellHeader({ active, email }: { active?: NavActive; email?: string }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  /**
+   * 로그인 상태. `email` prop은 서버 컴포넌트가 인증을 이미 확인한 페이지(콘솔 홈)에서만 온다.
+   * `/guide`·`/faq`는 로그인 없이 볼 수 있는 정적 페이지라 prop이 없는데, 그렇다고 로그인한
+   * 사용자에게 [로그인]을 보여주면 안 된다 → prop이 없을 때만 브라우저에서 세션을 확인한다.
+   * 확인이 끝나기 전에는 둘 중 어느 것도 그리지 않는다(틀린 버튼을 깜빡이지 않게).
+   */
+  const [session, setSession] = useState<{ email: string | null } | null>(
+    email ? { email } : null,
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem("mockspec:theme");
     if (stored === "dark" || stored === "light") setTheme(stored);
   }, []);
+
+  useEffect(() => {
+    if (email) return; // 서버가 이미 확인했다.
+    let cancelled = false;
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!cancelled) setSession({ email: data.user?.email ?? null });
+      })
+      .catch(() => {
+        if (!cancelled) setSession({ email: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [email]);
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -37,7 +63,7 @@ export function ShellHeader({ active, email }: { active?: NavActive; email?: str
         {EDITION_NAME.cloud}
       </Link>
       <div className="c-header-right">
-        {email ? <span className="c-user-email">{email}</span> : null}
+        {session?.email ? <span className="c-user-email">{session.email}</span> : null}
         <Link href="/guide" className={navCls("guide")}>
           사용 가이드
         </Link>
@@ -54,7 +80,7 @@ export function ShellHeader({ active, email }: { active?: NavActive; email?: str
           aria-label={theme === "dark" ? "라이트 모드" : "다크 모드"}
           title={theme === "dark" ? "라이트 모드" : "다크 모드"}
         />
-        {email ? (
+        {session === null ? null : session.email ? (
           <button type="button" className="c-btn c-btn-ghost" onClick={() => void signOut()}>
             로그아웃
           </button>
