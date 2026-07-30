@@ -37,7 +37,7 @@
   5. **#43 확장 배포 경로 — B안 구현·로컬 검증 완료, Draft PR #67.** 사이트 ZIP 다운로드·개발자 모드 설치 가이드·버전 규칙을 `feat/extension-download-43`에 구현했다. A(웹스토어)는 심사·비용·개인정보 페이지가 딸려오므로 별건. 남은 것은 Preview 실다운로드·unpacked 설치와 PR 리뷰.
   - **#48은 지금 하지 않는다** — 외부 공유를 열 때가 조건. 미리 하면 편집 저장 CORS+토큰 전환 비용을 쓸 곳 없이 먼저 지불한다. #12·#13은 `[실수요 대기]` 유지
 - **PR #44 Codex 리뷰 5건 처리**: 오픈 리다이렉트(P2)만 **병합 전 수정**(`lib/auth/safe-next.ts` — `next`를 같은 오리진 경로로 제한, 절대·프로토콜상대·백슬래시 변형 차단, 단위 테스트 6건). 나머지 4건은 이슈로 분리.
-- **열린 이슈 (10건)** — 처리 순서는 위 "다음 할 일":
+- **열린 이슈** — 처리 순서는 위 "다음 할 일":
   - **#63** 토큰 재발급 경합 — 사용자에게 노출된 코드가 이미 무효일 수 있다 (#47 후속: 콘솔 single-flight + 테스트 보강)
   - **#65** 사용 가이드 코드 예시를 터미널 창 UI로 (가독성 개선 — 다크·라이트 처리 결정이 선행)
   - **#64** 문서 인덱스·작업 규약 현행화 (**`AGENTS.md`의 "guide/ 3종"이 실제 7종** 등 사실관계 오류 4건)
@@ -158,7 +158,7 @@
 - 완료: 공개판 경로 D 탭을 `1 · 확장 설치` → `2 · 프로젝트 연결` 순서로 재구성하고 다운로드 버튼·Chrome/Edge 개발자 모드 5단계 가이드·수동 업데이트 안내를 추가했다. `/download`를 인증 예외에 추가해 최초 스모크에서 발견한 로그인 리다이렉트를 수정했고 접두 오탐(`/download-fake`) 회귀 테스트를 보강했다. Preview 환경변수 3종 활성화는 사용자가 확인했다.
 - 검증: `npm test` **338 passed / 12 skipped (350)**, 루트·web typecheck 통과, `npm run vercel-build -w @mockspec/web` 통과(확장 **v0.1.0·6파일·264,072 bytes**). HTTP 스모크 `/guide` 200, `/download/mockspec-extension.zip` 200 `application/zip`·PK 매직 바이트 확인, ZIP 내부 6파일·manifest 버전·운영 호스트 권한 정확 일치 재검증. Playwright 하네스는 더미 공개키로 기동 성공했으나 이 클론에 실 Supabase secret이 없어 **6 skipped**. `$visual-verdict`는 앵커 헤더 가림을 수정한 2차에서 **95/100 pass**(데스크톱·390px 모바일).
 - 완료(배포 준비): 커밋 `4ca3644`를 `origin/feat/extension-download-43`에 푸시하고 **Draft PR #67**을 열었다. Vercel Preview 배포는 success이며 환경 URL은 커밋마다 갱신되므로 PR의 Vercel 체크를 정본으로 본다.
-- 완료(리뷰·병합 순서 정정): 2차 리뷰어가 PR #67에 리뷰 코멘트 1건을 남겼다(머지 전 2건 = ① `.c-extension-download`가 `.c-btn`보다 **앞에** 선언돼 같은 특정도에서 `display: inline-flex`·`padding`이 덮임 → 모바일 라벨 좌측 정렬, ② E2E의 `suggestedFilename()`이 `<a download>` 속성만 재확인해 산출물 바이트를 검증하지 못함. 선택 5건 = `next dev` ZIP 부재, 공개 배포본 localhost `host_permissions`, `aria-labelledby`가 generic role에서 무시, 미들웨어 matcher의 `.zip` 미제외, fflate/jszip 중복). 아울러 **PR #66이 #67보다 먼저 병합돼야 했다** — 둘 다 `docs/PROGRESS.md`의 같은 hunk를 건드려 GitHub이 각각을 CLEAN으로 표시해도 실제로는 충돌한다(`git merge-tree`로 확인). #66을 먼저 병합(merge `df5bb03`)한 뒤 이 브랜치에서 `origin/main`을 병합해 충돌을 해소했다(열린 이슈 #64·#65 유지, 세션 로그는 "최신이 위" 규약대로 07-31 → 07-30 순).
+- 완료(리뷰·병합 순서 정정): 2차 리뷰어가 PR #67에 리뷰 코멘트 1건을 남겼다(머지 전 2건 = ① `.c-extension-download`가 `.c-btn`보다 **앞에** 선언돼 같은 특정도에서 `display: inline-flex`·`padding`이 덮임 → 모바일 라벨 좌측 정렬, ② E2E의 `suggestedFilename()`이 `<a download>` 속성만 재확인해 산출물 바이트를 검증하지 못함. 선택 5건 = `next dev` ZIP 부재, 공개 배포본 localhost `host_permissions`, `aria-labelledby`가 generic role에서 무시, 미들웨어 matcher의 `.zip` 미제외, fflate/jszip 중복). 아울러 **PR #66이 #67보다 먼저 병합돼야 했다** — 둘 다 `docs/PROGRESS.md`의 같은 hunk를 건드려 GitHub이 각각을 CLEAN으로 표시해도 실제로는 충돌한다(`git merge-tree`로 확인). #66을 먼저 병합(merge `df5bb03`)한 뒤 이 브랜치에서 `origin/main`을 병합해 충돌을 해소했다(열린 이슈 #64·#65 유지, 세션 로그는 "최신이 위" 규약대로 07-31 → 07-30 순). 이어서 **#66에 병합 후 도착한 CodeRabbit 지적 중 1건을 회수**했다 — `열린 이슈 (10건)`의 개수 표기는 같은 문서 07-30 로그의 재발 방지 규칙 "목록이 늘어나는 문서에 개수를 쓰지 않는다"와 모순이라 `(10건)`을 제거했다. 문서 전체를 훑어 같은 성격의 표기가 더 있는지 확인했고, 나머지 개수 표기(환경변수 3종·테이블 3종·"이 세션에서 머지한 PR 4건" 등)는 **늘어나지 않는 확정된 사실**이라 그대로 뒀다.
 - 다음 할 일: 위 리뷰 ①②를 반영하고, 로그인된 브라우저로 PR Preview에서 실제 ZIP 다운로드·압축해제·unpacked 로드와 실 Supabase 경로 D E2E를 확인한다. `main` 병합은 별도 동의를 받는다.
 - 막힌 지점: 코드 블로커 없음. Preview는 Vercel SSO 보호 상태라 비로그인 자동 요청은 SSO로 302된다. 이 Windows 클론의 `apps/web/.env.local` 부재로 실 Supabase E2E 6본도 조건부 스킵됐다. 기존 빌드 경고(`single-file-core` IIFE의 `import.meta`, 홈 디렉터리 lockfile로 인한 Next workspace root 추론)는 이번 변경과 무관하다.
 
