@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "cd ../.. && npm run build && cd apps/web && next build",
+    "build": "node scripts/package-extension.mjs && next build",
+    "vercel-build": "cd ../.. && npm run build && npm run build -w @mockspec/web",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },

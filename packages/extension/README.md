@@ -11,6 +11,21 @@ npm run build -w @mockspec/extension     # dist/ 생성
 
 Chrome → `chrome://extensions` → 개발자 모드 → **압축해제된 확장 프로그램을 로드** → `dist/`.
 
+공개판 사용자는 사이트의 `/download/mockspec-extension.zip`을 내려받아 압축을 풀고,
+그 안의 `mockspec-extension/` 폴더를 같은 방식으로 로드한다. 이 ZIP은 공개판 빌드가
+`dist/`에서 자동 생성하며 Git에는 커밋하지 않는다.
+
+## 배포 버전
+
+`manifest.json`의 `version`이 정본이다. 공개된 확장 내용이 바뀌면 배포 전에 다음 규칙으로
+올린다.
+
+- patch: 버그·보안 수정
+- minor: 기존 바인딩과 호환되는 기능 또는 권한 변경
+- major: 바인딩·저장 계약이 기존 설치본과 호환되지 않는 변경
+
+다운로드 URL은 버전과 무관하게 고정하고, 콘솔·가이드가 manifest 버전을 함께 표시한다.
+
 ## 저장 대상 서버 = `host_permissions` (중요)
 
 팝업에서 입력하는 **서버 URL**은 background가 `fetch`할 대상이고, 실제로 허용되는 호스트는

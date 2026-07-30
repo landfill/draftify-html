@@ -439,18 +439,28 @@ resolve(anchor):
 |------------|-----------|
 | `packages/viewer/dist/main.js` | 루트 `tsc -b` |
 | `packages/sdk/dist/sdk.js` | `npm run build -w @mockspec/sdk` (vite) |
+| `packages/extension/dist/*` | `npm run build -w @mockspec/extension` (Vite IIFE 3본 + sdk.js·manifest·popup) |
 
 Vercel은 Root Directory(`apps/web`)의 빌드 스크립트만 실행하므로 두 산출물이 없어 빌드가 깨진다.
 그래서 `apps/web/package.json`에 **`vercel-build`** 를 둔다(Vercel은 이 스크립트가 있으면 `build`
 대신 실행한다):
 
 ```
-"vercel-build": "cd ../.. && npm run build && cd apps/web && next build"
+"build": "node scripts/package-extension.mjs && next build"
+"vercel-build": "cd ../.. && npm run build && npm run build -w @mockspec/web"
 ```
 
-루트 `npm run build`(= `tsc -b` + sdk·extension 빌드)를 먼저 돌려 두 산출물을 만든 뒤 `next build`
-한다. 로컬 `build`는 그대로 `next build`만 — dist가 이미 있는 개발 흐름을 늦추지 않는다.
-검증은 두 `dist/`를 지우고 `npm run vercel-build -w @mockspec/web`이 통과하는지로 한다.
+루트 `npm run build`(= `tsc -b` + sdk·extension 빌드)를 먼저 돌려 워크스페이스 산출물을
+만든다. 이어 공개판 `build`가 확장 `dist/`를
+`apps/web/public/download/mockspec-extension.zip`으로 패키징한 뒤 `next build`를 실행한다.
+ZIP 내부 루트는 `mockspec-extension/` 하나라 압축 해제 후 그 폴더를 unpacked 확장으로 바로
+고를 수 있다. 안정 URL은 버전이 바뀌어도 유지하고, 화면에 표시할 버전은
+`packages/extension/manifest.json.version`을 정본으로 읽는다. ZIP은 생성 산출물이므로 Git에
+커밋하지 않는다.
+
+검증은 `viewer`·`sdk`·`extension`의 `dist/`와 공개 ZIP을 지운 뒤
+`npm run vercel-build -w @mockspec/web`이 통과하고 ZIP 안에 manifest·popup·content·background·
+sdk 파일이 모두 있는지 확인한다.
 
 ---
 

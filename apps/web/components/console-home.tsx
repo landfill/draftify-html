@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { encodeConnection, type ProjectListItem } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 import { LIMITS, formatMb } from "@/lib/abuse/limits.js";
+import { EXTENSION_RELEASE } from "@/lib/extension-release.js";
 import { uploadMockupZip, completeMockupIntake } from "@/lib/intake/upload.js";
 import type { Db } from "@/lib/store/ids.js";
 
@@ -370,11 +371,58 @@ export function ConsoleHome() {
             aria-labelledby="new-tab-1"
             aria-hidden={activeTab !== 1}
           >
-            <p className="c-hint">
-              로그인해야 보이는 화면·사내 시스템처럼 <b>zip으로 만들 수 없는 목업</b>에 씁니다. 서버는
-              그 화면에 접근하지 않고, Chrome 확장이 <b>내 브라우저 화면 위에</b> 편집기를 얹습니다.
-              프로젝트를 만들면 <b>연결 코드</b>가 복사되고, 그 코드를 확장 팝업에 붙여넣어 연결합니다.
-            </p>
+            <div className="c-extension-setup" aria-labelledby="extension-install-title">
+              <div className="c-extension-release">
+                <div>
+                  <div className="c-extension-kicker">1 · 확장 설치</div>
+                  <h3 id="extension-install-title" className="c-extension-title">
+                    브라우저에 편집기 준비
+                  </h3>
+                  <p className="c-extension-meta">
+                    MockSpec v{EXTENSION_RELEASE.version} · Chrome / Edge
+                  </p>
+                </div>
+                <a
+                  className="c-btn c-extension-download"
+                  href={EXTENSION_RELEASE.href}
+                  download={EXTENSION_RELEASE.filename}
+                >
+                  <span aria-hidden="true">↓</span>
+                  확장 ZIP 다운로드
+                </a>
+              </div>
+              <ol className="c-extension-steps">
+                <li>
+                  <strong>압축 풀기</strong>
+                  <span>내려받은 ZIP을 원하는 폴더에 풉니다.</span>
+                </li>
+                <li>
+                  <strong>개발자 모드 켜기</strong>
+                  <span>
+                    <code>chrome://extensions</code>에서 개발자 모드를 켭니다.
+                  </span>
+                </li>
+                <li>
+                  <strong>폴더 불러오기</strong>
+                  <span>
+                    [압축해제된 확장 프로그램 로드]에서 <code>mockspec-extension</code>을 고릅니다.
+                  </span>
+                </li>
+              </ol>
+              <p className="c-extension-help">
+                설치가 끝나면 아래에서 프로젝트를 만드세요. 자세한 화면별 순서는{" "}
+                <a href="/guide#extension-install">설치 가이드</a>에서 볼 수 있습니다.
+              </p>
+            </div>
+
+            <div className="c-extension-connect">
+              <div className="c-extension-kicker">2 · 프로젝트 연결</div>
+              <p>
+                로그인해야 보이는 화면·사내 시스템처럼 <b>ZIP으로 만들 수 없는 목업</b>에 씁니다.
+                프로젝트를 만들면 <b>연결 코드</b>가 복사됩니다. 편집할 탭에서 확장 아이콘을 열어
+                붙여넣으면 서버가 그 화면에 접근하지 않고 내 브라우저 위에만 편집기를 얹습니다.
+              </p>
+            </div>
             <form onSubmit={(e) => void handleCreateSnippet(e)}>
               <div className="c-row">
                 <label htmlFor="snippet-name">프로젝트 이름</label>

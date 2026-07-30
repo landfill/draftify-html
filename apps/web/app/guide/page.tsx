@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShellHeader } from "@/components/shell-header.js";
+import { EXTENSION_RELEASE } from "@/lib/extension-release.js";
 
 export default function GuidePage() {
   return (
@@ -66,27 +67,55 @@ zip -r mockup-public.zip dist-public`}
           </p>
         </section>
 
-        <section className="g-section">
+        <section id="extension-install" className="g-section">
           <h2>zip을 만들 수 없다면 — 확장으로 내 화면 편집</h2>
           <p className="g-note">
             로그인해야 보이는 화면, 사내 시스템, 내 로컬 개발 서버처럼{" "}
             <b>zip으로 뽑을 수 없는 목업</b>에 씁니다. 서버는 그 화면에 접근하지 않습니다 — Chrome
             확장이 <b>내 브라우저에 열린 화면 위에</b> 편집기를 얹고, 저장만 이 서비스로 보냅니다.
           </p>
+          <div className="g-download-card">
+            <div>
+              <span className="g-download-kicker">브라우저 확장</span>
+              <h3>MockSpec v{EXTENSION_RELEASE.version}</h3>
+              <p>Chrome·Edge 최신 버전 · 개발자 모드로 설치</p>
+            </div>
+            <a
+              className="g-download-button"
+              href={EXTENSION_RELEASE.href}
+              download={EXTENSION_RELEASE.filename}
+            >
+              <span aria-hidden="true">↓</span>
+              확장 ZIP 다운로드
+            </a>
+          </div>
           <ol className="g-steps">
+            <li>
+              위 버튼으로 ZIP을 내려받고 압축을 풉니다. 안에는{" "}
+              <code>mockspec-extension</code> 폴더 하나가 있습니다.
+            </li>
+            <li>
+              Chrome에서 <code>chrome://extensions</code>를 열고 우측 상단 <b>개발자 모드</b>를
+              켭니다. Edge는 <code>edge://extensions</code>에서 같은 순서로 진행합니다.
+            </li>
+            <li>
+              <b>압축해제된 확장 프로그램을 로드</b>를 눌러 압축을 푼{" "}
+              <code>mockspec-extension</code> 폴더를 고릅니다.
+            </li>
             <li>
               콘솔의 <b>새 프로젝트 — 내 화면에서 편집 (확장)</b>에서 이름을 넣고 만들면{" "}
               <b>연결 코드</b>가 클립보드에 복사됩니다.
             </li>
             <li>
-              Chrome 확장을 설치하고(저장소 <code>packages/extension</code> 빌드본을 개발자 모드로
-              로드), 편집할 화면이 열린 탭에서 확장 아이콘 → 연결 코드 붙여넣기 → <b>연결</b>.
-            </li>
-            <li>
-              그 페이지를 새로고침하면 우하단에 편집 버튼이 뜹니다. 이후 화면 등록·어노테이션·보내기는
-              ZIP 방식과 완전히 동일합니다.
+              편집할 화면이 열린 탭에서 확장 아이콘 → 연결 코드 붙여넣기 → <b>연결</b> → 페이지
+              새로고침. 우하단 편집 버튼이 뜨면 설치와 연결이 끝난 것입니다.
             </li>
           </ol>
+          <p className="g-note">
+            ZIP 설치판은 자동 업데이트되지 않습니다. 콘솔에 표시된 버전이 설치본보다 높으면 새 ZIP을
+            내려받아 기존 <code>mockspec-extension</code> 폴더를 교체한 뒤 확장 관리 화면에서 새로고침
+            버튼을 누르세요.
+          </p>
           <p className="g-note">
             <b>연결 코드에는 토큰이 들어 있습니다</b> — 코드를 공유하면 그 프로젝트에 쓰기 권한을
             주는 것과 같습니다. 코드는 발급 시 한 번만 만들어지고 콘솔을 새로고침하면 사라지므로,

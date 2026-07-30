@@ -454,6 +454,20 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     // 경로 D 폼은 두 번째 탭 안에 있다 (#51 — 기본 탭은 ZIP 업로드).
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
+    await expect(page.getByText("1 · 확장 설치")).toBeVisible();
+    await expect(page.getByText("2 · 프로젝트 연결")).toBeVisible();
+
+    // #43 — 프로젝트 토큰을 만들기 전에 사이트에서 설치 파일을 받을 수 있어야 한다.
+    const extensionDownloadLink = page.getByRole("link", { name: "확장 ZIP 다운로드" });
+    await expect(extensionDownloadLink).toHaveAttribute(
+      "href",
+      "/download/mockspec-extension.zip",
+    );
+    const extensionDownloadPromise = page.waitForEvent("download");
+    await extensionDownloadLink.click();
+    const extensionDownload = await extensionDownloadPromise;
+    expect(extensionDownload.suggestedFilename()).toBe("mockspec-extension.zip");
+
     await page.locator("#snippet-name").fill("경로 D 회귀");
     await page.locator("#snippet-owner").fill("QA");
     await page.getByRole("button", { name: "만들고 연결 코드 복사" }).click();
