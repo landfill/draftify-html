@@ -254,6 +254,7 @@ npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.en
 
 - **`main` 브랜치가 프로덕션** → `main`에 병합하는 순간 공개 서비스에 반영
 - 아래는 대시보드에서 한 번 설정하는 값 → **기본값으로 두면 빌드 실패**
+- 로컬 개발·**마이그레이션 적용 순서**·남용 방어 등 공개판 운영 규칙 → **[apps/web/README.md](./apps/web/README.md)**
 
 ### Vercel 프로젝트 설정
 

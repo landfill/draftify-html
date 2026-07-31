@@ -15,8 +15,11 @@
 |------|------|
 | `AGENTS.md` (이 파일) | 작업 규약. 어떻게 일하고 무엇을 어디에 기록할지 |
 | `docs/PROGRESS.md` | 살아있는 진행 로그 — 현재 단계, WBS 체크리스트, 세션 로그. **작업 시작 시 먼저 읽고, 끝날 때 갱신** |
-| `docs/` 스펙 6종 | 무엇을 만들지의 계약 (아래 §1) |
-| `guide/` 원본 3종 | 결정의 근거·원본. 스펙과 충돌 시 §2 절차로 해소 |
+| `docs/` 스펙 문서 | 무엇을 만들지의 계약. **정본 목록은 아래 §1** |
+| `guide/` 원본 문서 | 결정의 근거·원본. **정본 목록은 아래 §1-9.** 스펙과 충돌 시 §4 절차로 해소 |
+
+> **개수를 세지 않는다.** 이 표와 §1은 문서가 늘 때 함께 늘어난다. "3종"·"6종" 같은 개수
+> 표기는 목록이 자라면 곧 거짓이 되므로(#64의 계기) **목록 자체를 정본으로 삼는다.**
 
 ## 1. 먼저 읽을 문서 (읽는 순서)
 
@@ -27,14 +30,26 @@
    낡은 base에서 딴 브랜치는 불필요한 충돌을 만든다
 1. `docs/PROGRESS.md` — **지금 어디까지 됐는지.** 항상 여기서 시작한다
 2. `docs/README.md` — 문서 지도
-3. `docs/PRD.md` — 제품 정의·용어·설계 제1원칙·기능 요구사항
-4. `docs/detailed-spec.md` — 화면별 상세, 제품 정책(POL-M\*), 수용 기준
-5. `docs/technical-spec.md` — 아키텍처·스택·데이터 모델·API·알고리즘·WBS
-6. `docs/output-standard.md` — 산출물 HTML의 ID 체계·섹션 구조
-7. `docs/implementation-decisions.md` — 미정의 지점 확정 (ID-01~15)
-8. `guide/` 3종 — 위 문서들의 근거 원본
+3. `docs/user-guide.md` — 세 경로(A·B·D)를 사용자가 실제로 어떻게 쓰는지. **제품의 현재 모습**
+4. `docs/PRD.md` — 제품 정의·용어·설계 제1원칙·기능 요구사항
+5. `docs/detailed-spec.md` — 화면별 상세, 제품 정책(POL-M\*), 수용 기준
+6. `docs/technical-spec.md` — 아키텍처·스택·데이터 모델·API·알고리즘·WBS
+7. `docs/output-standard.md` — 산출물 HTML의 ID 체계·섹션 구조
+8. `docs/implementation-decisions.md` — 미정의 지점 확정 (ID-01~15)
+9. `guide/` 원본 — 위 문서들의 근거. 트랙별 킥오프가 계약이고, RFC는 그 근거다:
+   - `mockup-as-spec-guide.md` — 코어 개념 (장면·앵커·캡처)
+   - `mockup-as-spec-service-architecture.md` — 서비스 구성 (온보딩 경로, 컴포넌트, S1~S3)
+   - `s1-kickoff-spec.md` — S1 확정 사양 + **결정 변경 이력(§11)**
+   - `s2-kickoff-spec.md` — S2 확정 사양 (경로 B·SSRF·마스킹·CI)
+   - `pathD-kickoff-spec.md` — S2.5 확정 사양 (경로 D 확장·프로젝트 토큰)
+   - `open-service-kickoff-spec.md` — 공개 멀티테넌트 개편 착수 계약 (Vercel + Supabase)
+   - `open-service-rfc.md` — 위 킥오프의 근거 RFC (대안 비교·리뷰 반영 이력)
 
-구현을 시작하기 전에 최소한 1·3·5·7은 읽는다.
+   각 문서의 지위·재검토 대상 여부는 `docs/README.md` "원 결정 문서 (guide/)"에 있다.
+
+구현을 시작하기 전에 최소한 `PROGRESS.md` · `PRD.md` · `technical-spec.md` ·
+`implementation-decisions.md`는 읽는다. (번호가 아니라 파일명으로 적는다 — 목록이 늘면
+번호가 어긋난다.)
 
 ## 2. 설계 제1원칙 (이탈 금지)
 
@@ -66,8 +81,11 @@
 
 스펙과 다르게 구현해야 할 이유가 생기면 **코드부터 고치지 않는다:**
 
-1. `guide/s1-kickoff-spec.md`의 관련 결정을 먼저 수정한다
-2. 같은 문서 §11 "결정 변경 이력"에 **이유**를 기록한다
+1. **그 결정이 실린 킥오프 문서**를 먼저 수정한다. 어느 문서인지는 무엇을 바꾸는지로 갈린다:
+   S1 코어·산출물 = `s1-kickoff-spec.md`, 경로 B·마스킹 = `s2-kickoff-spec.md`,
+   경로 D 확장·프로젝트 토큰 = `pathD-kickoff-spec.md`, 공개판(Vercel·Supabase·RLS) =
+   `open-service-kickoff-spec.md`. 걸치면 양쪽 다 고친다
+2. **같은 문서의 "결정 변경 이력"** 섹션에 **이유**를 기록한다 (문서마다 절 번호가 다르다)
 3. 영향받는 `docs/` 문서를 동기화한다
 4. 그런 다음 구현한다
 

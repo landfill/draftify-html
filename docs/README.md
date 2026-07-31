@@ -11,8 +11,9 @@
 | 주소 | 로컬 실행 `http://localhost:4000` | **https://draftify-html.vercel.app** (`main`이 프로덕션 브랜치 = 병합 즉시 반영) |
 
 - 목업 서빙 방식이 달라 **목업 zip 빌드 방법도 다름** → 루트 [README.md](../README.md)의 비교표 확인 필수
+- 공개판 운영 규칙(환경변수·마이그레이션 적용 순서·남용 방어) → [apps/web/README.md](../apps/web/README.md)
 - 공개 멀티테넌트 전환(open-service 트랙)은 **2026-07-29 `main` 병합으로 종료**, 해당 브랜치도 삭제됨
-- 그 트랙의 근거 문서 = 아래 [원 결정 문서](#원-결정-문서-guide) **6·7번**
+- 그 트랙의 근거 문서 = 아래 [원 결정 문서](#원-결정-문서-guide)의 `open-service-kickoff-spec.md`(계약)와 `open-service-rfc.md`(근거)
 
 **서비스를 실행하는 방법**은 루트 [README.md](../README.md)(빠른 시작),
 **세 가지 연결 방식(경로 A·B·D)의 상세 사용법**은 [user-guide.md](./user-guide.md)(사용 가이드)에 있다.
@@ -41,7 +42,8 @@
 
 ## 원 결정 문서 (guide/)
 
-위 문서들의 근거이자 원본. 충돌 시 결정 변경 절차(s1-kickoff-spec §11)를 따른다.
+위 문서들의 근거이자 원본. 충돌 시 결정 변경 절차([AGENTS.md](../AGENTS.md) §4)를 따른다 —
+바꾸려는 결정이 실린 킥오프 문서를 먼저 고치고, 그 문서의 "결정 변경 이력"에 이유를 남긴다.
 
 1. [guide/mockup-as-spec-guide.md](../guide/mockup-as-spec-guide.md) — 코어 개념 (장면·앵커·캡처)
 2. [guide/mockup-as-spec-service-architecture.md](../guide/mockup-as-spec-service-architecture.md) — 서비스 구성 (온보딩 4경로, 컴포넌트, S1~S3)
@@ -54,10 +56,21 @@
 ## 한눈에 보는 핵심
 
 ```
-[온보딩]           [편집]                    [산출]              [소비]
-목업 등록    →    장면 선언 + 어노테이션   →   단일 HTML 조립   →   file://로 열람
-(zip 업로드)       + 캡처(사용자 브라우저)      (서버는 조립만)      (네트워크 0건)
+[온보딩]              [편집]                   [산출]            [소비]
+목업 등록       →   화면 등록 + 어노테이션  →  단일 HTML 조립  →  file://로 열람
+A: zip 업로드        + 캡처(사용자 브라우저)     (조립만 서버 몫)   (네트워크 0건)
+B: URL 프록시
+D: 확장 — 내 화면
 ```
+
+- **등록 경로는 셋** — A(zip 업로드) · B(URL 프록시) · D(브라우저 확장). 사용법은
+  [user-guide.md](./user-guide.md), 어느 것을 고를지는 루트 [README.md](../README.md)
+- **배포에 따라 지원 경로가 다르다** — 사내판은 A·B·D 전부, **공개판은 A·D만**
+  (B는 SSRF 표면을 없애려고 제외)
+- **캡처는 항상 사용자 브라우저에서** 하고, 서버(사내판 `packages/server` / 공개판 `apps/web`)는
+  받은 조각을 **조립**한다. 서버가 목업을 헤드리스로 재현하는 경로는 없다
+
+### 설계 제1원칙 (PRD 1.3절)
 
 - **의도는 추론하지 않는다** — 사람이 입력한 것만 렌더 (LLM은 S3에서 초안 보조만)
 - **사용자는 목업을 수정하지 않는다** — SDK 주입은 서비스가 대신
