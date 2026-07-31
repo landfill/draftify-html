@@ -295,24 +295,51 @@ async function copyConnectionInfo(project) {
   }
 }
 
-async function reissueToken(project) {
+/**
+ * 재발급 진행 중인 프로젝트 id (이슈 #63). 재발급이 겹치면 두 요청 모두 각자의 평문 토큰을
+ * 돌려주지만 실제로 유효한 것은 마지막 writer의 하나뿐이다. 응답 도착 순서는 저장 순서와
+ * 다를 수 있으므로, 콘솔이 이미 덮어써진 코드를 sessionStorage에 넣고 사용자에게 복사해 준다.
+ * 두 번째 요청을 아예 내보내지 않는 것이 해법이다 (공개판 console-home.tsx와 같은 처리).
+ */
+var reissuingId = null;
+
+function setReissueBusy(btns, busy) {
+  btns.reissue.disabled = busy;
+  btns.reissue.textContent = busy ? "재발급 중…" : "토큰 재발급";
+  // 진행 중 복사하면 곧 무효가 될 구 토큰의 코드를 건네게 된다.
+  btns.copy.disabled = busy;
+}
+
+async function reissueToken(project, btns) {
+  // 버튼 disabled와 짝인 코드 레벨 가드 — 렌더 전 재진입을 막는다.
+  if (reissuingId) return;
   var go = window.confirm("토큰을 재발급하면 기존 토큰이 즉시 무효화됩니다. 확장도 새 토큰으로 다시 연결해야 합니다. 계속할까요?");
   if (!go) return;
-  var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/token", { method: "POST" });
-  if (!res.ok) {
-    setStatus(listStatusEl, "토큰 재발급에 실패했습니다.", "error");
-    return;
-  }
-  var data = await res.json();
-  sessionStorage.setItem("mockspec:tok:" + project.id, data.token);
-  // 새 토큰으로 연결 코드를 즉시 복사 — 확장에 붙여넣어 재연결.
-  var code = encodeConnection(project.id, data.token, location.origin);
+  reissuingId = project.id;
+  setReissueBusy(btns, true);
   try {
-    await navigator.clipboard.writeText(code);
-    setStatus(listStatusEl, "토큰 재발급 + 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결].", "ok");
+    var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/token", { method: "POST" });
+    if (!res.ok) {
+      setStatus(listStatusEl, "토큰 재발급에 실패했습니다.", "error");
+      return;
+    }
+    var data = await res.json();
+    sessionStorage.setItem("mockspec:tok:" + project.id, data.token);
+    // 새 토큰으로 연결 코드를 즉시 복사 — 확장에 붙여넣어 재연결.
+    var code = encodeConnection(project.id, data.token, location.origin);
+    try {
+      await navigator.clipboard.writeText(code);
+      setStatus(listStatusEl, "토큰 재발급 + 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결].", "ok");
+    } catch (e) {
+      window.prompt("새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):", code);
+      setStatus(listStatusEl, "토큰이 재발급되었습니다.", "ok");
+    }
   } catch (e) {
-    window.prompt("새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):", code);
-    setStatus(listStatusEl, "토큰이 재발급되었습니다.", "ok");
+    // 네트워크 예외로 잠금이 남으면 재발급이 영영 불가능해진다 — finally로 반드시 푼다.
+    setStatus(listStatusEl, "토큰 재발급에 실패했습니다.", "error");
+  } finally {
+    reissuingId = null;
+    setReissueBusy(btns, false);
   }
 }
 
@@ -393,7 +420,9 @@ function renderProject(project) {
 
     var reissueBtn = el("button", "c-btn c-btn-ghost", "토큰 재발급");
     reissueBtn.type = "button";
-    reissueBtn.addEventListener("click", function () { void reissueToken(project); });
+    // 진행 중 잠글 대상을 클로저로 넘긴다 — 재발급은 목록을 다시 그리지 않으므로 참조가 유효하다.
+    var reissueBtns = { reissue: reissueBtn, copy: copyBtn };
+    reissueBtn.addEventListener("click", function () { void reissueToken(project, reissueBtns); });
     actions.appendChild(reissueBtn);
   }
 
