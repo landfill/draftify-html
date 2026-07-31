@@ -477,7 +477,19 @@ test.describe("공개 서비스 DoD (W9)", () => {
     // 스크린리더에는 계속 "명령 복사"로 들린다. 라벨과 라이브 리전 둘 다 상태를 반영해야 한다.
     await expect(copyButton).toHaveAttribute("aria-label", `복사됨: ${commandText}`);
     // 페이지에 터미널 블록이 여럿이라 status도 여럿이다 — 누른 블록 것만 본다.
-    await expect(block.getByRole("status")).toHaveText("명령을 클립보드에 복사했습니다.");
+    const status = block.getByRole("status");
+    await expect(status).toHaveText(`${commandText} 명령을 클립보드에 복사했습니다.`);
+
+    // 한 블록에 복사 버튼이 여럿이다. 알림 문구가 고정이면 다음 명령을 복사해도 텍스트 노드가
+    // 그대로여서 React가 DOM을 건드리지 않고, 스크린리더는 두 번째 성공을 알리지 않는다.
+    const secondCommandLine = block.locator(".g-term-line", { has: page.locator(".g-term-copy") }).nth(1);
+    const secondCommand = (await secondCommandLine.locator("span").first().innerText()).replace(
+      /^\$\s*/,
+      "",
+    );
+    expect(secondCommand, "같은 블록의 두 번째 명령").not.toBe(commandText);
+    await secondCommandLine.locator(".g-term-copy").click();
+    await expect(status).toHaveText(`${secondCommand} 명령을 클립보드에 복사했습니다.`);
 
     const scroll = await page.evaluate(() => {
       const el = document.documentElement;

@@ -64,6 +64,9 @@ export function TerminalBlock({ label, lines, done }: TerminalBlockProps) {
     timer.current = setTimeout(() => setCopiedIndex(null), 1600);
   }
 
+  const copiedLine = copiedIndex === null ? null : lines[copiedIndex];
+  const copiedCommand = copiedLine && copiedLine.kind === "command" ? copiedLine.text : "";
+
   return (
     <div className="g-term">
       <div className="g-term-bar">
@@ -123,9 +126,14 @@ export function TerminalBlock({ label, lines, done }: TerminalBlockProps) {
         읽어 주는지는 스크린리더마다 다르다. 라이브 리전으로 한 번 더 알린다 (PR #76 Codex 지적).
         비어 있는 상태로 먼저 렌더돼 있어야 이후 내용 변경이 알림으로 잡힌다 — 그래서
         조건부 렌더가 아니라 항상 두고 문자열만 바꾼다.
+
+        **메시지에 복사한 명령을 싣는 이유**: 한 블록에 복사 버튼이 여럿이라, 문구가 고정이면
+        다른 명령을 이어서 복사해도 텍스트 노드가 그대로여서 React가 DOM을 건드리지 않고
+        두 번째 성공이 알려지지 않는다. (같은 버튼을 연속으로 누르면 메시지가 같아 다시
+        알리지 않는데, 이미 복사한 명령을 한 번 더 복사한 경우라 실사용에서 문제되지 않는다.)
       */}
       <div className="g-sr-only" role="status" aria-live="polite">
-        {copiedIndex === null ? "" : "명령을 클립보드에 복사했습니다."}
+        {copiedIndex === null ? "" : `${copiedCommand} 명령을 클립보드에 복사했습니다.`}
       </div>
     </div>
   );
