@@ -35,12 +35,18 @@
 ```bash
 cp apps/web/.env.example apps/web/.env.local   # 값은 Supabase 대시보드에서
 npm install                                    # 저장소 루트에서
+npm run build                                  # ⚠️ 루트 선행 빌드 — 생략하면 아래가 실패한다
 npm run dev -w @mockspec/web                   # http://localhost:3000
 npm run typecheck -w @mockspec/web
-npm run build -w @mockspec/web                 # 확장 ZIP 패키징 + next build
+npm run vercel-build -w @mockspec/web          # 루트 빌드 + 확장 ZIP + next build 한 번에
 npm run test:e2e:web                           # 실 Supabase에 붙는다 — .env.local 없으면 스킵
 ```
 
+- **⚠️ `apps/web`만 빌드하면 clean clone에서 실패한다.** 이 앱은
+  `packages/viewer/dist/main.js`·`packages/sdk/dist/sdk.js`를 `?raw`로 인라인하는데, 그 산출물은
+  gitignore 대상이라 새로 클론한 저장소에 없다. **루트 `npm run build`를 먼저 돌리거나**
+  (`next dev`도 이 import를 타므로 dev에도 필요하다), 한 번에 하는 `vercel-build`를 쓴다 —
+  `npm run build -w @mockspec/web` 단독 실행은 `next build` 도중 그 import에서 죽는다
 - **`.env.local`은 gitignore 대상이라 어떤 클론에도 따라오지 않는다.** 새 환경에서는 직접 채워야
   하고, 없으면 Supabase 연동 Playwright는 설계대로 조건부 스킵된다(실패가 아니다)
 - 로컬 로그인을 쓰려면 Supabase `Authentication → URL Configuration`에 `http://localhost:3000`
