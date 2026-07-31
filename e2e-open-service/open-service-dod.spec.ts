@@ -446,8 +446,9 @@ test.describe("공개 서비스 DoD (W9)", () => {
       isMobile: true,
     });
     const page = await context.newPage();
-    // 가이드는 로그인 없이 보는 공개 페이지다.
-    await page.goto(`${baseURL}/guide`);
+    // 가이드는 로그인 없이 보는 공개 페이지다. 복사 버튼은 클라이언트 컴포넌트라
+    // 하이드레이션 전에 누르면 클릭이 그냥 사라진다 — 로딩이 잦아든 뒤에 만진다.
+    await page.goto(`${baseURL}/guide`, { waitUntil: "networkidle" });
 
     const block = page.locator(".g-term").first();
     await expect(block).toBeVisible();
@@ -456,9 +457,12 @@ test.describe("공개 서비스 DoD (W9)", () => {
     const commandText = (await commandLine.locator("span").first().innerText()).replace(/^\$\s*/, "");
     expect(commandText, "첫 줄은 실행할 명령이다").toBe("npm run build:public");
 
-    const copyButton = commandLine.getByRole("button", { name: /명령 복사/ });
+    // 접근성 이름으로 잡지 않는다 — 복사 후 이름이 "복사됨: …"으로 바뀌므로, 이름에 묶은
+    // locator는 클릭 직후 자기가 누른 버튼을 놓친다.
+    const copyButton = commandLine.locator(".g-term-copy");
     await expect(copyButton, "터치 기기에서도 복사 버튼이 보여야 한다").toBeVisible();
     await expect(copyButton).toHaveCSS("opacity", "1");
+    await expect(copyButton).toHaveAttribute("aria-label", `명령 복사: ${commandText}`);
 
     await copyButton.click();
     // "복사됨"은 클립보드 쓰기가 resolve된 뒤에만 뜬다(terminal-block.tsx의 handleCopy).
@@ -468,6 +472,12 @@ test.describe("공개 서비스 DoD (W9)", () => {
     expect(await page.evaluate(() => navigator.clipboard.readText()), "프롬프트·출력 없이 명령만").toBe(
       commandText,
     );
+
+    // `aria-label`은 버튼 안 텍스트를 덮어쓴다 — 라벨이 고정이면 화면은 "복사됨"인데
+    // 스크린리더에는 계속 "명령 복사"로 들린다. 라벨과 라이브 리전 둘 다 상태를 반영해야 한다.
+    await expect(copyButton).toHaveAttribute("aria-label", `복사됨: ${commandText}`);
+    // 페이지에 터미널 블록이 여럿이라 status도 여럿이다 — 누른 블록 것만 본다.
+    await expect(block.getByRole("status")).toHaveText("명령을 클립보드에 복사했습니다.");
 
     const scroll = await page.evaluate(() => {
       const el = document.documentElement;

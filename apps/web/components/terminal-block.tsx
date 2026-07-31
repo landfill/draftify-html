@@ -94,7 +94,10 @@ export function TerminalBlock({ label, lines, done }: TerminalBlockProps) {
                     type="button"
                     className={`g-term-copy${isCopied ? " is-copied" : ""}`}
                     onClick={() => void handleCopy(index, line.text)}
-                    aria-label={`명령 복사: ${line.text}`}
+                    // `aria-label`은 버튼 안 텍스트를 덮어쓴다 — 라벨을 고정해 두면 화면에서는
+                    // "복사됨"으로 바뀌는데 스크린리더에는 계속 "명령 복사"로 들린다. 상태를
+                    // 라벨에도 반영하고, 아래 status 영역으로 완료를 한 번 더 알린다.
+                    aria-label={`${isCopied ? "복사됨" : "명령 복사"}: ${line.text}`}
                   >
                     {isCopied ? "복사됨" : "복사"}
                   </button>
@@ -114,6 +117,16 @@ export function TerminalBlock({ label, lines, done }: TerminalBlockProps) {
       </pre>
 
       {done ? <div className="g-term-foot">{done}</div> : null}
+
+      {/*
+        복사 성공은 화면에서는 버튼 글자로 알 수 있지만, 라벨이 붙은 버튼의 이름 변경을
+        읽어 주는지는 스크린리더마다 다르다. 라이브 리전으로 한 번 더 알린다 (PR #76 Codex 지적).
+        비어 있는 상태로 먼저 렌더돼 있어야 이후 내용 변경이 알림으로 잡힌다 — 그래서
+        조건부 렌더가 아니라 항상 두고 문자열만 바꾼다.
+      */}
+      <div className="g-sr-only" role="status" aria-live="polite">
+        {copiedIndex === null ? "" : "명령을 클립보드에 복사했습니다."}
+      </div>
     </div>
   );
 }
