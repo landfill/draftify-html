@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShellHeader } from "@/components/shell-header.js";
+import { TerminalBlock } from "@/components/terminal-block.js";
 import { EXTENSION_RELEASE } from "@/lib/extension-release.js";
 
 export default function GuidePage() {
@@ -46,14 +47,32 @@ export default function GuidePage() {
           </p>
           <pre className="g-code">
             <code>
-              {`# package.json 의 scripts 에 한 줄 추가
-"build:public": "vite build --base=./ --outDir dist-public"
-
-# 기존 dist/ 는 그대로 두고 업로드용만 추가로 빌드
-npm run build:public
-zip -r mockup-public.zip dist-public`}
+              {`// package.json 의 scripts 에 한 줄 추가
+"build:public": "vite build --base=./ --outDir dist-public"`}
             </code>
           </pre>
+          <p className="g-note">
+            그 다음은 터미널에서 두 줄입니다. 아래는 실제 실행 모습이니 <b>본인 화면과 대조</b>해
+            보세요.
+          </p>
+          <TerminalBlock
+            label="업로드용 빌드 만들기"
+            lines={[
+              { kind: "command", text: "npm run build:public" },
+              { kind: "output", text: "vite v5.4.11 building for production..." },
+              { kind: "output", text: "✓ 42 modules transformed." },
+              { kind: "output", text: "dist-public/index.html                    0.48 kB" },
+              { kind: "output", text: "dist-public/assets/index-C8yQ1a.css       6.21 kB" },
+              { kind: "output", text: "dist-public/assets/index-Dk39Xb.js      148.30 kB" },
+              { kind: "ok", text: "✓ built in 1.24s" },
+              { kind: "blank" },
+              { kind: "command", text: "zip -r mockup-public.zip dist-public" },
+              { kind: "output", text: "  adding: dist-public/ (stored 0%)" },
+              { kind: "output", text: "  adding: dist-public/index.html (deflated 42%)" },
+              { kind: "output", text: "  adding: dist-public/assets/index-Dk39Xb.js (deflated 68%)" },
+            ]}
+            done="✔ mockup-public.zip 이 만들어졌습니다 — 이 파일을 콘솔에 업로드하세요"
+          />
           <p className="g-note">
             빌드 도구는 프로젝트에 설치돼 있어 <code>vite</code>를 그대로 치면{" "}
             <code>command not found</code>가 납니다. 위처럼 <code>npm run</code>으로 실행하거나, 한
@@ -61,10 +80,22 @@ zip -r mockup-public.zip dist-public`}
             <code>npx</code>를 붙입니다.
           </p>
           <p className="g-note">
-            어느 폴더가 업로드용인지 헷갈릴 때는 <code>index.html</code>을 열어{" "}
-            <code>src=&quot;./assets/…&quot;</code>(업로드용) 인지{" "}
-            <code>src=&quot;/assets/…&quot;</code>(아님) 인지 보면 됩니다.
+            어느 폴더가 업로드용인지 헷갈리면 <code>index.html</code>이 자원을 어떻게 가리키는지
+            확인합니다. <b>한 줄로 판별</b>할 수 있습니다.
           </p>
+          <TerminalBlock
+            label="업로드용이 맞는지 확인"
+            lines={[
+              { kind: "command", text: `grep -o 'src="[^"]*"' dist-public/index.html` },
+              { kind: "output", text: 'src="./assets/index-Dk39Xb.js"' },
+              { kind: "blank" },
+              { kind: "ok", text: "✓ ./ 로 시작하면 업로드용이 맞습니다" },
+              {
+                kind: "warn",
+                text: "⚠ /assets/… 처럼 / 로 시작하면 경로가 어긋납니다 — --base=./ 를 확인하세요",
+              },
+            ]}
+          />
         </section>
 
         <section id="extension-install" className="g-section">

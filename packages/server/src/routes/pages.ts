@@ -32,6 +32,64 @@ code {
 .g-section a { color: var(--c-accent); text-decoration: none; font-weight: 500; }
 .g-section a:hover { text-decoration: underline; }
 
+/*
+  터미널 블록 (이슈 #65). 공개판 apps/web/app/globals.css의 .g-term 규칙과 같은 값이다 —
+  한쪽만 고치면 두 배포의 화면이 어긋난다(#51 전례). 사내판 가이드에는 아직 여러 줄 명령
+  예시가 없지만, 스타일을 먼저 맞춰 두면 나중에 추가할 때 자동으로 같은 모습이 된다.
+
+  테마와 무관하게 항상 다크다(사용자 결정) — 터미널의 관습에 맞고, 성공 초록·주의 노랑
+  대비를 한 번만 잡으면 된다. 그래서 --c-* 테마 변수를 쓰지 않고 자체 값을 박아 둔다.
+
+  색을 바꿀 때는 대비를 다시 재고 넣는다(10~11.5px 글자 → WCAG AA 4.5:1). 배경뿐 아니라
+  상단 바 위에서도 재야 한다 — 라벨이 거기 놓이고 그쪽이 더 빡빡하다. 실측은 공개판
+  globals.css 주석 참조 (PR #76 리뷰 반영).
+*/
+.g-term {
+  --t-bg: #16161a; --t-bar: #1f1f24; --t-border: #2c2c33; --t-dot: #3d3c42;
+  /* --t-dim: 프롬프트·라벨·복사 버튼(보조) / --t-out: 대조 대상인 명령 출력이라 더 밝게 */
+  --t-dim: #8f8d85; --t-out: #a09e97; --t-text: #d6d3cd; --t-ok: #4ade80; --t-warn: #facc15;
+  margin: 12px 0 0; border: 1px solid var(--t-border); border-radius: 10px;
+  overflow: hidden; background: var(--t-bg);
+}
+.g-term-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 14px; border-bottom: 1px solid var(--t-border); background: var(--t-bar);
+}
+.g-term-dots { display: flex; gap: 6px; }
+.g-term-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--t-dot); }
+.g-term-label { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10.5px; color: var(--t-dim); white-space: nowrap; }
+/* 좁은 화면에서 페이지가 아니라 이 블록만 가로 스크롤한다. */
+.g-term-body { margin: 0; padding: 14px 16px; overflow-x: auto; background: none; border: 0; }
+.g-section .g-term-body code {
+  display: block; padding: 0; background: none; border: 0; border-radius: 0;
+  font-size: 11.5px; line-height: 1.75; color: var(--t-text);
+}
+.g-term-line { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; white-space: pre; }
+.g-term-line.is-blank { height: 0.9em; }
+.g-term-prompt { color: var(--t-dim); }
+.g-term-out { color: var(--t-out); }
+.g-term-ok { color: var(--t-ok); }
+.g-term-warn { color: var(--t-warn); }
+/* sticky — 가로 스크롤이 생겨도 버튼이 콘텐츠 오른쪽 끝(화면 밖)으로 밀려나지 않게. */
+.g-term-copy {
+  position: sticky; right: 0; flex: 0 0 auto; padding: 1px 7px;
+  border: 1px solid var(--t-border); border-radius: 5px; background: var(--t-bg);
+  color: var(--t-dim); font-family: inherit; font-size: 10px; line-height: 1.6;
+  cursor: pointer; user-select: none; opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.g-term:hover .g-term-copy, .g-term-copy:focus-visible { opacity: 1; }
+.g-term-copy:hover { color: var(--t-text); border-color: var(--t-dim); }
+.g-term-copy.is-copied { opacity: 1; color: var(--t-ok); border-color: var(--t-ok); }
+.g-term-foot {
+  padding: 10px 16px; border-top: 1px solid var(--t-border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px; color: var(--t-ok);
+}
+@media (prefers-reduced-motion: reduce) { .g-term-copy { transition: none; } }
+/* 터치 기기에는 hover가 없다 — 버튼이 숨어 있으면 복사를 아예 못 쓴다. */
+@media (hover: none), (pointer: coarse) { .g-term-copy { opacity: 1; } }
+
 .g-paths { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .g-path {
   background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px;

@@ -418,6 +418,94 @@ test.describe("공개 서비스 DoD (W9)", () => {
   }
 
   /**
+   * 이슈 #65 — 가이드의 명령 예시를 터미널 창으로 바꾸면서 붙은 두 계약을 고정한다.
+   *
+   * ① 복사 버튼이 **그 줄의 명령만** 클립보드에 넣는다. 프롬프트(`$ `)나 출력이 섞이면
+   *    붙여넣기가 그대로 깨지고, 이 UI를 쓰는 이유가 사라진다.
+   * ② 좁은 화면에서 **페이지가 아니라 블록만** 가로 스크롤한다. 명령은 길어질 수밖에
+   *    없는데, 페이지가 통째로 밀리면 본문 읽기가 망가진다.
+   *
+   * 모바일 조건(`hasTouch`)으로 도는 이유: 복사 버튼은 평소 hover로만 드러나므로, 터치
+   * 기기에서 계속 숨어 있으면 복사를 아예 쓸 수 없다.
+   *
+   * **이 테스트를 자격증명 게이트(`test.skip(!hasEnv)`) 밖으로 빼지 말 것.** `/guide`는
+   * Supabase를 쓰지 않지만, `.env.local`이 없으면 **앱 자체가 뜨지 않는다** — 미들웨어가
+   * 공개 경로에서도 세션 갱신을 위해 Supabase 클라이언트를 만들고(헤더 로그인 상태를 맞추기
+   * 위해 필요하다 — PR #53 회귀), 키가 없으면 거기서 throw해 `webServer`가 기동 타임아웃으로
+   * 죽는다. 게이트 밖으로 빼면 "자격증명 없이도 도는 테스트"가 되는 게 아니라 **스킵이
+   * 실패로 바뀔 뿐이다.** (PR #76 Codex 지적을 실측으로 확인한 결과.)
+   */
+  test("가이드 터미널 블록 — 명령만 복사, 페이지가 아닌 블록만 가로 스크롤 (#65)", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      permissions: ["clipboard-read", "clipboard-write"],
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await context.newPage();
+    // 가이드는 로그인 없이 보는 공개 페이지다. 복사 버튼은 클라이언트 컴포넌트라
+    // 하이드레이션 전에 누르면 클릭이 그냥 사라진다 — 로딩이 잦아든 뒤에 만진다.
+    await page.goto(`${baseURL}/guide`, { waitUntil: "networkidle" });
+
+    const block = page.locator(".g-term").first();
+    await expect(block).toBeVisible();
+
+    const commandLine = block.locator(".g-term-line").first();
+    const commandText = (await commandLine.locator("span").first().innerText()).replace(/^\$\s*/, "");
+    expect(commandText, "첫 줄은 실행할 명령이다").toBe("npm run build:public");
+
+    // 접근성 이름으로 잡지 않는다 — 복사 후 이름이 "복사됨: …"으로 바뀌므로, 이름에 묶은
+    // locator는 클릭 직후 자기가 누른 버튼을 놓친다.
+    const copyButton = commandLine.locator(".g-term-copy");
+    await expect(copyButton, "터치 기기에서도 복사 버튼이 보여야 한다").toBeVisible();
+    await expect(copyButton).toHaveCSS("opacity", "1");
+    await expect(copyButton).toHaveAttribute("aria-label", `명령 복사: ${commandText}`);
+
+    await copyButton.click();
+    // "복사됨"은 클립보드 쓰기가 resolve된 뒤에만 뜬다(terminal-block.tsx의 handleCopy).
+    // 재시도 assertion인 이 줄을 먼저 통과시켜야, 아래 readText()가 쓰기 완료 전에 읽어
+    // 간헐 실패하는 일이 없다.
+    await expect(copyButton).toHaveText("복사됨");
+    expect(await page.evaluate(() => navigator.clipboard.readText()), "프롬프트·출력 없이 명령만").toBe(
+      commandText,
+    );
+
+    // `aria-label`은 버튼 안 텍스트를 덮어쓴다 — 라벨이 고정이면 화면은 "복사됨"인데
+    // 스크린리더에는 계속 "명령 복사"로 들린다. 라벨과 라이브 리전 둘 다 상태를 반영해야 한다.
+    await expect(copyButton).toHaveAttribute("aria-label", `복사됨: ${commandText}`);
+    // 페이지에 터미널 블록이 여럿이라 status도 여럿이다 — 누른 블록 것만 본다.
+    const status = block.getByRole("status");
+    await expect(status).toHaveText(`${commandText} 명령을 클립보드에 복사했습니다.`);
+
+    // 한 블록에 복사 버튼이 여럿이다. 알림 문구가 고정이면 다음 명령을 복사해도 텍스트 노드가
+    // 그대로여서 React가 DOM을 건드리지 않고, 스크린리더는 두 번째 성공을 알리지 않는다.
+    const secondCommandLine = block.locator(".g-term-line", { has: page.locator(".g-term-copy") }).nth(1);
+    const secondCommand = (await secondCommandLine.locator("span").first().innerText()).replace(
+      /^\$\s*/,
+      "",
+    );
+    expect(secondCommand, "같은 블록의 두 번째 명령").not.toBe(commandText);
+    await secondCommandLine.locator(".g-term-copy").click();
+    await expect(status).toHaveText(`${secondCommand} 명령을 클립보드에 복사했습니다.`);
+
+    const scroll = await page.evaluate(() => {
+      const el = document.documentElement;
+      const body = document.querySelector(".g-term-body")!;
+      return {
+        page: el.scrollWidth > el.clientWidth,
+        block: body.scrollWidth > body.clientWidth,
+      };
+    });
+    expect(scroll.page, "페이지는 가로로 밀리지 않는다").toBe(false);
+    expect(scroll.block, "긴 명령은 블록 안에서 스크롤된다").toBe(true);
+
+    await context.close();
+  });
+
+  /**
    * 헤더 로그인 상태가 페이지마다 어긋나던 회귀. `/guide`·`/faq`는 로그인 없이 보는 정적
    * 페이지라 서버가 `email` prop을 주지 않는데, 헤더가 그 prop만 보고 판단해서 **로그인한
    * 사용자에게도 [로그인]** 을 보여줬다(콘솔 홈은 [로그아웃]). 헤더가 자기 세션을 직접
