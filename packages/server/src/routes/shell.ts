@@ -79,14 +79,26 @@ export const SHELL_CSS = `
 body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 11.5px; line-height: 1.5; }
 button, input { font: inherit; }
 
+/*
+  줄바꿈은 브레이크포인트가 아니라 내용이 정한다 (이슈 #77) — 특정 폭 아래에서만 wrap을 켜면
+  그 경계 바로 위에서 헤더가 깨진다. 넓은 화면에서는 어차피 한 줄에 들어가 보이는 것이 같다.
+*/
 .c-header {
   display: flex; justify-content: space-between; align-items: center;
-  height: 56px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 0 32px;
+  flex-wrap: wrap; gap: 8px 16px;
+  height: auto; min-height: 56px;
+  background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 8px 32px;
   /* 목록·가이드가 길어져도 메뉴 전환이 가능하게 상단 고정. z-index는 모달 오버레이(100) 아래. */
   position: sticky; top: 0; z-index: 50;
 }
+/*
+  헤더 항목은 낱말 안에서 갈리지 않는다 (이슈 #77) — "MockSpec / Local", "사용 가 / 이드".
+  항목 사이의 줄바꿈은 위 flex-wrap이 맡는다. 클래스가 아니라 태그로 잡는 이유: 버튼은
+  .c-nav-link가 아니라 .c-btn이라 클래스로 걸면 빠진다 (PR #78 CodeRabbit 지적).
+*/
+.c-header a, .c-header button { white-space: nowrap; }
 .c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; }
-.c-header-right { display: flex; gap: 24px; align-items: center; }
+.c-header-right { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
 .c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; }
 .c-nav-link:hover { color: var(--c-text); }
 .c-nav-link.is-active { color: var(--c-accent); font-weight: 600; }
@@ -109,6 +121,12 @@ button, input { font: inherit; }
   padding: 28px 32px;
   margin-bottom: 32px;
 }
+/* 좁은 화면 헤더 (이슈 #77) — 줄바꿈은 위에서 항상 켜 두었고 여기서는 여백만 좁힌다. */
+@media (max-width: 720px) {
+  .c-header { padding: 8px 16px; gap: 8px 12px; }
+  .c-header-right { gap: 8px 12px; }
+}
+
 .c-section { margin-bottom: 36px; }
 .c-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px 4px; font-size: 13px; font-weight: 700; color: var(--c-text); letter-spacing: -0.2px; }
 `.trim();
@@ -150,8 +168,8 @@ export const THEME_TOGGLE_JS = `
 `.trim();
 
 /** 공통 헤더. active는 현재 페이지의 내비 링크 하이라이트. */
-export function pageHeader(active?: "guide" | "faq"): string {
-  const cls = (name: "guide" | "faq"): string =>
+export function pageHeader(active?: "home" | "guide" | "faq"): string {
+  const cls = (name: "home" | "guide" | "faq"): string =>
     active === name ? "c-nav-link is-active" : "c-nav-link";
   return `
   <header class="c-header">
@@ -159,6 +177,9 @@ export function pageHeader(active?: "guide" | "faq"): string {
       <a href="/" class="c-logo">${EDITION_NAME.local}</a>
     </div>
     <div class="c-header-right">
+      <!-- 작업 기점(프로젝트 목록)으로 돌아오는 링크 (이슈 #77). 로고 클릭이 유일한 길이면
+           처음 쓰는 사람이 찾지 못한다. 공개판 shell-header.tsx와 같은 처리다. -->
+      <a href="/" class="${cls("home")}">내 프로젝트</a>
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
       <a href="/sample" class="c-nav-link" target="_blank" rel="noopener">샘플 보기</a>
       <a href="/faq" class="${cls("faq")}">FAQ</a>

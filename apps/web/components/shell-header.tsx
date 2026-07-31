@@ -64,6 +64,17 @@ export function ShellHeader({ active, email }: { active?: NavActive; email?: str
       </Link>
       <div className="c-header-right">
         {session?.email ? <span className="c-user-email">{session.email}</span> : null}
+        {/*
+          작업 기점(프로젝트 목록)으로 **돌아오는** 링크 (이슈 #77). 이전에는 로고 클릭이
+          유일한 길이었는데, "로고 = 홈"은 학습된 관행이라 처음 쓰는 사람이 찾지 못했다.
+
+          비로그인 상태에서도 보여 준다: 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이
+          있어야 한다. `/`는 보호 경로라 누르면 로그인 화면으로 가는데, 프로젝트를 보려면
+          어차피 로그인이 필요하므로 그게 자연스러운 다음 걸음이다.
+        */}
+        <Link href="/" className={navCls("home")}>
+          내 프로젝트
+        </Link>
         <Link href="/guide" className={navCls("guide")}>
           사용 가이드
         </Link>

@@ -528,6 +528,15 @@ test.describe("공개 서비스 DoD (W9)", () => {
         page.getByRole("link", { name: "로그인" }),
         `${path} 헤더에 로그인 링크 없음`,
       ).toHaveCount(0);
+
+      // 이슈 #77 — 작업 기점으로 돌아올 길이 로고뿐이면 처음 쓰는 사람이 찾지 못한다.
+      const consoleLink = page.locator(".c-header").getByRole("link", { name: "내 프로젝트" });
+      await expect(consoleLink, `${path} 헤더에 프로젝트 목록 링크`).toBeVisible();
+      await expect(consoleLink).toHaveAttribute("href", "/");
+      // 콘솔에 있을 때만 활성 표시 — 다른 내비 항목과 같은 규칙이다.
+      await expect(consoleLink, `${path} 활성 표시`).toHaveClass(
+        path === "/" ? /is-active/ : /^(?!.*is-active).*$/,
+      );
     }
 
     // 로그아웃 상태에서는 반대로 나와야 한다 — 정적 페이지도 포함.
@@ -543,7 +552,75 @@ test.describe("공개 서비스 DoD (W9)", () => {
         anonPage.getByRole("button", { name: "로그아웃" }),
         `${path} 비로그인 헤더에 로그아웃 없음`,
       ).toHaveCount(0);
+
+      // #77 — 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이 보여야 한다(사용자 결정).
+      // 누르면 로그인 화면으로 가는데, 프로젝트를 보려면 어차피 로그인이 필요하다.
+      await expect(
+        anonPage.locator(".c-header").getByRole("link", { name: "내 프로젝트" }),
+        `${path} 비로그인 헤더에도 프로젝트 목록 링크`,
+      ).toBeVisible();
     }
+
+    // #77 — 좁은 화면에서 낱말이 통째로 쪼개지던 문제("MockSpec / Cloud", "사용 가 / 이드").
+    // 항목은 줄을 넘기지 않고, 넘칠 때는 항목 단위로 다음 줄로 내려간다.
+    //
+    // 721px을 함께 보는 이유(PR #78 Codex 지적): 줄바꿈을 특정 폭 아래에서만 켜면 그 경계
+    // **바로 위**에서 헤더가 깨진다 — 이메일이 다시 나타나면서 한 줄에 다 들어가지 않는다.
+    // 그래서 폭이 아니라 내용이 줄바꿈을 정하게 했고, 여기서 경계 양쪽을 다 확인한다.
+    // 로그인 상태(`page`)로 재는 것이 중요하다. 이메일이 있는 쪽이 더 빡빡하다.
+    for (const width of [390, 721, 900]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${baseURL}/`);
+      const header = await page.evaluate(() => {
+        const el = document.documentElement;
+        // 링크만 보면 안 된다 — [로그아웃]은 `.c-nav-link`가 아니라 `.c-btn`이라 규칙이
+        // 따로 걸리고, 실제로 그 버튼만 "로그 / 아웃"으로 갈렸다 (PR #78 CodeRabbit 지적).
+        // 텍스트가 있는 항목 전부를 본다(아이콘뿐인 테마 토글은 textContent가 비어 제외된다).
+        const items = [...document.querySelectorAll<HTMLElement>(".c-header a, .c-header button, .c-header span")]
+          .filter((n) => (n.textContent ?? "").trim().length > 0);
+        return {
+          /*
+            "낱말이 갈렸는가"는 **텍스트가 몇 줄에 걸쳤는가**로 판정한다. 두 가지 오탐을
+            피해야 한다: 요소 높이로 재면 버튼의 padding을 줄바꿈으로 오인하고, Range의
+            사각형 **개수**로 재면 `text-overflow: ellipsis`가 텍스트를 여러 조각으로
+            나눈 것까지 잡는다(같은 줄인데도 2개가 나온다). 조각들의 top이 서로 다를 때만
+            실제로 줄이 갈린 것이다.
+          */
+          split: items
+            .filter((n) => {
+              const range = document.createRange();
+              range.selectNodeContents(n);
+              const tops = new Set(
+                [...range.getClientRects()].map((r) => Math.round(r.top)),
+              );
+              return tops.size > 1;
+            })
+            .map((n) => n.textContent?.trim()),
+          overflowsRight: items.some(
+            (n) => n.getBoundingClientRect().right > el.clientWidth + 1,
+          ),
+          pageScrollsX: el.scrollWidth > el.clientWidth,
+        };
+      });
+      expect(header.split, `${width}px — 낱말 안에서 줄바꿈되지 않는다`).toEqual([]);
+      expect(header.overflowsRight, `${width}px — 항목이 화면 밖으로 나가지 않는다`).toBe(false);
+      expect(header.pageScrollsX, `${width}px — 페이지가 가로로 밀리지 않는다`).toBe(false);
+    }
+
+    // 주소가 길어도 헤더를 밀어내지 않도록 잘라 둔다. 위 폭 검사는 테스트 계정 주소 길이에
+    // 의존하므로(실측: 721px에서 35자 주소까지 여유 47px), 잘림 자체를 계약으로 못 박는다.
+    await page.setViewportSize({ width: 900, height: 844 });
+    await page.goto(`${baseURL}/`);
+    const emailWidth = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>(".c-user-email");
+      if (!el) return null;
+      el.textContent = "very.long.name.department@some-very-long-company-domain.example.com";
+      const cs = getComputedStyle(el);
+      return { rendered: el.getBoundingClientRect().width, overflow: cs.textOverflow };
+    });
+    expect(emailWidth, "콘솔 헤더에 이메일 표시").not.toBeNull();
+    expect(emailWidth!.overflow, "긴 주소는 말줄임").toBe("ellipsis");
+    expect(emailWidth!.rendered, "잘린 폭은 상한 이하").toBeLessThanOrEqual(221);
 
     await anon.close();
     await context.close();
