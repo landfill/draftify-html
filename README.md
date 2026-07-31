@@ -10,7 +10,7 @@
 목업 등록  →  화면(상태) 등록 + 어노테이션  →  내보내기  →  단독 HTML 하나
 ```
 
-설계 원칙 4가지 (PRD §1.3 · [AGENTS.md](./AGENTS.md) §2):
+설계 원칙 4가지 (PRD 1.3절 · [AGENTS.md](./AGENTS.md) 2절):
 
 - **의도는 사람이 입력한다** — 크롤링·LLM 추론이 아니라 사람이 단 설명만 렌더
 - **목업은 건드리지 않는다** — 편집 도구 주입은 서비스가 대신
@@ -65,14 +65,14 @@
 
 | 경로 | 이런 목업에 | 상세 |
 |------|------------|------|
-| **A. ZIP 업로드** | 빌드 결과물(zip)을 만들 수 있다 — **기본 권장** | 아래 [빠른 시작](#빠른-시작) + [가이드 §1](./docs/user-guide.md#1-경로-a--zip-업로드) |
-| **B. URL 프록시** | 로그인 없이 URL만으로 열리는 목업 | [가이드 §2](./docs/user-guide.md#2-경로-b--url-프록시) |
-| **D. 내 화면에서 편집** | 로그인해야 보이는 화면·사내망·로컬 (브라우저 확장) | 아래 [화면으로 보는 경로 D](#화면으로-보는-경로-d--내-화면에서-편집-확장) + [가이드 §3](./docs/user-guide.md#3-경로-d--내-화면에서-편집-확장--상세) |
+| **A. ZIP 업로드** | 빌드 결과물(zip)을 만들 수 있다 — **기본 권장** | 아래 [빠른 시작](#빠른-시작) + [가이드 1절](./docs/user-guide.md#1-경로-a--zip-업로드) |
+| **B. URL 프록시** | 로그인 없이 URL만으로 열리는 목업 | [가이드 2절](./docs/user-guide.md#2-경로-b--url-프록시) |
+| **D. 내 화면에서 편집** | 로그인해야 보이는 화면·사내망·로컬 (브라우저 확장) | 아래 [화면으로 보는 경로 D](#화면으로-보는-경로-d--내-화면에서-편집-확장) + [가이드 3절](./docs/user-guide.md#3-경로-d--내-화면에서-편집-확장--상세) |
 
 이 README가 다루는 범위 = **경로 A의 빠른 시작** + **경로 D의 화면 소개**.
 
 > **경로 C는?** 설계상 존재 — **C(레포 빌드)** = git URL을 받아 서버가 clone·build한 뒤 경로 A에 합류시키는 방식.
-> S3 후순위라 아직 미구현이므로 여기서는 제외 (PRD §4.2).
+> S3 후순위라 아직 미구현이므로 여기서는 제외 (PRD 4.2절).
 
 > 제품 정의·스펙 → [docs/README.md](./docs/README.md)(문서 인덱스) · 에이전트 작업 규약 → [AGENTS.md](./AGENTS.md)
 
@@ -99,7 +99,7 @@ node packages/server/dist/index.js  # 기본 포트 4000
 | **콘솔** `localhost:4000` | 프로젝트 업로드·목록·내보내기·삭제 | ✅ 여기만 직접 연다 |
 | **목업** `{projectId}.localhost:4000` | 업로드하면 서버가 편집 SDK를 주입해 **자동으로** 서빙 | 콘솔의 링크로 열림 |
 
-> 프로젝트마다 호스트를 나누는 이유 2가지 (technical-spec §3.1):
+> 프로젝트마다 호스트를 나누는 이유 2가지 (technical-spec 3.1절):
 >
 > - 목업 간 localStorage·쿠키 격리
 > - 절대 경로(`/assets/…`) 빌드가 무수정으로 동작
@@ -190,7 +190,7 @@ zip -r mockup.zip dist  &&  zip -r mockup-public.zip dist-public
 
 - 대상: 로그인해야 보이는 화면(SSO 포함)·사내망·로컬 개발 서버
 - 특징: **지금 보고 있는 화면 그대로** 기획서 작성
-- 설치·연결·트러블슈팅 상세 → [가이드 §3](./docs/user-guide.md#3-경로-d--내-화면에서-편집-확장--상세)
+- 설치·연결·트러블슈팅 상세 → [가이드 3절](./docs/user-guide.md#3-경로-d--내-화면에서-편집-확장--상세)
 
 ### 1. 프로젝트 등록 및 연결 코드 발급
 
@@ -254,6 +254,7 @@ npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.en
 
 - **`main` 브랜치가 프로덕션** → `main`에 병합하는 순간 공개 서비스에 반영
 - 아래는 대시보드에서 한 번 설정하는 값 → **기본값으로 두면 빌드 실패**
+- 로컬 개발·**마이그레이션 적용 순서**·남용 방어 등 공개판 운영 규칙 → **[apps/web/README.md](./apps/web/README.md)**
 
 ### Vercel 프로젝트 설정
 
@@ -265,7 +266,7 @@ npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.en
 | **Install Command** (Override) | **`cd ../.. && npm install`** | Root Directory에서만 install → 루트 `node_modules` 부재 → `tsc: command not found` |
 | Build Command | 비워 둔다 | `apps/web`의 `vercel-build`가 자동 실행 (루트 선행 빌드 → `next build`) |
 
-`vercel-build`가 필요한 이유: `apps/web`이 `packages/viewer/dist/main.js`·`packages/sdk/dist/sdk.js`를 `?raw`로 인라인하는데, 이 산출물은 다른 워크스페이스가 생성 (technical-spec §8).
+`vercel-build`가 필요한 이유: `apps/web`이 `packages/viewer/dist/main.js`·`packages/sdk/dist/sdk.js`를 `?raw`로 인라인하는데, 이 산출물은 다른 워크스페이스가 생성 (technical-spec 8절).
 
 ### 환경변수 (Production)
 
