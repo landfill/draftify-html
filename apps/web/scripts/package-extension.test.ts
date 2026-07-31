@@ -27,7 +27,9 @@ async function createBuiltExtension(): Promise<{ outputA: string; outputB: strin
       file === "manifest.json"
         ? JSON.stringify({ manifest_version: 3, name: "MockSpec", version: "0.1.0" })
         : `fixture:${file}`;
-    await writeFile(path.join(sourceDir, file), content);
+    const target = path.join(sourceDir, file);
+    await mkdir(path.dirname(target), { recursive: true }); // icons/처럼 하위 폴더가 있다
+    await writeFile(target, content);
   }
 
   return {
@@ -63,6 +65,23 @@ describe("packageExtension", () => {
       "http://localhost/*",
       "http://127.0.0.1/*",
     ]);
+  });
+
+  /**
+   * 이슈 #68 — manifest에 아이콘을 적어도 그 파일이 ZIP에 들어가지 않으면 Chrome은 기본 퍼즐
+   * 아이콘으로 표시하고, 사용자는 툴바에서 확장을 찾지 못해 연결 자체를 시작할 수 없다.
+   * 아이콘을 늘리거나 경로를 바꿀 때 배포 필수 목록 갱신을 잊는 것이 그 결함의 재발 경로다.
+   */
+  it("manifest가 참조하는 아이콘이 배포 필수 목록에 전부 있다 (#68)", () => {
+    const referenced = new Set<string>([
+      ...Object.values(extensionManifest.icons),
+      ...Object.values(extensionManifest.action.default_icon),
+    ]);
+
+    expect(referenced.size).toBeGreaterThan(0);
+    for (const file of referenced) {
+      expect(REQUIRED_EXTENSION_FILES).toContain(file);
+    }
   });
 
   it("불완전한 빌드 산출물은 배포하지 않는다", async () => {

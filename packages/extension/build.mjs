@@ -49,4 +49,11 @@ await cp(path.join(root, "manifest.json"), path.join(dist, "manifest.json"));
 await cp(path.join(root, "popup.html"), path.join(dist, "popup.html"));
 await cp(sdkBundle, path.join(dist, "sdk.js"));
 
+// 아이콘 PNG는 커밋된 산출물이다 (원본 SVG에서 scripts/render-icons.mjs로 만든다 — 이슈 #68).
+// 원본 SVG는 복사하지 않는다: MV3가 쓰지 않는 파일이라 배포 ZIP만 키운다.
+for (const size of [16, 32, 48, 128]) {
+  const file = `icon-${size}.png`;
+  await cp(path.join(root, "icons", file), path.join(dist, "icons", file));
+}
+
 console.log(`[extension] dist 조립 완료: ${dist}`);
