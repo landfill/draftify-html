@@ -39,10 +39,15 @@ code {
 
   테마와 무관하게 항상 다크다(사용자 결정) — 터미널의 관습에 맞고, 성공 초록·주의 노랑
   대비를 한 번만 잡으면 된다. 그래서 --c-* 테마 변수를 쓰지 않고 자체 값을 박아 둔다.
+
+  색을 바꿀 때는 대비를 다시 재고 넣는다(10~11.5px 글자 → WCAG AA 4.5:1). 배경뿐 아니라
+  상단 바 위에서도 재야 한다 — 라벨이 거기 놓이고 그쪽이 더 빡빡하다. 실측은 공개판
+  globals.css 주석 참조 (PR #76 리뷰 반영).
 */
 .g-term {
   --t-bg: #16161a; --t-bar: #1f1f24; --t-border: #2c2c33; --t-dot: #3d3c42;
-  --t-dim: #6b6963; --t-text: #d6d3cd; --t-ok: #4ade80; --t-warn: #facc15;
+  /* --t-dim: 프롬프트·라벨·복사 버튼(보조) / --t-out: 대조 대상인 명령 출력이라 더 밝게 */
+  --t-dim: #8f8d85; --t-out: #a09e97; --t-text: #d6d3cd; --t-ok: #4ade80; --t-warn: #facc15;
   margin: 12px 0 0; border: 1px solid var(--t-border); border-radius: 10px;
   overflow: hidden; background: var(--t-bg);
 }
@@ -61,7 +66,8 @@ code {
 }
 .g-term-line { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; white-space: pre; }
 .g-term-line.is-blank { height: 0.9em; }
-.g-term-prompt, .g-term-out { color: var(--t-dim); }
+.g-term-prompt { color: var(--t-dim); }
+.g-term-out { color: var(--t-out); }
 .g-term-ok { color: var(--t-ok); }
 .g-term-warn { color: var(--t-warn); }
 /* sticky — 가로 스크롤이 생겨도 버튼이 콘텐츠 오른쪽 끝(화면 밖)으로 밀려나지 않게. */

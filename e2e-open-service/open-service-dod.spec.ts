@@ -454,10 +454,13 @@ test.describe("공개 서비스 DoD (W9)", () => {
     await expect(copyButton).toHaveCSS("opacity", "1");
 
     await copyButton.click();
+    // "복사됨"은 클립보드 쓰기가 resolve된 뒤에만 뜬다(terminal-block.tsx의 handleCopy).
+    // 재시도 assertion인 이 줄을 먼저 통과시켜야, 아래 readText()가 쓰기 완료 전에 읽어
+    // 간헐 실패하는 일이 없다.
+    await expect(copyButton).toHaveText("복사됨");
     expect(await page.evaluate(() => navigator.clipboard.readText()), "프롬프트·출력 없이 명령만").toBe(
       commandText,
     );
-    await expect(copyButton).toHaveText("복사됨");
 
     const scroll = await page.evaluate(() => {
       const el = document.documentElement;
