@@ -296,27 +296,47 @@ async function copyConnectionInfo(project) {
 }
 
 /**
- * 재발급 진행 중인 프로젝트 id (이슈 #63). 재발급이 겹치면 두 요청 모두 각자의 평문 토큰을
- * 돌려주지만 실제로 유효한 것은 마지막 writer의 하나뿐이다. 응답 도착 순서는 저장 순서와
- * 다를 수 있으므로, 콘솔이 이미 덮어써진 코드를 sessionStorage에 넣고 사용자에게 복사해 준다.
- * 두 번째 요청을 아예 내보내지 않는 것이 해법이다 (공개판 console-home.tsx와 같은 처리).
+ * 재발급 진행 중인 프로젝트 id **집합** (이슈 #63). 재발급이 겹치면 두 요청 모두 각자의 평문
+ * 토큰을 돌려주지만 실제로 유효한 것은 마지막 writer의 하나뿐이다. 응답 도착 순서는 저장
+ * 순서와 다를 수 있으므로, 콘솔이 이미 덮어써진 코드를 sessionStorage에 넣고 사용자에게
+ * 복사해 준다. 두 번째 요청을 아예 내보내지 않는 것이 해법이다 (공개판과 같은 처리).
+ *
+ * 경합은 프로젝트 단위로만 일어나므로 잠금도 프로젝트별이다 — 스칼라로 두면 A 재발급 중
+ * B의 버튼은 활성인데 클릭하면 가드에 걸려 아무 일도 일어나지 않는다 (PR #72 지적).
  */
-var reissuingId = null;
+var reissuingIds = new Set();
 
-function setReissueBusy(btns, busy) {
-  btns.reissue.disabled = busy;
-  btns.reissue.textContent = busy ? "재발급 중…" : "토큰 재발급";
+/**
+ * 잠금 상태를 **현재 DOM에서 다시 찾아** 반영한다. 버튼 참조를 클로저로 붙들면, 재발급이
+ * 진행 중일 때 다른 액션(내보내기 등)이 renderList()를 호출하는 순간 그 참조는 떨어져 나간
+ * 옛 카드를 가리킨다 — 새로 그려진 카드의 복사 버튼은 활성이라, 막으려던 "곧 무효가 될
+ * 코드"를 그대로 건네게 된다 (PR #72 Codex 지적). 그래서 id로 조회한다.
+ */
+function setReissueBusy(reissueBtn, copyBtn, busy) {
+  reissueBtn.disabled = busy;
+  reissueBtn.textContent = busy ? "재발급 중…" : "토큰 재발급";
   // 진행 중 복사하면 곧 무효가 될 구 토큰의 코드를 건네게 된다.
-  btns.copy.disabled = busy;
+  copyBtn.disabled = busy;
 }
 
-async function reissueToken(project, btns) {
+function applyReissueBusy(projectId) {
+  var cards = listEl.querySelectorAll(".c-project");
+  for (var i = 0; i < cards.length; i++) {
+    if (cards[i].dataset.projectId !== projectId) continue;
+    var reissueBtn = cards[i].querySelector(".c-reissue-btn");
+    var copyBtn = cards[i].querySelector(".c-copy-btn");
+    if (reissueBtn && copyBtn) setReissueBusy(reissueBtn, copyBtn, reissuingIds.has(projectId));
+    return;
+  }
+}
+
+async function reissueToken(project) {
   // 버튼 disabled와 짝인 코드 레벨 가드 — 렌더 전 재진입을 막는다.
-  if (reissuingId) return;
+  if (reissuingIds.has(project.id)) return;
   var go = window.confirm("토큰을 재발급하면 기존 토큰이 즉시 무효화됩니다. 확장도 새 토큰으로 다시 연결해야 합니다. 계속할까요?");
   if (!go) return;
-  reissuingId = project.id;
-  setReissueBusy(btns, true);
+  reissuingIds.add(project.id);
+  applyReissueBusy(project.id);
   try {
     var res = await fetch("/api/projects/" + encodeURIComponent(project.id) + "/token", { method: "POST" });
     if (!res.ok) {
@@ -338,8 +358,8 @@ async function reissueToken(project, btns) {
     // 네트워크 예외로 잠금이 남으면 재발급이 영영 불가능해진다 — finally로 반드시 푼다.
     setStatus(listStatusEl, "토큰 재발급에 실패했습니다.", "error");
   } finally {
-    reissuingId = null;
-    setReissueBusy(btns, false);
+    reissuingIds.delete(project.id);
+    applyReissueBusy(project.id);
   }
 }
 
@@ -358,6 +378,7 @@ async function deleteProject(project) {
 
 function renderProject(project) {
   var card = el("div", "c-project");
+  card.dataset.projectId = project.id; // applyReissueBusy()가 카드를 다시 찾는 손잡이
 
   var info = el("div", "c-project-info");
 
@@ -413,17 +434,18 @@ function renderProject(project) {
     openLink.rel = "noopener";
     actions.appendChild(openLink);
   } else {
-    var copyBtn = el("button", "c-btn c-btn-ghost", "연결 코드 복사");
+    // 클래스는 applyReissueBusy()가 카드에서 두 버튼을 다시 찾는 손잡이다.
+    var copyBtn = el("button", "c-btn c-btn-ghost c-copy-btn", "연결 코드 복사");
     copyBtn.type = "button";
     copyBtn.addEventListener("click", function () { void copyConnectionInfo(project); });
     actions.appendChild(copyBtn);
 
-    var reissueBtn = el("button", "c-btn c-btn-ghost", "토큰 재발급");
+    var reissueBtn = el("button", "c-btn c-btn-ghost c-reissue-btn", "토큰 재발급");
     reissueBtn.type = "button";
-    // 진행 중 잠글 대상을 클로저로 넘긴다 — 재발급은 목록을 다시 그리지 않으므로 참조가 유효하다.
-    var reissueBtns = { reissue: reissueBtn, copy: copyBtn };
-    reissueBtn.addEventListener("click", function () { void reissueToken(project, reissueBtns); });
+    reissueBtn.addEventListener("click", function () { void reissueToken(project); });
     actions.appendChild(reissueBtn);
+    // 재발급 도중 다른 액션이 목록을 다시 그렸다면, 새로 태어난 카드도 잠긴 상태여야 한다.
+    setReissueBusy(reissueBtn, copyBtn, reissuingIds.has(project.id));
   }
 
   var exportBtn = el("button", "c-btn c-btn-ghost", "내보내기");
