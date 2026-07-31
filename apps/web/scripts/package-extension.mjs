@@ -7,6 +7,12 @@ export const EXTENSION_ARCHIVE_ROOT = "mockspec-extension";
 export const REQUIRED_EXTENSION_FILES = [
   "background.js",
   "content.js",
+  // manifest의 icons·action.default_icon이 가리키는 파일들 — 빠지면 Chrome이 기본 퍼즐
+  // 아이콘으로 표시해 사용자가 툴바에서 확장을 찾지 못한다 (이슈 #68).
+  "icons/icon-128.png",
+  "icons/icon-16.png",
+  "icons/icon-32.png",
+  "icons/icon-48.png",
   "manifest.json",
   "popup.html",
   "popup.js",

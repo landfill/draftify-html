@@ -26,6 +26,27 @@ Chrome → `chrome://extensions` → 개발자 모드 → **압축해제된 확�
 
 다운로드 URL은 버전과 무관하게 고정하고, 콘솔·가이드가 manifest 버전을 함께 표시한다.
 
+## 아이콘
+
+`icons/`의 PNG 4종(16·32·48·128)이 `manifest.json`의 `icons`·`action.default_icon` 양쪽에서
+쓰인다. 빠지면 Chrome이 기본 퍼즐 아이콘으로 표시해 사용자가 툴바에서 확장을 찾지 못한다
+(이슈 #68 — 경로 D 온보딩은 `확장 아이콘 클릭 → 연결 코드 붙여넣기`가 필수 단계다).
+
+- **원본은 SVG 두 벌이다.** `icon.svg`(48·128)와 `icon-small.svg`(16·32). 큰 것을 그대로
+  축소하면 16px에서 중앙 V가 뭉개져 M으로 읽히지 않아, 작은 쪽은 획을 굵히고 좌표를 16px
+  픽셀 그리드에 맞춰 다시 잡았다
+- **PNG는 커밋된 산출물이다.** 원본 SVG를 고쳤을 때만 다시 만든다:
+
+  ```bash
+  node packages/extension/scripts/render-icons.mjs
+  ```
+
+  빌드 파이프라인에 넣지 않는 이유: 아이콘은 좀처럼 바뀌지 않는데, 빌드가 Playwright(브라우저
+  다운로드 포함)에 의존하면 Vercel 빌드까지 그 비용을 매번 낸다
+- 아이콘을 늘리거나 경로를 바꾸면 **`apps/web/scripts/package-extension.mjs`의
+  `REQUIRED_EXTENSION_FILES`도 같이 고친다** — ZIP에서 빠지는 것을 막는 검증 목록이다
+  (E2E의 `EXPECTED_EXTENSION_ENTRIES`는 의도적으로 분리된 사본이라 함께 갱신한다)
+
 ## 저장 대상 서버 = `host_permissions` (중요)
 
 팝업에서 입력하는 **서버 URL**은 background가 `fetch`할 대상이고, 실제로 허용되는 호스트는

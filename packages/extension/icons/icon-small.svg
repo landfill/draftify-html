@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    16·32px 전용 변형 (이슈 #68). 큰 아이콘(icon.svg)을 그대로 축소하면 16px에서 중앙 V가
+    뭉개져 M으로 읽히지 않는다 — 획이 1.6px라 픽셀 경계에 걸치기 때문이다.
+
+    그래서 좌표를 **16px 그리드에 맞춰** 다시 잡았다: stroke 16 = 16px에서 정확히 2px이고,
+    획의 중심선(28·100 → 3.5px·12.5px)이 픽셀 중앙에 떨어져 번지지 않는다. 획이 굵어진
+    만큼 여백도 줄여 글리프가 답답해 보이지 않게 했다.
+  -->
+  <rect width="128" height="128" rx="24" fill="#4f46e5" />
+  <path
+    d="M28 100 V28 L64 64 L100 28 V100"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="16"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

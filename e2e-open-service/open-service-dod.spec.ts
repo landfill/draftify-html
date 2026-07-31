@@ -44,6 +44,10 @@ const EXTENSION_ARCHIVE_ROOT = "mockspec-extension";
 const EXPECTED_EXTENSION_ENTRIES = [
   "background.js",
   "content.js",
+  "icons/icon-128.png",
+  "icons/icon-16.png",
+  "icons/icon-32.png",
+  "icons/icon-48.png",
   "manifest.json",
   "popup.html",
   "popup.js",
