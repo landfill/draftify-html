@@ -563,19 +563,49 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     // #77 — 좁은 화면에서 낱말이 통째로 쪼개지던 문제("MockSpec / Cloud", "사용 가 / 이드").
     // 항목은 줄을 넘기지 않고, 넘칠 때는 항목 단위로 다음 줄로 내려간다.
-    const narrow = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    const narrowPage = await narrow.newPage();
-    await narrowPage.goto(`${baseURL}/guide`);
-    const splitItems = await narrowPage.evaluate(() =>
-      [...document.querySelectorAll(".c-header .c-nav-link, .c-header .c-logo")]
-        .filter((el) => {
-          const oneLine = parseFloat(getComputedStyle(el).fontSize) * 1.8;
-          return el.getBoundingClientRect().height > oneLine;
-        })
-        .map((el) => el.textContent?.trim()),
-    );
-    expect(splitItems, "헤더 항목이 낱말 안에서 줄바꿈되지 않는다").toEqual([]);
-    await narrow.close();
+    //
+    // 721px을 함께 보는 이유(PR #78 Codex 지적): 줄바꿈을 특정 폭 아래에서만 켜면 그 경계
+    // **바로 위**에서 헤더가 깨진다 — 이메일이 다시 나타나면서 한 줄에 다 들어가지 않는다.
+    // 그래서 폭이 아니라 내용이 줄바꿈을 정하게 했고, 여기서 경계 양쪽을 다 확인한다.
+    // 로그인 상태(`page`)로 재는 것이 중요하다. 이메일이 있는 쪽이 더 빡빡하다.
+    for (const width of [390, 721, 900]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${baseURL}/`);
+      const header = await page.evaluate(() => {
+        const el = document.documentElement;
+        const items = [...document.querySelectorAll(".c-header .c-nav-link, .c-header .c-logo")];
+        return {
+          split: items
+            .filter((n) => {
+              const oneLine = parseFloat(getComputedStyle(n).fontSize) * 1.8;
+              return n.getBoundingClientRect().height > oneLine;
+            })
+            .map((n) => n.textContent?.trim()),
+          overflowsRight: items.some(
+            (n) => n.getBoundingClientRect().right > el.clientWidth + 1,
+          ),
+          pageScrollsX: el.scrollWidth > el.clientWidth,
+        };
+      });
+      expect(header.split, `${width}px — 낱말 안에서 줄바꿈되지 않는다`).toEqual([]);
+      expect(header.overflowsRight, `${width}px — 항목이 화면 밖으로 나가지 않는다`).toBe(false);
+      expect(header.pageScrollsX, `${width}px — 페이지가 가로로 밀리지 않는다`).toBe(false);
+    }
+
+    // 주소가 길어도 헤더를 밀어내지 않도록 잘라 둔다. 위 폭 검사는 테스트 계정 주소 길이에
+    // 의존하므로(실측: 721px에서 35자 주소까지 여유 47px), 잘림 자체를 계약으로 못 박는다.
+    await page.setViewportSize({ width: 900, height: 844 });
+    await page.goto(`${baseURL}/`);
+    const emailWidth = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>(".c-user-email");
+      if (!el) return null;
+      el.textContent = "very.long.name.department@some-very-long-company-domain.example.com";
+      const cs = getComputedStyle(el);
+      return { rendered: el.getBoundingClientRect().width, overflow: cs.textOverflow };
+    });
+    expect(emailWidth, "콘솔 헤더에 이메일 표시").not.toBeNull();
+    expect(emailWidth!.overflow, "긴 주소는 말줄임").toBe("ellipsis");
+    expect(emailWidth!.rendered, "잘린 폭은 상한 이하").toBeLessThanOrEqual(221);
 
     await anon.close();
     await context.close();

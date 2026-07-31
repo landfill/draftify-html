@@ -79,15 +79,21 @@ export const SHELL_CSS = `
 body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 11.5px; line-height: 1.5; }
 button, input { font: inherit; }
 
+/*
+  줄바꿈은 브레이크포인트가 아니라 내용이 정한다 (이슈 #77) — 특정 폭 아래에서만 wrap을 켜면
+  그 경계 바로 위에서 헤더가 깨진다. 넓은 화면에서는 어차피 한 줄에 들어가 보이는 것이 같다.
+*/
 .c-header {
   display: flex; justify-content: space-between; align-items: center;
-  height: 56px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 0 32px;
+  flex-wrap: wrap; gap: 8px 16px;
+  height: auto; min-height: 56px;
+  background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 8px 32px;
   /* 목록·가이드가 길어져도 메뉴 전환이 가능하게 상단 고정. z-index는 모달 오버레이(100) 아래. */
   position: sticky; top: 0; z-index: 50;
 }
 /* white-space: nowrap — 좁은 화면에서 "MockSpec / Local"처럼 낱말이 쪼개지지 않게 (이슈 #77) */
 .c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; white-space: nowrap; }
-.c-header-right { display: flex; gap: 24px; align-items: center; }
+.c-header-right { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
 .c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; white-space: nowrap; }
 .c-nav-link:hover { color: var(--c-text); }
 .c-nav-link.is-active { color: var(--c-accent); font-weight: 600; }
@@ -110,14 +116,10 @@ button, input { font: inherit; }
   padding: 28px 32px;
   margin-bottom: 32px;
 }
-/*
-  좁은 화면 헤더 (이슈 #77) — 공개판 globals.css와 같은 규칙. 고정 높이에 항목을 욱여넣으면
-  폭이 모자랄 때 낱말이 통째로 쪼개진다. 항목 안에서는 줄을 넘기지 않고(위 nowrap), 넘칠
-  때는 항목 단위로 다음 줄로 내려가게 한다.
-*/
+/* 좁은 화면 헤더 (이슈 #77) — 줄바꿈은 위에서 항상 켜 두었고 여기서는 여백만 좁힌다. */
 @media (max-width: 720px) {
-  .c-header { height: auto; min-height: 56px; padding: 10px 16px; flex-wrap: wrap; gap: 8px 12px; }
-  .c-header-right { flex-wrap: wrap; gap: 8px 12px; }
+  .c-header { padding: 8px 16px; gap: 8px 12px; }
+  .c-header-right { gap: 8px 12px; }
 }
 
 .c-section { margin-bottom: 36px; }
