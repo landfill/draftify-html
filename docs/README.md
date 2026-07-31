@@ -42,7 +42,7 @@
 
 ## 원 결정 문서 (guide/)
 
-위 문서들의 근거이자 원본. 충돌 시 결정 변경 절차([AGENTS.md](../AGENTS.md) §4)를 따른다 —
+위 문서들의 근거이자 원본. 충돌 시 결정 변경 절차([AGENTS.md](../AGENTS.md) 4절)를 따른다 —
 바꾸려는 결정이 실린 킥오프 문서를 먼저 고치고, 그 문서의 "결정 변경 이력"에 이유를 남긴다.
 
 1. [guide/mockup-as-spec-guide.md](../guide/mockup-as-spec-guide.md) — 코어 개념 (장면·앵커·캡처)

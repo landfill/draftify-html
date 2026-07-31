@@ -5,7 +5,7 @@
 > 바뀌면 접근할 수 없다. 이 프로젝트에 관한 진행 상태·결정·다음 할 일은
 > 전부 이 파일(과 `docs/`의 스펙 문서)에 남긴다. 개인 메모리에는 남기지 않는다.
 >
-> 갱신 규약은 [AGENTS.md](../AGENTS.md) §3 참조.
+> 갱신 규약은 [AGENTS.md](../AGENTS.md) 3절 참조.
 
 ## 현재 단계
 
@@ -16,12 +16,12 @@
 > 2. **#43 완료·종결 (PR #67, merge `03a3101`) — 프로덕션 수동 설치 확인까지 끝났다(사용자, 2026-07-31). 미검증 항목 없음.** 공개판에서 `/download/mockspec-extension.zip`을 받아 개발자 모드로 설치하는 흐름이 프로덕션에 있다. #45는 **2번(Storage 직접 업로드)이 남아 이슈가 열려 있다**.
 > 3. **#46은 대기**(Free 플랜 SMTP 제약). 손대지 말 것 — 사용자 결정이 먼저다.
 > 4. 이 저장소에 **prettier 설정이 없다.** `npx prettier --write` 금지(80칼럼으로 대량 재포맷된다). 포맷은 주변 코드에 맞춰 손으로.
-> 5. 머지는 **건별로 사용자 동의**를 받는다(AGENTS.md §6). 임의 머지 금지.
-- 규약: `AGENTS.md` §1 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(§0·§3). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
+> 5. 머지는 **건별로 사용자 동의**를 받는다(AGENTS.md 6절). 임의 머지 금지.
+- 규약: `AGENTS.md` 1절 순서(fetch → 이 PROGRESS → 스펙)를 따른다. 개인 메모리(에이전트별)에 의존 금지, 모든 상태는 이 파일에만(0절·3절). 비-Claude 에이전트도 `AGENTS.md`를 정본으로 읽는다(`CLAUDE.md`가 위임).
 - **이제 배포가 둘이다. 어느 쪽을 건드리는지 항상 확인한다** — 서빙 방식이 달라 제약이 정반대인 항목이 있다(README 최상단 비교표):
   - **사내판** `packages/server`(Express·파일 저장), 로컬 `localhost:4000`, 목업은 서브도메인 루트 서빙
   - **공개판** `apps/web`(Next·Supabase), **https://draftify-html.vercel.app**, 목업은 `/m/{id}/` 경로 접두 → **목업 zip은 상대 base 빌드 필수**
-- 상태: open-service 트랙 **종료**(엄브렐라 #34 종결). W1~W9 완료 + 프로덕션 배포 + **실사용 1회 판정 완료**(킥오프 §10 조건 충족, §11 기록). **PR #44 main 병합 완료 (2026-07-29, merge `6fbc925`)** — 30커밋·102파일(+7448/−96), `verify`·`pr_agent` green. CodeRabbit은 파일 수 한도(>100) 초과로 리뷰 스킵.
+- 상태: open-service 트랙 **종료**(엄브렐라 #34 종결). W1~W9 완료 + 프로덕션 배포 + **실사용 1회 판정 완료**(킥오프 10절 조건 충족, 11절 기록). **PR #44 main 병합 완료 (2026-07-29, merge `6fbc925`)** — 30커밋·102파일(+7448/−96), `verify`·`pr_agent` green. CodeRabbit은 파일 수 한도(>100) 초과로 리뷰 스킵.
 - **⚠️ 브랜치 운영이 바뀌었다 (2026-07-29): Vercel Production Branch = `main`.**
   - **`main`에 병합하는 순간 공개 서비스에 반영된다.** 이전처럼 `open-service`에 푸시해야 배포되는 구조가 아니다.
   - 작업은 **`main`에서 딴 토픽 브랜치**(`feat/`·`fix/`…) → Preview 배포로 확인 → PR → 병합. 사내판과 같은 흐름이다.
@@ -33,17 +33,17 @@
   1. ~~**#50 + #51**~~ — **완료 (PR #53, merge `32c33e2`).** 이어서 사용자 보고 2건도 완료(PR #54 `08df1dc`: 헤더 로그인 상태 불일치 + 헤더 sticky).
   2. **#46 매직링크 크로스디바이스** — **⛔ 대기: Free 플랜에서 커스텀 SMTP 없이는 템플릿 편집 불가**(2026-07-30 확인, 맨 위 세션 로그 참조). 로그인 퍼널이 깨져 있다(노트북 요청 → 휴대폰 열기 실패). 코드 0줄, Supabase 이메일 템플릿 한 줄. 실검증은 다른 기기에서 수동으로 해야 한다
   3. ~~**#47 토큰 재발급 경합**~~ — **완료·main 병합 (PR #58, merge `00efbbf`).** UNIQUE 제약 마이그레이션은 코드보다 먼저 프로덕션에 적용했다(중복 0건 확인 후). 상세는 맨 위 세션 로그. **다음에 마이그레이션이 딸린 작업을 할 때 재사용할 교훈: 코드가 제약에 의존하면(upsert의 `onConflict` 등) 마이그레이션이 먼저다** — 반대로 하면 그 기능이 프로덕션에서 즉시 죽는다. #45는 성질이 반대(권한 회수 → 코드 먼저).
-  4. ~~**#45 남용 방어 우회 — A안**~~ — **완료·main 병합 (PR #60, merge `fa4a53d`).** `projects` INSERT 정책을 없애고 생성을 서버(service_role)로 좁혔다. 적용 순서는 **코드 먼저 → 배포 확인 → 마이그레이션**이었다(#47과 반대). **남은 것 = 2번(Storage 직접 업로드)** — B안은 킥오프 D5·D6과 얽혀 §4 절차가 필요하므로 별도 착수. 이슈는 열려 있다.
+  4. ~~**#45 남용 방어 우회 — A안**~~ — **완료·main 병합 (PR #60, merge `fa4a53d`).** `projects` INSERT 정책을 없애고 생성을 서버(service_role)로 좁혔다. 적용 순서는 **코드 먼저 → 배포 확인 → 마이그레이션**이었다(#47과 반대). **남은 것 = 2번(Storage 직접 업로드)** — B안은 킥오프 D5·D6과 얽혀 4절 절차가 필요하므로 별도 착수. 이슈는 열려 있다.
   5. ~~**#43 확장 배포 경로 — B안**~~ — **완료·main 병합 (PR #67, merge `03a3101`).** 사이트 ZIP 다운로드·개발자 모드 설치 가이드·버전 규칙이 프로덕션에 있다. A(웹스토어)는 심사·비용·개인정보 페이지가 딸려오므로 별건으로 남긴다. **미검증 1건: 실 Chrome unpacked 로드** — 아래 T43-6 참조.
   - **#48은 지금 하지 않는다** — 외부 공유를 열 때가 조건. 미리 하면 편집 저장 CORS+토큰 전환 비용을 쓸 곳 없이 먼저 지불한다. #12·#13은 `[실수요 대기]` 유지
 - **PR #44 Codex 리뷰 5건 처리**: 오픈 리다이렉트(P2)만 **병합 전 수정**(`lib/auth/safe-next.ts` — `next`를 같은 오리진 경로로 제한, 절대·프로토콜상대·백슬래시 변형 차단, 단위 테스트 6건). 나머지 4건은 이슈로 분리.
 - **열린 이슈** — 처리 순서는 위 "다음 할 일":
-  - **#73** 재발급 배제가 콘솔 인스턴스 안에서만 걸린다 — 다중 탭·기기 (#63 후속, PR #72 Codex 지적에서 분리). **착수 조건 = 실제 보고 1건.** 서버 직렬화만으로는 해소되지 않고(순차화해도 먼저 응답받은 탭이 무효 코드를 쥔다) 쿨다운 같은 **제품 정책**이 필요해 킥오프 스펙 변경 절차(§4)가 선행한다
+  - **#73** 재발급 배제가 콘솔 인스턴스 안에서만 걸린다 — 다중 탭·기기 (#63 후속, PR #72 Codex 지적에서 분리). **착수 조건 = 실제 보고 1건.** 서버 직렬화만으로는 해소되지 않고(순차화해도 먼저 응답받은 탭이 무효 코드를 쥔다) 쿨다운 같은 **제품 정책**이 필요해 킥오프 스펙 변경 절차(4절)가 선행한다
   - **#71** 공개판 로딩 지연 분석·개선 (사용자 등록. 병목 파악 → Supabase 조회 튜닝 여지 → 구조적 한계 판단 → 단기 UX 보완 순)
   - **#70** 문서의 `§` 기호를 '절'·'섹션'으로 풀어쓰기 (가독성. 사용자 등록)
   - **#64** 문서 인덱스·작업 규약 현행화 (**`AGENTS.md`의 "guide/ 3종"이 실제 7종** 등 사실관계 오류 4건)
   - **#57** 마이그레이션을 최종 배포 스키마 기준으로 통합 관리 — **시점 대기**(사용자 방침: "최종 완료 시")
-  - **#45** 브라우저 직접 DB·Storage 쓰기가 쿼터·레이트리밋 우회 — **A안(프로젝트 생성) 완료(PR #60). 남은 것은 2번 Storage 직접 업로드**(킥오프 §4 절차 필요)
+  - **#45** 브라우저 직접 DB·Storage 쓰기가 쿼터·레이트리밋 우회 — **A안(프로젝트 생성) 완료(PR #60). 남은 것은 2번 Storage 직접 업로드**(킥오프 4절 절차 필요)
   - **#46** 매직링크 크로스디바이스 — **⛔ 대기(SMTP 제약, 사용자 결정 필요)**
   - **#48** 목업 오리진 격리 — **조건 대기**(외부 공유를 열 때가 조건. 미리 하면 CORS 전환 비용을 쓸 곳 없이 지불)
   - **#12 · #13** `[실수요 대기]` 유지
@@ -52,17 +52,17 @@
 **S2 구현 완료 (2026-07-11) — T11~T18 전 항목 완료. 원격 저장소(github.com/landfill/draftify-html) 개설·CI green.**
 **S2.5(경로 D — 브라우저 확장 클라이언트 주입) 완료 (2026-07-12) — T19~T25 전부 완료, 실사용 판정 "가능". 실사용 10건 피드백 반영.**
 **다중 장면 전이 + 흐름도(T26~T28) + 실사용 fix 11~13차 + 사용 가이드 — PR #1로 main 병합 완료 (2026-07-12).**
-**용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 §11 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
+**용어 개정(표면 "장면"→"화면"·"전이"→"화면 이동", 킥오프 11절 10차) — PR #2로 main 병합 완료 (2026-07-12, CI green·rebase).**
 **뷰어 세로 스크롤 내부화(3컬럼 각자 스크롤, 사용자 채택) — PR #3로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(E2E 서브픽셀 1px 허용) 반영·브랜치 삭제).**
 **작성자 라벨 + 산출물 이력(T29, FR-CON-03·FR-EXP-08) — PR #4로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 3건 반영·브랜치 삭제).**
-**동결 크기 절감(킥오프 §11 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
-**어노테이션 끝 번호 재사용(킥오프 §11 12차) — 중간 결번 유지 + 신규는 현재 최대 번호+1. PR #6로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 피드백 없음·브랜치 삭제).**
+**동결 크기 절감(킥오프 11절 11차) — 폰트 항상 차단(blockFonts)·비디오/오디오/포스터 콘텐츠 미임베드(blockVideos + neutralizeMedia). PR #5로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 1건(neutralizeMedia shadow DOM 재귀) 반영·브랜치 삭제).**
+**어노테이션 끝 번호 재사용(킥오프 11절 12차) — 중간 결번 유지 + 신규는 현재 최대 번호+1. PR #6로 main 병합 완료 (2026-07-14, rebase·CI green·리뷰 피드백 없음·브랜치 삭제).**
 **PR-Agent Gemini 코드 리뷰 워크플로 — PR #20로 main 병합 완료 (2026-07-16, CI·PR-Agent green·리뷰 피드백 반영·브랜치 삭제).**
 **콘솔 UI 디자인 개선(이슈 #11, 1~7차 피드백) — PR #21로 main 병합 완료 (2026-07-16, CI green·리뷰 5건(Gemini 4·Codex 1) 반영·브랜치 삭제).**
 **콘솔 가이드(/guide)·FAQ(/faq) 페이지 + 다크 모드 토글(EN 대체) — PR #29로 main 병합 완료 (2026-07-17, CI green·리뷰 3건(Gemini) 반영·브랜치 삭제). 헤더 DOCS 메뉴 정리는 이슈 #30.**
 **헤더 DOCS → 샘플 산출물 보기(/sample) 대체(이슈 #30 종결) — PR #33로 main 병합 완료 (2026-07-19, squash `025c2ea`, CI 4체크 green·리뷰 반영 1건(Promise 캐시)·기각 1건(Codex 날짜, UTC 선례)·브랜치 삭제).**
 **공개 서비스 개편 RFC(Vercel+Supabase) — PR #35로 main 병합 완료 (2026-07-21, `42e1784`). 엄브렐라 이슈 #34.**
-**공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·§7.1 open-service 트랙·§7.2 SSO 조건 ①)·technical-spec §9.2(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
+**공개 서비스 개편 RFC → 킥오프 스펙 승격 (2026-07-22) — `guide/open-service-kickoff-spec.md` 신설, PRD(NFR-01·7.1절 open-service 트랙·7.2절 SSO 조건 ①)·technical-spec 9.2절(WBS W1~W9) 동기화. `open-service` 장기 브랜치에서 진행(기존 레포 무손상). 다음 착수 = W1(Supabase 세팅). 문서만·코드 변경 0.**
 **페이지 헤더 밴드(이슈 #38) — PR #39로 main 병합 완료 (2026-07-24, merge `338677b`, CI green·리뷰 3라운드 반영·브랜치 삭제). Closes #38.**
 
 ## 공개판 확장 ZIP 배포 WBS 체크리스트 (이슈 #43, 2026-07-31 착수 — **완료·main 병합**)
@@ -82,13 +82,13 @@
 
 > 코어(`main`) 트랙. open-service(#34)와 분리. 브랜드 로고·`SpecProject` 변경 없음.
 
-- [x] T38-1 스펙 반영 — `guide/s1-kickoff-spec.md` §11 18차 + `docs/output-standard.md` §2·§4 (페이지 헤더 밴드·산출물 SCR 전역 숨김)
+- [x] T38-1 스펙 반영 — `guide/s1-kickoff-spec.md` 11절 18차 + `docs/output-standard.md` 2절·4절 (페이지 헤더 밴드·산출물 SCR 전역 숨김)
 - [x] T38-2 `shared` — `Scene.pageSectionLabel?`·`Scene.headerTitle?` + `sceneDisplay.ts` 헬퍼
 - [x] T38-3 뷰어 — 편집(`showScrCodes`) vs 산출물 분기, 페이지 헤더 밴드 렌더, export CSS
 - [x] T38-4 SDK — 페이지 헤더 편집 UI + 신규 장면 섹션 라벨 프리필 + `updateSceneHeaderFields`
 - [x] T38-5 검증 — vitest **262 passed**, E2E **4본 통과** (export SCR 미노출·밴드·전이 링크 회귀)
 
-## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec §9.2 / open-service-kickoff-spec §10, 2026-07-22 착수)
+## 공개 서비스 개편 WBS 체크리스트 (open-service 트랙, technical-spec 9.2절 / open-service-kickoff-spec 10절, 2026-07-22 착수)
 
 > RFC → 킥오프 승격 완료. 실 구현은 `open-service` 장기 브랜치에서 워크스트림별 PR로 진행했다. 엄브렐라 이슈 #34. **트랙 종료(2026-07-29 main 병합)로 그 브랜치는 삭제됐다 — 이후 작업은 `main`에서 딴 토픽 브랜치다.**
 
@@ -97,27 +97,27 @@
 - [x] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + `<base>` 삽입/교체 — **코어 구현·단위 테스트 완료.** `lib/intake/`(fflate unzip·zip-slip·제외·언랩 = server extract 동일 규칙), `lib/inject.ts`(SDK·base 주입·검증), `lib/intake/upload.ts`(Storage 직업로드 오케스트레이션), API `POST /api/projects`·`POST /api/projects/{id}/mockup/complete`(manifest 검증만·실패 시 mockup prefix 정리). vitest **233 passed**(+14). **남은 것: 인증 세션 E2E**(W7 콘솔 UI에서 zip→업로드→complete 왕복 — 수동 스모크 가능, 자동 E2E는 W9)
 - [x] W4 목업 서빙 `/m/{id}/*` Route Handler(소유권 검증+스트림) + 인제스트 검증 + SPA history fallback(FR-ONB-04) 보존 — **완료.** `app/m/[id]/[[...path]]/route.ts` + `lib/mockup/serve.ts`(readSpec RLS 소유권·Storage 스트림·확장자 없는 미존재 경로→index.html). per-request 주입 없음(D6).
 - [x] W4b 예약 경로 루트 라우트 `/__mockspec/sdk.js`·`/__mockspec/api/*` — **완료.** `GET /__mockspec/sdk`(rewrite→`sdk.js`)·`next.config` rewrite `/__mockspec/api/:path*`→`/api/:path*`. 미들웨어 `isProtectedApiPath`로 브리지도 인증 필수.
-- [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 §6 ⓐ). vitest **292 passed**.
+- [x] W5 spec GET/PUT·asset·export 함수 이식 — **완료.** `GET/PUT /api/projects/{id}`(validatePutSpec·mockupSource 불변·replaceSpec GC), `POST/GET .../assets`, `POST .../export`(≤4MB 인라인 HTML·초과 시 Storage signed URL **302** — 킥오프 6절 ⓐ). vitest **292 passed**.
 - [x] W6 경로 D 토큰 인증 이식 + 확장 저장 URL 전환(manifest host_permissions) — **완료.** `project-access`(세션 vs Bearer·admin 해시 검증·projectId 스코프), `POST/DELETE /api/projects/{id}/token`, `POST /api/projects {source:'snippet'}`, 미들웨어 Bearer 우회, manifest `localhost:3000`·`*.vercel.app`. vitest **297 passed**.
 - [x] W7 콘솔 UI Next 이식 + Auth 게이트 — **완료.** Supabase SSR 미들웨어(세션 갱신·`/api/*` 401·페이지 `/login` 리다이렉트), `/auth/callback`(OAuth·매직링크), `getAuthedContext()`(요청 스코프→RLS owner), 로그인(Google+이메일 OTP), 콘솔 홈(ZIP 업로드·목록·삭제), `/guide`·`/faq`·`/sample`(공개). `next build` green. vitest **238 passed**. **남은 것: W2 통합을 인증 세션 경로로 재확인(선택)·마스킹/export UI는 W5**
-- [x] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — **완료.** 한도 계약 = 킥오프 §7.5 / 사양 = technical-spec §7.4. 상수 단일 소스 `lib/abuse/limits.ts`(프로젝트 20개·zip 50MB·목업 50MB·1500파일·스냅샷 25MB·asset 총 100MB), 레이트리밋 Postgres 고정 윈도우(`rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER, in-memory 금지·fail-open) 버킷 4종, 업로드 검증 신뢰 경계를 `mockup/complete`로(Storage 실측 총 바이트·오브젝트 수, HTML만 다운로드), 에러 2종(`QUOTA_EXCEEDED` 403·`TOO_MANY_REQUESTS` 429+`Retry-After`), 확장 manifest 와일드카드 제거. vitest **335 passed**(+38), E2E 4본 통과, 실 서버 429 유발 확인
-- [x] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함) — **자동화 완료·green.** `e2e-open-service/open-service-dod.spec.ts` 1본 + 전용 설정 `playwright.open-service.config.ts`(포트 4300, `next start`), 실행 `npm run test:e2e:web`. DoD 7단계 전부(로그인·업로드·화면 2·어노테이션 4·export·file:// 네트워크 0건·마커 ≤2px·타 사용자 격리·예약 경로) 검증. **남은 것 = 실 배포 후 "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단)
+- [x] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — **완료.** 한도 계약 = 킥오프 7.5절 / 사양 = technical-spec 7.4절. 상수 단일 소스 `lib/abuse/limits.ts`(프로젝트 20개·zip 50MB·목업 50MB·1500파일·스냅샷 25MB·asset 총 100MB), 레이트리밋 Postgres 고정 윈도우(`rate_limit_counters` + `consume_rate_limit()` SECURITY DEFINER, in-memory 금지·fail-open) 버킷 4종, 업로드 검증 신뢰 경계를 `mockup/complete`로(Storage 실측 총 바이트·오브젝트 수, HTML만 다운로드), 에러 2종(`QUOTA_EXCEEDED` 403·`TOO_MANY_REQUESTS` 429+`Retry-After`), 확장 manifest 와일드카드 제거. vitest **335 passed**(+38), E2E 4본 통과, 실 서버 429 유발 확인
+- [x] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오(격리·예약 경로 회귀 포함) — **자동화 완료·green.** `e2e-open-service/open-service-dod.spec.ts` 1본 + 전용 설정 `playwright.open-service.config.ts`(포트 4300, `next start`), 실행 `npm run test:e2e:web`. DoD 7단계 전부(로그인·업로드·화면 2·어노테이션 4·export·file:// 네트워크 0건·마커 ≤2px·타 사용자 격리·예약 경로) 검증. **남은 것 = 실 배포 후 "실사용 1회" 판정**(킥오프 10절 종료 조건, 사용자 판단)
 
-## 라우트 변경 제안 WBS 체크리스트 (technical-spec §9.2, 2026-07-17 착수)
+## 라우트 변경 제안 WBS 체크리스트 (technical-spec 9.2절, 2026-07-17 착수)
 
 - [x] T30 SDK SPA 라우트 변경 제안 배너 + 사용 가이드 (이슈 #18) — `pathname+search+hash` 변경(pushState·replaceState·popstate·hashchange) 감지, 패널/모드 무관·닫힌 패널 제안 보존·route별 세션 1회·자동 화면 전환 없음. unit/API 214 passed, E2E 4본 통과, 실 Chromium에서 배너 배치·동작 확인
 
-## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec §9.2, 2026-07-14 착수)
+## 작성자 라벨·산출물 이력 WBS 체크리스트 (technical-spec 9.2절, 2026-07-14 착수)
 
-- [x] T29 `ownerLabel` 승격 + 산출물 이력(메타 전용, §6.3) — vitest 176 passed(+7)·E2E 4본 통과. 실 서버 구동 검증: 라벨 생성(공백 정리)→export 2회→목록 요약 "내보내기 2회"·뷰어 헤더 "작성자 김기획"·삭제 confirm에 이름·산출물 임베드 spec에 ownerLabel. 이력은 `exports.json`(서버 소유, spec.json 밖)에 메타만. htmlRef(파일 보관)·members[]는 미채택/보류 — technical-spec §2.2
+- [x] T29 `ownerLabel` 승격 + 산출물 이력(메타 전용, 6.3절) — vitest 176 passed(+7)·E2E 4본 통과. 실 서버 구동 검증: 라벨 생성(공백 정리)→export 2회→목록 요약 "내보내기 2회"·뷰어 헤더 "작성자 김기획"·삭제 confirm에 이름·산출물 임베드 spec에 ownerLabel. 이력은 `exports.json`(서버 소유, spec.json 밖)에 메타만. htmlRef(파일 보관)·members[]는 미채택/보류 — technical-spec 2.2절
 
-## 전이·흐름도 WBS 체크리스트 (technical-spec §9.2, 2026-07-12 착수)
+## 전이·흐름도 WBS 체크리스트 (technical-spec 9.2절, 2026-07-12 착수)
 
 - [x] T26 shared: `Annotation.transition { toSceneId, condition? }` 승격 — vitest 왕복 무손실·필드 부재 하위 호환 검증
 - [x] T27 SDK: 전이 지정 UI (장면 드롭다운(다른 장면만)+조건 텍스트) + 대상 장면 삭제 시 transition 제거 — vitest UI 왕복·정리 검증, focusShield SELECT 보호
 - [x] T28 뷰어·산출물: 전이 링크(클릭 시 장면 전환) + 프로세스 흐름도(자체 SVG, 전이 없으면 생략) + E2E — vitest 160·E2E 4본 통과, 실 Chromium 분기+순환 그래프 시각 확인
 
-## S2.5 WBS 체크리스트 (pathD 킥오프 §7)
+## S2.5 WBS 체크리스트 (pathD 킥오프 7절)
 
 - [x] T19 데이터 모델 + 토큰 발급/검증 (`snippet` 변형·해시 저장) — vitest 120 passed(+7), 평문 미보관·재발급 무효·왕복 무손실 검증
 - [x] T20 저장 경로 토큰 인증 (경로 D 프로젝트 401 게이트) — vitest 126 passed(+6), PUT/assets/export 게이트·타 프로젝트 토큰 거부·기존 경로 무영향 검증
@@ -127,7 +127,7 @@
 - [x] T24 E2E: 로그인 뒤 화면 시나리오 (DoD) — `e2e/pathD-dod.spec.ts`, 확장 로드+로그인+편집+마스킹+export+오프라인 검증, 3본(S1·S2·경로 D) 통과
 - [x] T25 실사용 판정 "가능" — 사용자가 실제 HANATOUR(Nexacro) 로그인 화면에 확장 연결→편집→저장→export→뷰어까지 완주. 실사용 10건 피드백 반영(ID 표시·연결 코드·동결 폴백·blockFonts·포커스 5~8차(Nexacro mousedown/pointerdown)·뷰어 넓은 화면 스크롤·네비 접기). 한계: 폴백 페이지는 폰트 시스템 대체.
 
-## S2 WBS 체크리스트 (킥오프 스펙 §8 — 구현은 docs/ 동기화 후 시작)
+## S2 WBS 체크리스트 (킥오프 스펙 8절 — 구현은 docs/ 동기화 후 시작)
 
 - [x] T11 shared 타입 확장 (mockupSource union·maskingRules·maskedSnapshotAsset) — vitest 84 passed, S1 형태 하위 호환·S2 필드 왕복 무손실·마스킹본 ID-11 검증
 - [x] T12 SSRF 가드 모듈 (allowlist·hard-deny IP·IP 고정 연결) — vitest 103 passed(+19), lookup 훅이 node:http에서 루프백 연결 차단 실측
@@ -140,7 +140,7 @@
 
 ## WBS 체크리스트
 
-원본: `technical-spec.md` §9.2 / `guide/s1-kickoff-spec.md` §10. 두 원본을 고치면 이 표도 같이 갱신한다.
+원본: `technical-spec.md` 9.2절 / `guide/s1-kickoff-spec.md` 10절. 두 원본을 고치면 이 표도 같이 갱신한다.
 
 - [x] T1 모노레포 셋업 + shared 타입 (`packages/shared/src/types.ts`가 3패키지에서 import됨) — `npm run build` exit 0, `npm test` 2 passed
 - [x] T2 서버: 업로드·해제·정적 서빙·SDK 주입 (zip 업로드 → 서브도메인에서 목업 열림, zip-slip 테스트 통과) — vitest 20 passed, 실기동 curl 스모크 통과
@@ -187,12 +187,12 @@
   - 클라이언트 컴포넌트라 **하이드레이션 전 클릭이 사라진다** → `waitUntil: "networkidle"`, `--repeat-each=3`으로 안정성 확인
 - **⚠️ 교훈 — 체크가 초록이어도 리뷰는 안 됐을 수 있다(이번 세션 두 번째 확인).** CodeRabbit은 플랜 한도로 이 PR의 재리뷰를 아예 돌리지 않았고, pr_agent(Gemini)도 초기 실행들이 **레이트 리밋으로 실패**했는데 job은 SUCCESS였다(최종 실행은 성공해 리뷰를 남겼다). **`gh pr view --json reviews`와 코멘트 본문을 직접 볼 것.** Codex는 `@codex review` 코멘트로 명시 요청할 수 있고, 지적이 없으면 "Didn't find any major issues"로 답한다.
 - 검증: vitest **351 passed**, 공개판 E2E **7본**(+1 — 복사 내용·모바일 오버플로·연속 복사 알림), 사내판 E2E 4본. 역검증 2회(복사 값에 프롬프트 섞기 / 알림 문구 고정하기) 모두 의도한 단정에서 실패 확인. 실 브라우저로 라이트·다크·iPhone 13 뷰포트 확인.
-- 다음 할 일: 사용자 우선순위 지정 대기. **#71**(공개판 로딩 지연)과 **#64**(문서 현행화)가 유력, **#70**(§ 기호 정리)은 가벼운 정리 건.
+- 다음 할 일: 사용자 우선순위 지정 대기. **#71**(공개판 로딩 지연)과 **#64**(문서 현행화)가 유력, **#70**(`§` 기호 정리)은 가벼운 정리 건.
 - 막힌 지점: 없음. **미뤄 둔 것 1건** — pr_agent 워크플로의 폴백 모델이 무용지물이다(`gemini-3.5-flash` 레이트 리밋 → 폴백 `gemini-3.1-flash-lite`가 `MAX_TOKENS` 미정의로 함께 실패, 그런데 job은 SUCCESS). 사용자 판단으로 이번엔 손대지 않았다.
 
 ### 2026-07-31 — 규약 변경(PROGRESS는 main 직접 커밋) + #68 확장 아이콘 (PR #75 병합)
 
-- 완료(규약 변경, 사용자 결정): **`docs/PROGRESS.md` 갱신은 브랜치·PR 없이 `main`에 직접 커밋한다** (`AGENTS.md` §3-4·§6에 명문화). 이유 — 이 파일은 리뷰 대상이 아니라 다음 세션이 읽을 상태 기록인데, PR을 거치면 병합 전까지 원격에 반영되지 않아 **다른 머신·클라우드 세션이 낡은 진실을 읽는다.** 문서 PR이 둘 이상 열릴 때 같은 hunk가 충돌하던 부류(#66·#67 사례)도 함께 사라진다. **예외 범위는 이 파일 하나** — 스펙 6종·`guide/`·`AGENTS.md`·`README.md`는 종전대로 브랜치 + PR.
+- 완료(규약 변경, 사용자 결정): **`docs/PROGRESS.md` 갱신은 브랜치·PR 없이 `main`에 직접 커밋한다** (`AGENTS.md` 3-4절·6절에 명문화). 이유 — 이 파일은 리뷰 대상이 아니라 다음 세션이 읽을 상태 기록인데, PR을 거치면 병합 전까지 원격에 반영되지 않아 **다른 머신·클라우드 세션이 낡은 진실을 읽는다.** 문서 PR이 둘 이상 열릴 때 같은 hunk가 충돌하던 부류(#66·#67 사례)도 함께 사라진다. **예외 범위는 이 파일 하나** — 스펙 6종·`guide/`·`AGENTS.md`·`README.md`는 종전대로 브랜치 + PR.
 - 완료: **#68 확장 아이콘 — PR #75 병합 (merge `019a910`), 이슈 종결.** 헤더 워드마크와 같은 결의 M 모노그램. 정식 로고가 생기면 SVG만 갈아끼우고 `node packages/extension/scripts/render-icons.mjs`를 다시 돌리면 된다.
   - **작은 크기용 소스를 따로 둔 이유(다음에 로고를 바꿔도 같은 함정이 있다)**: 128px 원본을 그대로 축소하면 **16px에서 중앙 V가 뭉개져 M으로 읽히지 않는다** — 획이 1.6px라 픽셀 경계에 걸치기 때문이다. `icon-small.svg`는 획을 16px에서 정확히 2px로 잡고 획 중심선이 픽셀 중앙에 떨어지도록 좌표를 다시 뒀다. **아이콘을 교체할 때는 반드시 16px를 픽셀 확대해 눈으로 확인할 것.**
   - PNG는 커밋된 산출물이고 렌더는 수동 스크립트다 — 빌드에 넣으면 Vercel 빌드가 매번 Playwright 브라우저를 받는다.
@@ -218,7 +218,7 @@
   - **잠금 범위와 가드 범위가 어긋나 있었다.** disabled는 프로젝트별(`reissuingId === p.id`)인데 재진입 가드는 전역(`if (reissuingId) return`)이라, A 재발급 중 **B의 버튼은 활성인데 클릭하면 confirm도 없이 조용히 아무 일도 일어나지 않았다.** 양쪽 콘솔 모두 `Set<string>`으로 바꿔 프로젝트별 독립 잠금으로 맞췄다. 경합은 토큰 행이 project_id마다 하나라 **프로젝트 단위로만** 일어나므로 이쪽이 원래 옳은 범위다.
   - **사내판은 버튼 참조를 클로저로 붙들고 있어 더 샜다.** 재발급 중 `exportProject`가 `renderList()`를 호출하면(실제로 한다) 그 참조는 떨어져 나간 옛 카드를 가리키고, 새로 그려진 카드의 복사 버튼은 활성이라 **막으려던 "곧 무효가 될 코드"를 그대로 건넸다.** 카드에 `data-project-id`, 버튼에 `.c-reissue-btn`/`.c-copy-btn`을 달아 `applyReissueBusy(projectId)`가 **현재 DOM에서 다시 찾아** 반영하도록 바꾸고, `renderProject`도 새 카드를 잠긴 상태로 태어나게 했다. 공개판은 React가 상태로 다시 계산하므로 이 문제가 없다.
   - 재검증(실 브라우저, 프로젝트 2개): A만 잠기고 **B는 독립적으로 재발급 시작 가능**(POST 2건), 진행 중 `renderList()`를 강제 호출해도 **재렌더된 카드가 잠금을 유지**, 해제 후 둘 다 정상 복귀(옛 참조가 detach된 뒤에도 finally가 DOM 재조회로 푼다), 콘솔 에러 0건. vitest 350·공개판 E2E 6본·사내판 E2E 4본 전부 재통과.
-- 완료(재리뷰 1건 — **철회**): Codex가 "같은 콘솔을 두 탭에서 열면 각 인스턴스가 독립된 잠금을 가지므로 여전히 동시 POST가 가능하다"고 지적했다. 사실관계는 맞지만 이 PR의 범위 밖으로 두고 **이슈 #73으로 분리**했다. 근거 — ① 이슈 #63이 "서버 측 직렬화를 얹을지는 별도 판단"으로 이미 갈라 둔 지점이고(§2의 "대안을 버린 이유가 문서에 있는지 확인"에 해당), ② **서버 직렬화만으로는 해소되지 않는다**(락으로 순차화해도 두 요청 모두 201을 받고 나중 것이 이겨, 먼저 응답받은 탭은 여전히 무효 코드를 쥔다 — 실질은 쿨다운 같은 제품 정책 결정), ③ 반복 남발 자체는 이미 `rateLimit(userSubject, "token")`이 429로 끊는다(W8). 철회 근거는 리뷰 스레드에 답글로 남겼다.
+- 완료(재리뷰 1건 — **철회**): Codex가 "같은 콘솔을 두 탭에서 열면 각 인스턴스가 독립된 잠금을 가지므로 여전히 동시 POST가 가능하다"고 지적했다. 사실관계는 맞지만 이 PR의 범위 밖으로 두고 **이슈 #73으로 분리**했다. 근거 — ① 이슈 #63이 "서버 측 직렬화를 얹을지는 별도 판단"으로 이미 갈라 둔 지점이고(2절의 "대안을 버린 이유가 문서에 있는지 확인"에 해당), ② **서버 직렬화만으로는 해소되지 않는다**(락으로 순차화해도 두 요청 모두 201을 받고 나중 것이 이겨, 먼저 응답받은 탭은 여전히 무효 코드를 쥔다 — 실질은 쿨다운 같은 제품 정책 결정), ③ 반복 남발 자체는 이미 `rateLimit(userSubject, "token")`이 429로 끊는다(W8). 철회 근거는 리뷰 스레드에 답글로 남겼다.
 - 완료: **PR #72를 `main`에 병합했다 (merge `6c9846f`, 이슈 #63 자동 종결).** 원격·로컬 브랜치 삭제, `main` 동기화 완료. 리뷰 지적 5건 = 4건 수정 + 1건 철회, 체크 전부 green.
 - 다음 할 일: 사용자 우선순위 지정 대기. 바로 착수 가능한 것은 **#64**(문서 사실관계 오류 4건)·**#45 2번**(Storage 직접 업로드). #65·#68은 결정 선행, #73은 실수요 대기.
 - 막힌 지점: 없음.
@@ -226,7 +226,7 @@
 ### 2026-07-31 — #43 프로덕션 반영 (PR #67 병합) + 리뷰 라운드
 - 완료: **PR #67을 `main`에 병합했다 (merge `03a3101`, 이슈 #43 자동 종결).** 원격·로컬 토픽 브랜치 삭제, `main` 동기화까지 마쳤다. 공개판 사용자는 이제 사이트에서 `/download/mockspec-extension.zip`을 받아 개발자 모드로 설치할 수 있다.
 - 완료(병합 순서 사고 회피): **PR #66과 #67이 `docs/PROGRESS.md`의 같은 hunk를 건드리고 있었다.** GitHub이 둘 다 `CLEAN`으로 표시했지만 이는 각각을 *당시 main* 기준으로만 계산하기 때문이고, 실제로는 먼저 병합되는 쪽이 나머지를 충돌시킨다(`git merge-tree`로 확인). **#66을 먼저 병합**(merge `df5bb03`)한 뒤 #67에서 `origin/main`을 병합해 해소했다(merge `1ccb1f3`). 순서가 반대였다면 열린 이슈 목록에서 #64·#65가 누락되고 세션 로그 재배치를 손으로 해야 했다. **다음에 문서 PR이 둘 이상 열려 있으면 `mergeStateStatus`를 믿지 말고 `git merge-tree`로 교차 확인할 것.**
-- **⚠️ 이번 세션 최대 교훈 — Draft PR은 봇 리뷰를 통째로 막는다.** #67은 Preview 검증 전 실수 병합을 막으려고 Draft로 열려 있었는데, 그 상태에서 **CodeRabbit은 `Review skipped: draft pull request`, Codex는 트리거 자체가 없어(오픈·ready·`@codex review`가 트리거) 578줄이 자동 리뷰를 한 건도 받지 못하고 있었다.** Ready로 전환하자 즉시 **Codex 2건·CodeRabbit 5건**이 도착했다. **병합 방지는 Draft가 아니라 AGENTS.md §6의 동의 규약이 맡는다 — 리뷰를 받아야 하는 PR을 Draft로 두지 말 것.** (직전 세션의 #63은 봇 리뷰를 *늦게* 봐서 놓친 사고였고, 이번은 아예 *오지 않게* 막아 둔 것이다. 같은 뿌리다.)
+- **⚠️ 이번 세션 최대 교훈 — Draft PR은 봇 리뷰를 통째로 막는다.** #67은 Preview 검증 전 실수 병합을 막으려고 Draft로 열려 있었는데, 그 상태에서 **CodeRabbit은 `Review skipped: draft pull request`, Codex는 트리거 자체가 없어(오픈·ready·`@codex review`가 트리거) 578줄이 자동 리뷰를 한 건도 받지 못하고 있었다.** Ready로 전환하자 즉시 **Codex 2건·CodeRabbit 5건**이 도착했다. **병합 방지는 Draft가 아니라 AGENTS.md 6절의 동의 규약이 맡는다 — 리뷰를 받아야 하는 PR을 Draft로 두지 말 것.** (직전 세션의 #63은 봇 리뷰를 *늦게* 봐서 놓친 사고였고, 이번은 아예 *오지 않게* 막아 둔 것이다. 같은 뿌리다.)
 - 완료(리뷰 대응): 지적 7건 중 **3건 수정**(`11980ea` CSS 특정도, `dfcc399` E2E 산출물 검증, `9b42f52` MD040), **2건은 오탐으로 판단해 근거를 달아 회신 → CodeRabbit이 둘 다 철회**(`[S2]`/`[S2.5]` 스프린트 마커 관례, 커밋 타임스탬프 `+0900` 기준 KST 날짜), 나머지 2건은 두 봇이 같은 것을 지적한 중복. **Codex는 후속 push를 자동 리뷰하지 않으므로 `@codex review`를 명시 요청**했고 재리뷰에서 major issue 0건을 받았다. Codex는 스레드를 스스로 닫지 않아 수정 커밋을 근거로 남기고 직접 resolve했다(최종 7개 스레드 전부 resolved).
 - 검증: `npm test` **338 passed / 12 skipped**, 루트·web typecheck 통과, CI `verify` 2본·Vercel·`pr_agent_job` 전부 pass.
 - 다음 할 일: **프로덕션에서 확장 unpacked 로드 1회 수동 확인**(T43-6의 마지막 한 걸음 — Preview가 Vercel SSO로 막혀 자동화가 불가능했다). 그 다음 작업은 사용자 우선순위 지정 대기. 열린 이슈는 #63·#65·#64·#57·#45·#46·#48·#68·#12·#13.
@@ -238,8 +238,8 @@
 - 검증: `npm test` **338 passed / 12 skipped (350)**, 루트·web typecheck 통과, `npm run vercel-build -w @mockspec/web` 통과(확장 **v0.1.0·6파일·264,072 bytes**). HTTP 스모크 `/guide` 200, `/download/mockspec-extension.zip` 200 `application/zip`·PK 매직 바이트 확인, ZIP 내부 6파일·manifest 버전·운영 호스트 권한 정확 일치 재검증. Playwright 하네스는 더미 공개키로 기동 성공했으나 이 클론에 실 Supabase secret이 없어 **6 skipped**. `$visual-verdict`는 앵커 헤더 가림을 수정한 2차에서 **95/100 pass**(데스크톱·390px 모바일).
 - 완료(배포 준비): 커밋 `4ca3644`를 `origin/feat/extension-download-43`에 푸시하고 **Draft PR #67**을 열었다. Vercel Preview 배포는 success이며 환경 URL은 커밋마다 갱신되므로 PR의 Vercel 체크를 정본으로 본다.
 - 완료(리뷰·병합 순서 정정): 2차 리뷰어가 PR #67에 리뷰 코멘트 1건을 남겼다(머지 전 2건 = ① `.c-extension-download`가 `.c-btn`보다 **앞에** 선언돼 같은 특정도에서 `display: inline-flex`·`padding`이 덮임 → 모바일 라벨 좌측 정렬, ② E2E의 `suggestedFilename()`이 `<a download>` 속성만 재확인해 산출물 바이트를 검증하지 못함. 선택 5건 = `next dev` ZIP 부재, 공개 배포본 localhost `host_permissions`, `aria-labelledby`가 generic role에서 무시, 미들웨어 matcher의 `.zip` 미제외, fflate/jszip 중복). 아울러 **PR #66이 #67보다 먼저 병합돼야 했다** — 둘 다 `docs/PROGRESS.md`의 같은 hunk를 건드려 GitHub이 각각을 CLEAN으로 표시해도 실제로는 충돌한다(`git merge-tree`로 확인). #66을 먼저 병합(merge `df5bb03`)한 뒤 이 브랜치에서 `origin/main`을 병합해 충돌을 해소했다(열린 이슈 #64·#65 유지, 세션 로그는 "최신이 위" 규약대로 07-31 → 07-30 순). 이어서 **#66에 병합 후 도착한 CodeRabbit 지적 중 1건을 회수**했다 — `열린 이슈 (10건)`의 개수 표기는 같은 문서 07-30 로그의 재발 방지 규칙 "목록이 늘어나는 문서에 개수를 쓰지 않는다"와 모순이라 `(10건)`을 제거했다. 문서 전체를 훑어 같은 성격의 표기가 더 있는지 확인했고, 나머지 개수 표기(환경변수 3종·테이블 3종·"이 세션에서 머지한 PR 4건" 등)는 **늘어나지 않는 확정된 사실**이라 그대로 뒀다.
-- 완료(봇 리뷰 반영): Draft를 해제하자 **Codex 2건·CodeRabbit 5건**이 도착했다(Draft 상태에서는 CodeRabbit이 `Review skipped`, Codex는 트리거 자체가 없어 **578줄이 자동 리뷰를 한 번도 못 받고 있었다** — Draft는 병합 방지 수단으로 쓰지 말 것. AGENTS.md §6의 동의 규약이 이미 그 역할을 한다). **세 리뷰어가 독립적으로 같은 2건에 수렴**했고 그 2건을 고쳤다: ① `.c-extension-download` → `.c-btn.c-extension-download`로 특정도를 올려 `display: inline-flex`·`padding`이 `.c-btn`에 덮이지 않게 했다(≤720px에서 `justify-content: center`가 비로소 동작). ② E2E가 `suggestedFilename()`(= `<a download>` 속성)만 보던 것을 `failure()` null 확인 + JSZip 파싱 + 엔트리 6개 + **화면 표시 버전과 ZIP 내 `manifest.version` 일치**까지 검증하도록 바꿨다. 셋째로 `technical-spec.md`의 무언어 코드 펜스에 `jsonc`를 붙였다(MD040).
-- 판단(반영하지 않은 지적 2건): **`detailed-spec.md` "경로 선택 계약 모순"은 오탐** — "2택"은 `[S2]`, "3번째 선택지"는 `[S2.5]`로 문서 관례인 스프린트 마커가 이미 구분하고, 설치 강제 여부도 "설치 전에도 프로젝트 생성은 막지 않되"로 확정돼 있다. **킥오프 `2026-07-31` 날짜도 오탐** — 커밋 타임스탬프가 `+0900`이라 KST로 07-31이 맞고 봇이 UTC(07-30 16:35)로 읽었다. 둘 다 고치면 AGENTS.md §4 절차가 필요한 결정 변경이 되므로 근거를 달아 회신만 했다.
+- 완료(봇 리뷰 반영): Draft를 해제하자 **Codex 2건·CodeRabbit 5건**이 도착했다(Draft 상태에서는 CodeRabbit이 `Review skipped`, Codex는 트리거 자체가 없어 **578줄이 자동 리뷰를 한 번도 못 받고 있었다** — Draft는 병합 방지 수단으로 쓰지 말 것. AGENTS.md 6절의 동의 규약이 이미 그 역할을 한다). **세 리뷰어가 독립적으로 같은 2건에 수렴**했고 그 2건을 고쳤다: ① `.c-extension-download` → `.c-btn.c-extension-download`로 특정도를 올려 `display: inline-flex`·`padding`이 `.c-btn`에 덮이지 않게 했다(≤720px에서 `justify-content: center`가 비로소 동작). ② E2E가 `suggestedFilename()`(= `<a download>` 속성)만 보던 것을 `failure()` null 확인 + JSZip 파싱 + 엔트리 6개 + **화면 표시 버전과 ZIP 내 `manifest.version` 일치**까지 검증하도록 바꿨다. 셋째로 `technical-spec.md`의 무언어 코드 펜스에 `jsonc`를 붙였다(MD040).
+- 판단(반영하지 않은 지적 2건): **`detailed-spec.md` "경로 선택 계약 모순"은 오탐** — "2택"은 `[S2]`, "3번째 선택지"는 `[S2.5]`로 문서 관례인 스프린트 마커가 이미 구분하고, 설치 강제 여부도 "설치 전에도 프로젝트 생성은 막지 않되"로 확정돼 있다. **킥오프 `2026-07-31` 날짜도 오탐** — 커밋 타임스탬프가 `+0900`이라 KST로 07-31이 맞고 봇이 UTC(07-30 16:35)로 읽었다. 둘 다 고치면 AGENTS.md 4절 절차가 필요한 결정 변경이 되므로 근거를 달아 회신만 했다.
 - 검증(리뷰 반영분): `npm test` **338 passed / 12 skipped**, 루트·web typecheck 통과, `npx playwright test --list`로 spec 트랜스파일 확인(6 tests). **E2E 다운로드 경로는 이 클론에서 실행되지 않으므로**(`.env.local` 부재로 조건부 스킵) 단언 내용은 실 ZIP을 만들어 따로 대조했다 — 엔트리 6개가 기대값과 정확히 일치, `manifest.version` = `0.1.0`으로 화면 표시(`MockSpec v0.1.0`)와 같다. **이 경로의 실제 실행 검증은 실 secret이 있는 환경에서 T43-6과 함께 해야 한다.**
 - 교훈(패키징 상수를 E2E가 import하지 않는 이유): 처음에는 `package-extension.mjs`의 `REQUIRED_EXTENSION_FILES`를 import해 단일 소스로 두려 했으나, **Playwright의 CJS 로더가 `.mjs`의 `import.meta`를 처리하지 못해 spec 전체가 로드 실패**했다(`--list`로 즉시 발견). spec에 기대값을 따로 적는 쪽으로 바꿨는데, 결과적으로 이게 옳다 — 패키징 스크립트가 잘못 바뀌면 E2E가 잡아야 하는데 같은 상수를 공유하면 함께 바뀌어 못 잡는다.
 - 다음 할 일: 로그인된 브라우저로 PR Preview에서 실제 ZIP 다운로드·압축해제·unpacked 로드와 실 Supabase 경로 D E2E를 확인한다. `main` 병합은 별도 동의를 받는다.
@@ -252,7 +252,7 @@
 - **다음 세션이 곧바로 이어받을 지점 = #43**(공개판 확장 배포 경로, B안=zip 다운로드만). **착수 전 Vercel Preview 환경변수 3종** 활성화 확인이 선행이다 — Production에만 있으면 토픽 브랜치 Preview가 빌드는 되고 런타임에 죽는다.
 - **다음 세션이 반복하지 말아야 할 것 3건** (이 세션에서 실제로 겪었다):
   1. **봇 리뷰를 놓치고 병합했다.** Codex는 CI 체크가 끝난 **뒤에** 리뷰를 달고, `gh pr view --json reviews`로는 **인라인 코멘트가 보이지 않는다.** 그래서 PR #58의 코드 지적 2건이 병합 후 도착해 묻혔다(뒤늦게 #63으로 회수). → 병합 전에 **`gh api .../pulls/{n}/reviews`와 `.../pulls/{n}/comments` 둘 다** 확인한다. 또한 **Codex는 후속 push를 자동 리뷰하지 않는다**(PR 오픈·ready·`@codex review`가 트리거) — 지적을 반영한 커밋을 다시 검토받으려면 `@codex review`를 남긴다.
-  2. **`git add -A`로 남의 변경을 함께 커밋했다.** 워킹 트리에 있던 `docs/README.md`의 미커밋 메모가 딸려 들어갔다. AGENTS.md §6 "한 커밋에 무관한 변경을 섞지 않는다" 위반 → **파일을 지정해 add 한다.**
+  2. **`git add -A`로 남의 변경을 함께 커밋했다.** 워킹 트리에 있던 `docs/README.md`의 미커밋 메모가 딸려 들어갔다. AGENTS.md 6절 "한 커밋에 무관한 변경을 섞지 않는다" 위반 → **파일을 지정해 add 한다.**
   3. **목록이 늘어나는 문서에 개수를 쓰지 않는다.** 이 세션에서만 세 번 어긋났다 — README 설계 원칙 "3가지"(실제 4개, Codex 지적) · `AGENTS.md`의 "guide/ 3종"(실제 7개) · "docs/ 스펙 6종"(셈 불명확). 뒤 둘은 #64로 등록.
 - **재사용할 판단 기준 — 마이그레이션 적용 순서는 일률적이지 않다.** "무엇이 무엇에 의존하는가"로 정한다: **#47**은 코드가 제약에 의존(`upsert`의 `onConflict`)해서 **마이그레이션이 먼저**였고(반대로 하면 토큰 발급이 전면 중단), **#45**는 권한 회수라 **코드 배포 → Production `success` 확인 → 마이그레이션** 순이었다(반대로 하면 프로젝트 생성이 즉시 실패).
 - 검증 상태(`c20c8c0` 기준): vitest **347 passed**, 공개판 E2E **6본**, 사내판 E2E **4본** 통과.
@@ -264,10 +264,10 @@
   - **다음 세션 규칙**: 병합 전에 **`gh api repos/{owner}/{repo}/pulls/{n}/reviews`와 `.../pulls/{n}/comments` 둘 다** 확인한다. `gh pr view --json reviews`만으로는 인라인 코멘트를 못 본다. 체크가 green이 된 직후가 아니라 **리뷰 도착까지 기다린 뒤** 병합한다.
   - CodeRabbit의 `Review rate limited`는 실재한다 — 계정 PR 리뷰 한도이고 대기 시간이 코멘트에 표시된다(예: "Next review available in: 34 minutes"). 이건 별개 사유이므로 Codex 리뷰 부재의 근거로 쓰면 안 된다.
 - **문서 정정 4건** (봇 지적 반영):
-  1. **README 설계 원칙이 3개로 적혀 있었다** → PRD §1.3·AGENTS.md §2가 정의하는 **4개**로 수정(누락분 = "산출물은 단독 HTML 하나"). 개조식 정리 때 내가 "3가지"라는 개수를 명시하면서 **불완전한 목록을 완전한 것처럼** 만든 것이 문제였다 (Codex, PR #62).
+  1. **README 설계 원칙이 3개로 적혀 있었다** → PRD 1.3절·AGENTS.md 2절이 정의하는 **4개**로 수정(누락분 = "산출물은 단독 HTML 하나"). 개조식 정리 때 내가 "3가지"라는 개수를 명시하면서 **불완전한 목록을 완전한 것처럼** 만든 것이 문제였다 (Codex, PR #62).
   2. **#45 세션 로그가 자기모순이었다** — 제목·최종 상태는 "적용 완료"인데 본문에 "아직 적용 안 함"과 적용 전 결과(`346 passed / 1 failed`)가 그대로 남아 다음 세션이 마이그레이션을 재적용·누락할 위험이 있었다 → 해당 줄을 **"적용 전 시점의 기록"으로 명시**해 보존(테스트가 취약점을 실제로 잡는다는 증거라 지우지 않았다) (Codex+CodeRabbit, PR #61).
   3. **#47 세션 로그의 "봇 리뷰 0건" 기록을 정정**하고 이슈 #63을 연결했다 (Codex, PR #59가 "원인 미확인 상태로 단정했다"고 지적한 건이 실제로 틀린 기록이었음이 확인됨).
-  4. 이 세션 로그 자체 — README 작업이 PROGRESS에 기록되지 않은 것도 지적받았다 (Codex, PR #62). AGENTS.md §3은 **작업을 하나 끝낼 때마다** 기록하라고 명시한다.
+  4. 이 세션 로그 자체 — README 작업이 PROGRESS에 기록되지 않은 것도 지적받았다 (Codex, PR #62). AGENTS.md 3절은 **작업을 하나 끝낼 때마다** 기록하라고 명시한다.
 - 다음 할 일: **#43 확장 배포 경로**(착수 전 Vercel Preview 환경변수 3종 확인). **#63**(토큰 재발급 UX + 테스트 보강)은 #47 후속이라 따로 잡는다.
 - 막힌 지점: 없음.
 
@@ -280,8 +280,8 @@
 - **⚠️ 적용 순서 — 이번엔 코드가 먼저다(#47과 반대).** 배포된 구 코드는 요청 스코프로 INSERT하므로, 마이그레이션을 먼저 적용하면 그 순간부터 프로덕션에서 **프로젝트 생성이 실패**한다. 그래서 파일만 커밋하고 적용은 **병합·배포 확인 후**로 미뤘다. 순서는 일률적이지 않고 "무엇이 무엇에 의존하는가"로 정한다 — #47은 코드가 제약에 의존해서 마이그레이션이 먼저였다.
 - **검증 ― ⏪ 마이그레이션 적용 *전* 시점의 기록(과거 상태, 현재 아님)**: vitest **346 passed / 1 failed (347)** — 실패 1건은 **신규 `projects 직접 INSERT는 요청 스코프 클라이언트로 거부된다 (#45)`** 이고, 그 시점엔 마이그레이션 미적용이라 INSERT가 성공했기 때문이다. **이 테스트가 실제로 취약점을 잡는다는 증거로 남겨 둔다** — 적용 후 통과로 바뀐 것은 위 "적용 후 검증" 줄 참조. 그 외 `npm run build -w @mockspec/web` green, **공개판 E2E 6본**·**사내판 E2E 4본** 통과 — 실제 생성 경로(업로드·경로 D)가 admin 클라이언트로 정상 동작함을 확인했다.
 - 주의로 넣은 것: 그 회귀 테스트는 INSERT가 (회귀로) 성공해 버려도 뒷정리가 되도록 id를 `projectIds`에 **미리** 등록한다. 이번 실행에서 만들어진 행은 `auth.users` 삭제의 cascade로 이미 정리됐음을 확인했다(`projects` 잔여 2건은 기존 실사용 프로젝트).
-- **범위**: 이슈 #45의 **1번(프로젝트 생성)만**. 2번(Storage 직접 업로드)은 킥오프 D5·D6과 얽혀 §4 절차가 필요하므로 분리한다 — 이슈는 그대로 열어 둔다.
-- 다음 할 일: **#43 확장 배포 경로**(B안=zip 다운로드만. 착수 전 **Vercel Preview 환경변수 3종** 확인). #45의 남은 2번(Storage)은 킥오프 §4 절차가 필요해 별도 착수.
+- **범위**: 이슈 #45의 **1번(프로젝트 생성)만**. 2번(Storage 직접 업로드)은 킥오프 D5·D6과 얽혀 4절 절차가 필요하므로 분리한다 — 이슈는 그대로 열어 둔다.
+- 다음 할 일: **#43 확장 배포 경로**(B안=zip 다운로드만. 착수 전 **Vercel Preview 환경변수 3종** 확인). #45의 남은 2번(Storage)은 킥오프 4절 절차가 필요해 별도 착수.
 - 막힌 지점: 없음.
 
 ### 2026-07-30 — #47 토큰 재발급 원자성 (UNIQUE 제약 + upsert) — **main 병합 완료 (PR #58)**
@@ -298,7 +298,7 @@
 - 막힌 지점: **#46 하나**(커스텀 SMTP / Pro / Send Email hook 중 택1 — 사용자 결정 대기). 그 외 없음.
 
 ### 2026-07-30 — 세션 마감 핸드오프 (다음 세션은 #47부터)
-- 이 세션에서 머지한 PR 4건: **#49**(§7.3 오리진 격리를 이슈 #48로 등록) · **#52**(워크트리 규약 만료 + `open-service` 브랜치 삭제) · **#53**(#50 에디션 타이틀 + #51 콘솔 탭) · **#54**(헤더 로그인 상태 + sticky) · **#55**(`/auth/confirm` type 3종 E2E). 등록한 이슈 3건: **#48 · #50 · #51**(#50·#51은 같은 세션에서 구현·종결).
+- 이 세션에서 머지한 PR 4건: **#49**(7.3절 오리진 격리를 이슈 #48로 등록) · **#52**(워크트리 규약 만료 + `open-service` 브랜치 삭제) · **#53**(#50 에디션 타이틀 + #51 콘솔 탭) · **#54**(헤더 로그인 상태 + sticky) · **#55**(`/auth/confirm` type 3종 E2E). 등록한 이슈 3건: **#48 · #50 · #51**(#50·#51은 같은 세션에서 구현·종결).
 - **다음 세션이 곧바로 이어받을 지점 = #47.** 착수 절차(중복 조회 → 정리 → 마이그레이션)를 위 "현재 단계"에 못 박아 뒀다 — Supabase가 Preview·Production 공용 1개라 순서를 틀리면 프로덕션에 바로 걸린다.
 - **다음 세션이 반복하지 말아야 할 실수 3건** (이 세션에서 실제로 겪었다):
   1. **`npx prettier --write` 금지.** 저장소에 prettier 설정이 없어 기본 80칼럼으로 재포맷된다 — 80자 초과 줄이 2558개라 무관한 대량 diff가 생긴다. 되돌리고 손으로 맞췄다.
@@ -325,7 +325,7 @@
 - 막힌 지점: 없음.
 
 ### 2026-07-30 — #50 에디션 타이틀 + #51 공개판 콘솔 탭 (한 PR)
-- **#50 완료.** `constants.ts`에 표시용 상수 신설 — `DISPLAY_NAME = "MockSpec"`, `EDITION_NAME.local/.cloud`. **`WORKING_NAME`은 값을 바꾸지 않았다**(패키지 스코프 `@mockspec/*`·예약 경로 `/__mockspec`·서브도메인 규칙이 물려 있는 식별자라 바꾸면 경로가 깨진다) — 대신 주석에 "식별자 전용, 화면에 쓰지 말 것"을 명시. 교체처 6곳: 사내판 `shell.ts`(로고)·`console.ts`(탭)·`pages.ts`(가이드·FAQ 탭), 공개판 `layout.tsx`(하드코딩 `"Mockspec"` 제거)·`shell-header.tsx`(로고)·`login-form.tsx`(로그인 제목 — 이슈에 없던 사용처를 추적 중 발견). `technical-spec.md` §1.3 동기화.
+- **#50 완료.** `constants.ts`에 표시용 상수 신설 — `DISPLAY_NAME = "MockSpec"`, `EDITION_NAME.local/.cloud`. **`WORKING_NAME`은 값을 바꾸지 않았다**(패키지 스코프 `@mockspec/*`·예약 경로 `/__mockspec`·서브도메인 규칙이 물려 있는 식별자라 바꾸면 경로가 깨진다) — 대신 주석에 "식별자 전용, 화면에 쓰지 말 것"을 명시. 교체처 6곳: 사내판 `shell.ts`(로고)·`console.ts`(탭)·`pages.ts`(가이드·FAQ 탭), 공개판 `layout.tsx`(하드코딩 `"Mockspec"` 제거)·`shell-header.tsx`(로고)·`login-form.tsx`(로그인 제목 — 이슈에 없던 사용처를 추적 중 발견). `technical-spec.md` 1.3절 동기화.
 - **#51 완료.** 공개판 "새 프로젝트" 카드 2개 세로 스택 → **2탭**(`ZIP 업로드` / `내 화면에서 편집 (확장)`). `URL 등록`은 경로 B라 D2로 제외. 탭 CSS를 `globals.css`에 이식(`c-tab*` 규칙이 0건이었다) + `prefers-reduced-motion` 대응 추가. 상태는 React `useState`(사내판 vanilla JS를 그대로 옮기지 않음), 접근성은 `role=tablist/tab/tabpanel`+`aria-selected`/`aria-controls`/`aria-labelledby` + **좌우·Home·End 키보드 이동**(사내판은 클릭만 처리 — 이식하면서 개선).
 - 검증: `npm run build` + `npm run build -w @mockspec/web` 통과, **vitest 345 passed**(45 파일), **공개판 E2E 2본 통과**, **사내판 E2E 4본 통과**. 실제 화면 확인 — 사내판 `localhost:4100` 탭 제목·로고 `MockSpec Local`, 공개판 `localhost:3000` `MockSpec Cloud`(공개판 콘솔 본문은 로그인이 필요해 E2E의 탭 클릭으로 검증).
 - E2E 갱신 2곳: `open-service-dod.spec.ts` — ① 콘솔 진입 단정이 없어진 제목(`새 프로젝트 — ZIP 업로드`)을 찾고 있었다 → `새 프로젝트 시작` + 기본 탭 `aria-selected` 확인으로 교체 ② 경로 D 테스트가 숨은 패널의 `#snippet-name`을 채우려 해 실패 → 탭 전환 스텝 추가.
@@ -337,17 +337,17 @@
 ### 2026-07-30 — 워크트리·`open-service` 브랜치 정리 + 워크트리 규약 만료 + 이슈 #50·#51 등록
 - **워크트리 제거**: `apps/web/.env.local`을 main 폴더로 이관(사용자) → 두 사본 내용 동일함을 `diff`로 확인 → `git worktree remove ../Draftify-open-service`. 이제 작업 폴더는 하나뿐이다.
 - **`open-service` 브랜치 삭제 (로컬·원격)**: `git log open-service --not main`이 비어 있음을 로컬·원격 양쪽에서 확인해 유실 커밋 0건을 먼저 검증했다. Vercel Production Branch는 이미 `main`이라 배포에 영향 없음.
-- **워크트리 규약 만료 (사용자 결정)**: 워크트리의 목적은 "메인 폴더를 `main`으로 둬서 사내판을 언제든 구동·비교" 하나였고, 병합으로 두 앱이 `main` 안에 공존하게 되면서 사라졌다. 킥오프 §8 불변 항목을 만료 표기(결정 삭제가 아니라 이유와 함께 보존)하고 §11 이력 행 추가, `AGENTS.md` §6의 장기 워크트리·장기 브랜치 문구 동기화. **이후 작업은 `main`에서 딴 토픽 브랜치.**
+- **워크트리 규약 만료 (사용자 결정)**: 워크트리의 목적은 "메인 폴더를 `main`으로 둬서 사내판을 언제든 구동·비교" 하나였고, 병합으로 두 앱이 `main` 안에 공존하게 되면서 사라졌다. 킥오프 8절 불변 항목을 만료 표기(결정 삭제가 아니라 이유와 함께 보존)하고 11절 이력 행 추가, `AGENTS.md` 6절의 장기 워크트리·장기 브랜치 문구 동기화. **이후 작업은 `main`에서 딴 토픽 브랜치.**
 - **이슈 2건 등록**: **#50**(타이틀 구분 — `MockSpec Local` / `MockSpec Cloud`. `WORKING_NAME`은 패키지 스코프·`/__mockspec` 예약 경로 겸용 식별자라 값을 바꾸지 않고 표시용 `DISPLAY_NAME` 신설. `apps/web/app/layout.tsx:6`이 `"Mockspec"`을 하드코딩해 constants.ts 규약을 어긴 것도 함께) · **#51**(공개판 콘솔 "새 프로젝트"를 탭으로 재구성 — 로컬판은 3탭, 공개판은 카드 2개 세로 스택. 공개판 탭은 `URL 등록`이 D2로 제외돼 **2탭**).
 - **"해상도가 다르다"는 보고는 코드 원인 없음 — 브라우저 줌이었다**(사용자 확인). 확인 과정에서 콘솔 셸 1080px·가이드 셸 860px·`body` 11.5px·viewport meta·`buildExportHtml` 공유까지 양쪽이 동일함을 실측했고, 재조사 방지용으로 그 표를 #51 본문에 남겼다. 실제 차이는 `.c-header-right` gap(로컬 24px ↔ 공개 16px)과 로컬에만 있는 hover transition·말줄임 몇 건뿐 — 정리하려면 별도 이슈.
 - 검증 방법: `git worktree list`가 `Draftify-Html [main]` 한 줄, `git branch -a | grep open-service`가 0건. `.env.local` 3키(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` = `sb_secret_` prefix) 정상 → `test:e2e:web` 스킵 조건에 걸리지 않음. `fixtures/todo-app-relative.zip`은 main으로 복사했으나 실은 불필요했다(`test:e2e:web`이 매번 `fixtures:zip:relative`로 재생성).
 - 다음 할 일: **#50 + #51(한 PR — 화면에 직접 보이는 것 먼저, 사용자 결정)** → #46 → #47 → #45(A안) → #43. 위 "현재 단계"의 우선순위 근거 참조. **(#50·#51은 2026-07-30 완료 — 맨 위 세션 로그 참조)**
 - 막힌 지점: 없음. (#46은 Supabase 대시보드 작업 + 다른 기기 수동 검증이라 사용자 실행이 필요하다.)
 
-### 2026-07-30 — §7.3 오리진 격리를 이슈 #48로 등록 (문서 ↔ 이슈 연결)
-- 배경: 사용자가 "공개용 구현 계획 때 서비스 링크와 목업 링크를 보안 관점에서 분리하는 논의가 있었던 것 같은데 맞나"라고 확인 요청. 맞다 — RFC/킥오프 **§7.3 승격 경로(옵션 1·방법 B)**: Vercel Hobby 프로젝트 2개(`*-console` / `*-usercontent`)로 목업을 콘솔·API와 **다른 오리진**에서 `/m/{id}/` 경로로 서빙. 단 **v1에 구현된 것이 아니라 유보된 계획**이고, 조건은 **§9-8 외부 공유를 열기 전 선행**이다.
+### 2026-07-30 — 7.3절 오리진 격리를 이슈 #48로 등록 (문서 ↔ 이슈 연결)
+- 배경: 사용자가 "공개용 구현 계획 때 서비스 링크와 목업 링크를 보안 관점에서 분리하는 논의가 있었던 것 같은데 맞나"라고 확인 요청. 맞다 — RFC/킥오프 **7.3절 승격 경로(옵션 1·방법 B)**: Vercel Hobby 프로젝트 2개(`*-console` / `*-usercontent`)로 목업을 콘솔·API와 **다른 오리진**에서 `/m/{id}/` 경로로 서빙. 단 **v1에 구현된 것이 아니라 유보된 계획**이고, 조건은 **9-8절 외부 공유를 열기 전 선행**이다.
 - 한 가지 흔한 오해를 명시해 둔다: 별도 오리진으로 나가는 것은 **export 산출물이 아니라 업로드된 목업**(신뢰불가 임의 JS)이다. 따라서 분리 후에는 **편집 화면 자체가 usercontent 오리진**에서 열리고, 그 대가로 경로 A 편집 SDK의 same-origin 저장이 CORS+토큰으로 전환된다.
-- 완료: **이슈 #48 개설** — 작업 항목 9개(① usercontent Vercel 프로젝트 신설+배포 파이프라인 ② 프로젝트 단위 단기 capability 인증 배관 ③ 편집 SDK 저장 CORS+토큰 전환 ④ `vercel.json`/라우트 핸들러 CORS 헤더 ⑤ 확장 `host_permissions`에 usercontent 호스트 1개 추가(와일드카드 금지) ⑥ `<base href>` 주입이 usercontent 기준으로 맞는지 검증 ⑦ SPA history fallback(FR-ONB-04) 회귀 확인 ⑧ §7.4 오리진 공유 부작용 해소 확인 ⑨ 두 오리진 전 구간 E2E)와 완료 조건 포함. 문서 3곳에 교차 참조: `guide/open-service-rfc.md` §7.3·§9-8, `guide/open-service-kickoff-spec.md` §7.3·§9 + §11 이력 행.
+- 완료: **이슈 #48 개설** — 작업 항목 9개(① usercontent Vercel 프로젝트 신설+배포 파이프라인 ② 프로젝트 단위 단기 capability 인증 배관 ③ 편집 SDK 저장 CORS+토큰 전환 ④ `vercel.json`/라우트 핸들러 CORS 헤더 ⑤ 확장 `host_permissions`에 usercontent 호스트 1개 추가(와일드카드 금지) ⑥ `<base href>` 주입이 usercontent 기준으로 맞는지 검증 ⑦ SPA history fallback(FR-ONB-04) 회귀 확인 ⑧ 7.4절 오리진 공유 부작용 해소 확인 ⑨ 두 오리진 전 구간 E2E)와 완료 조건 포함. 문서 3곳에 교차 참조: `guide/open-service-rfc.md` 7.3절·9-8절, `guide/open-service-kickoff-spec.md` 7.3절·9절 + 11절 이력 행.
 - 검증 방법: `gh issue view 48`로 본문 체크박스 9개 확인(문서에 적은 수량과 일치), `grep -n "#48" guide/open-service-rfc.md guide/open-service-kickoff-spec.md docs/PROGRESS.md`로 교차 참조 5곳 실재 확인. PR #49에서 CI green(`verify` ×2 / `pr_agent_job` / CodeRabbit / Vercel Preview Ready). 문서만 변경이라 코드 테스트는 해당 없음.
 - 다음 할 일: 변경 없음 — **#43 확장 배포 경로**(착수 전 Vercel Preview 환경변수 3종 확인) → **#45(보안)**. #48은 외부 공유 착수 시점에 열린다.
 - 막힌 지점: 없음. (이전 세션의 정리 대기 1건 — `../Draftify-open-service` 워크트리 제거 전 `apps/web/.env.local` 이동 — 는 그대로 남아 있다.)
@@ -377,42 +377,42 @@
 ### 2026-07-29 — 첫 배포 성공 + 절대경로 제약 실사용 노출 → 안내 문구·확장 호스트 등록
 - **배포 완료: https://draftify-html.vercel.app** (Vercel Hobby, production branch = `open-service`). OAuth 로그인·서비스 기동 확인.
 - 배포까지 걸린 것 3건(전부 대시보드 설정): ① Install Command를 **`cd ../.. && npm install`** 로 오버라이드해야 한다 — Vercel은 Root Directory(`apps/web`)에서 install 해 루트 `node_modules`가 안 생긴다(`tsc: command not found`). ② Framework Preset을 **Next.js**로 지정 — 임포트 시 Root Directory가 `packages/sdk`였던 탓에 `Other`로 잡혀 `No Output Directory named "dist"`로 실패했다. **Output Directory에 `.next`를 수동 지정하면 안 된다**(정적 취급이 되어 Route Handler·미들웨어가 죽는다). ③ Production Branch는 `Settings → Environments → Production → Branch Tracking`(예전 `Settings → Git` 아님).
-- **실사용 1회 시도에서 킥오프 §7.1 "알려진 제약"이 그대로 터졌다**: 루트 절대경로(`/assets/…`)로 빌드된 목업을 올리니 `/m/{id}/` 접두 밖을 가리켜 404 — 화면이 비어 보인다. `<base href="/m/{id}/">`는 주입되지만 **HTML `<base>`는 상대 URL에만 적용**되므로 이 케이스를 못 고친다. 스펙이 "온보딩 제약 문서화로 갈음"(§7.1·비목표 76행)이라 했는데 **실제 문구가 콘솔의 "권장합니다" 한 줄뿐이라 무력했다.**
+- **실사용 1회 시도에서 킥오프 7.1절 "알려진 제약"이 그대로 터졌다**: 루트 절대경로(`/assets/…`)로 빌드된 목업을 올리니 `/m/{id}/` 접두 밖을 가리켜 404 — 화면이 비어 보인다. `<base href="/m/{id}/">`는 주입되지만 **HTML `<base>`는 상대 URL에만 적용**되므로 이 케이스를 못 고친다. 스펙이 "온보딩 제약 문서화로 갈음"(7.1절·비목표 76행)이라 했는데 **실제 문구가 콘솔의 "권장합니다" 한 줄뿐이라 무력했다.**
 - 완료: 안내를 **필수 조건**으로 강화 — 콘솔 업로드 힌트(왜 깨지는지 + `--base=./`), `/guide` 시작하기(예시 명령을 `vite build --base=./`로 교체 + 이유 문단), `/faq`에 신규 문항 "업로드는 됐는데 편집 화면이 비어 있거나 스타일이 깨집니다"(404 증상 → 원인 → 재빌드 방법 → 정상 여부 확인법).
-- 완료: 확장 `host_permissions`에 **`https://draftify-html.vercel.app/*`** 등록(정확한 호스트 1개, 와일드카드 금지 — 킥오프 §7.5). `packages/extension/README.md`도 실제 값으로 갱신(도메인 변경 시 추가가 아니라 **교체**).
+- 완료: 확장 `host_permissions`에 **`https://draftify-html.vercel.app/*`** 등록(정확한 호스트 1개, 와일드카드 금지 — 킥오프 7.5절). `packages/extension/README.md`도 실제 값으로 갱신(도메인 변경 시 추가가 아니라 **교체**).
 - 검증: `npm test` **339 passed**, `next build` green.
 - 완료(문서, 사용자 요청): **배포가 둘이라는 사실을 최상단에 못박았다.** ① 루트 `README.md` 최상단에 **사내판 vs 공개판 비교표**(주소·서빙 방식·`<base>` 주입 유무·**목업 빌드 base**·지원 경로·한도·설명서 위치) — 핵심은 "공개판 zip은 상대 base 필수", 덧붙여 **상대 빌드를 사내판에 쓸 때의 역방향 함정**(사내판은 `<base>` 미주입이라 깊은 URL 새로고침 시 자산 경로가 어긋난다)도 명시. ② `README.md`에 **공개판 배포 절** 신설 — Vercel 4개 설정(Production Branch·Root Directory·**Framework Preset=Next.js**·**Install Command `cd ../.. && npm install`**)과 기본값으로 뒀을 때의 증상, 환경변수 3종(`SUPABASE_SECRET_KEY` 접두 금지 경고), Supabase URL Configuration, 도메인 변경 시 manifest 교체 절차. ③ `docs/user-guide.md` 최상단에 **"사내판 전용" 경고 블록** — 이 문서는 2026-07-12 작성이라 배포가 하나뿐이던 시절 기준이고, 공개판 안내로 오독하면 목업이 안 열린다.
 - 완료(문서 2차, 실사용 피드백 반영): ① **두 배포용 zip을 한 프로젝트에서 만드는 법** — `--outDir`로 출력 폴더를 나눠 기존 빌드를 덮어쓰지 않는다(`dist/` 사내판 · `dist-public/` 공개판). README zip 준비 절 + `/guide`에 명령 블록으로 넣고, 참고 구현으로 `fixtures/todo-app`(zip/zip:relative 두 벌)을 가리켰다. ② **`vite: command not found` 함정** — 빌드 도구는 프로젝트 로컬 설치라 전역 PATH에 없다. 문서의 모든 `vite build`를 **`npx vite build`**로 교체하고(README·user-guide·`/faq`·`/guide`), `npm run` 스크립트 방식을 1순위로 안내. 사용자가 실제로 이 오류를 만나 드러난 문제다. ③ `/guide`에 여러 줄 명령 블록용 `.g-code` 스타일 신설(좁은 화면에서 페이지가 아니라 블록만 가로 스크롤).
-- **🏁 실사용 1회 판정 완료 (2026-07-29, 사용자) — open-service v1 종료 조건 충족.** 킥오프 §10이 요구한 기록은 §11 이력 행에 남겼다(§10은 "§11에 기록하면 종료"라고 규정).
-- 완료(이슈 처리): **#36 종결** — `docs/user-guide.md` §1에 "빌드 base 설정" 소절 신설(도구별 상대 경로 빌드 표·`npx` 함정·두 배포용 병행 빌드·판별법). 이슈가 요구한 마지막 항목이었다. **#42 신설** — 경로 D 콘솔 UI 누락(아래 참조).
-- 확인(이슈 아님): **신규 화면 등록 시 직전 화면의 `pageSectionLabel` 프리필은 의도된 동작이다.** 킥오프 s1 §11 18차(2026-07-24, 사용자 결정)에 "신규 장면 등록 시 직전 장면 값 프리필 UX"로 명시, `packages/sdk/src/state.ts:69` 구현 + `state.test.ts:71` 회귀 테스트로 고정. 기획서에서 같은 섹션에 화면이 연속되는 패턴을 전제한 것 — 값을 지우거나 바꾸면 그대로 저장된다.
+- **🏁 실사용 1회 판정 완료 (2026-07-29, 사용자) — open-service v1 종료 조건 충족.** 킥오프 10절이 요구한 기록은 11절 이력 행에 남겼다(10절은 "11절에 기록하면 종료"라고 규정).
+- 완료(이슈 처리): **#36 종결** — `docs/user-guide.md` 1절에 "빌드 base 설정" 소절 신설(도구별 상대 경로 빌드 표·`npx` 함정·두 배포용 병행 빌드·판별법). 이슈가 요구한 마지막 항목이었다. **#42 신설** — 경로 D 콘솔 UI 누락(아래 참조).
+- 확인(이슈 아님): **신규 화면 등록 시 직전 화면의 `pageSectionLabel` 프리필은 의도된 동작이다.** 킥오프 s1 11절 18차(2026-07-24, 사용자 결정)에 "신규 장면 등록 시 직전 장면 값 프리필 UX"로 명시, `packages/sdk/src/state.ts:69` 구현 + `state.test.ts:71` 회귀 테스트로 고정. 기획서에서 같은 섹션에 화면이 연속되는 패턴을 전제한 것 — 값을 지우거나 바꾸면 그대로 저장된다.
 - 막힌 지점: **경로 D(확장) 진입점이 콘솔에 없다 → 이슈 #42로 등록.** 백엔드는 W6에서 완비(snippet 생성·토큰 발급/폐기·Bearer 스코프·PUT/assets/export 분기 + 확장 manifest 프로덕션 호스트)인데 **W7 콘솔 이식에서 UI만 빠졌다** — 공개판에서 경로 D 프로젝트를 만들 수단이 없다. 누락 항목 5개(생성·연결 코드·토큰 재발급·목록 구분·snippet export 토큰 입력)와 사내판 참조 구현(`packages/server/src/routes/console.ts`), 재사용 가능한 `shared/connection.ts`를 이슈에 정리. 경로 B(프록시) 부재는 의도된 제외(D2)라 무관.
 
 ### 2026-07-29 — Vercel 배포 준비: 워크스페이스 선행 빌드(`vercel-build`)
-- 완료: `apps/web/package.json`에 **`vercel-build`** 추가 — `npm run build --prefix ../.. && next build`. Vercel은 Root Directory(`apps/web`)의 빌드만 돌리는데, `?raw` 인라인 대상인 `packages/viewer/dist/main.js`(루트 `tsc -b`)와 `packages/sdk/dist/sdk.js`(vite)가 없어 빌드가 깨진다. Vercel은 `vercel-build`가 있으면 `build` 대신 실행하므로, 로컬 `build`(= `next build`)는 건드리지 않고 배포 경로에만 선행 빌드를 물린다. technical-spec §8에 근거·검증법 기록.
+- 완료: `apps/web/package.json`에 **`vercel-build`** 추가 — `npm run build --prefix ../.. && next build`. Vercel은 Root Directory(`apps/web`)의 빌드만 돌리는데, `?raw` 인라인 대상인 `packages/viewer/dist/main.js`(루트 `tsc -b`)와 `packages/sdk/dist/sdk.js`(vite)가 없어 빌드가 깨진다. Vercel은 `vercel-build`가 있으면 `build` 대신 실행하므로, 로컬 `build`(= `next build`)는 건드리지 않고 배포 경로에만 선행 빌드를 물린다. technical-spec 8절에 근거·검증법 기록.
 - 검증: 두 `dist/`와 `.next`를 **지운 clean 상태**에서 `npm run vercel-build -w @mockspec/web` 통과(산출물 재생성 확인 — sdk 855KB·viewer 36KB), `npm test` **339 passed**(인라인 회귀 테스트 포함).
 - Vercel 프로젝트 설정(사용자 수작업, 대시보드): Production Branch = **`open-service`**(`Settings → Environments → Production → Branch Tracking` — 예전 `Settings → Git`이 아니다), Root Directory = **`apps/web`**, 도메인은 기본 `*.vercel.app`. 임포트 화면은 default branch(`main`)만 보여주고 `main`에는 `apps/web`이 없어 `packages/sdk`가 잡히므로, **생성 후 브랜치 → 루트 디렉터리 순서로** 바꿔야 한다.
-- 다음 할 일: Vercel 환경변수 3종(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` — 마지막은 서버 전용, `NEXT_PUBLIC_` 접두 금지) 입력 → 배포 → **URL 확정 시 확장 `host_permissions`에 그 호스트 1개 추가**(킥오프 §7.4 와일드카드 금지) + Supabase Redirect URLs에 `/auth/callback`·`/auth/confirm` 추가 → 실사용 1회 판정.
+- 다음 할 일: Vercel 환경변수 3종(`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_SECRET_KEY` — 마지막은 서버 전용, `NEXT_PUBLIC_` 접두 금지) 입력 → 배포 → **URL 확정 시 확장 `host_permissions`에 그 호스트 1개 추가**(킥오프 7.4절 와일드카드 금지) + Supabase Redirect URLs에 `/auth/callback`·`/auth/confirm` 추가 → 실사용 1회 판정.
 - **1차 배포 실패로 확인된 것 (2026-07-29)**: Vercel은 Root Directory(`apps/web`)에서 install 한다 — **루트 `node_modules`가 생기지 않아** `tsc: command not found`(exit 127)로 죽었다. 루트 *파일*은 빌드 컨텍스트에 있다(루트 `package.json` 스크립트가 실행됐다) — 없는 것은 의존성뿐. 조치 2개: ① `vercel-build`를 `--prefix ../..` → **`cd ../.. && … && cd apps/web`** 로 교체(npm이 실행 위치에서 PATH를 다시 계산하게 한다), ② **Vercel Install Command를 `cd ../.. && npm install`로 오버라이드**(대시보드 수작업, 이게 핵심 — 스크립트만으로는 루트 의존성이 생기지 않는다).
 - 막힌 지점: 없음.
 
 ### 2026-07-29 — W9 공개 서비스 DoD E2E 자동화 (open-service 트랙 코드 완료)
 - 브랜치: `feat/open-service-w8-abuse-guard` (W8·선결 fix와 같은 브랜치에 이어 커밋).
-- 완료: **`e2e-open-service/open-service-dod.spec.ts` 1본** — 킥오프 §10 DoD 7단계를 한 시나리오로 검증. ① admin API로 **신규 사용자** 생성 → 매직링크 `hashed_token`을 앱의 실제 확인 경로에 태워 로그인, ② ZIP 업로드(브라우저 unzip → Storage 직업로드 → `mockup/complete`), ③ `/m/{id}/`에서 편집 — **화면 2개·어노테이션 4개**(각 제목·설명), ④ export, ⑤ 산출물을 **새 브라우저 컨텍스트에서 `file://`로** 열어 화면 전환·마커 4개 위치 **≤2px**·설명 일치·**네트워크 요청 0건**, ⑥ **격리 회귀**(사용자 B로 A의 spec·목업·asset 접근 차단), ⑦ **예약 경로 회귀**(SDK가 `/__mockspec/sdk.js`로 로드되고 저장이 `/__mockspec/api`로 성립). 테스트가 만든 사용자·프로젝트·Storage 오브젝트는 `afterAll`에서 삭제.
+- 완료: **`e2e-open-service/open-service-dod.spec.ts` 1본** — 킥오프 10절 DoD 7단계를 한 시나리오로 검증. ① admin API로 **신규 사용자** 생성 → 매직링크 `hashed_token`을 앱의 실제 확인 경로에 태워 로그인, ② ZIP 업로드(브라우저 unzip → Storage 직업로드 → `mockup/complete`), ③ `/m/{id}/`에서 편집 — **화면 2개·어노테이션 4개**(각 제목·설명), ④ export, ⑤ 산출물을 **새 브라우저 컨텍스트에서 `file://`로** 열어 화면 전환·마커 4개 위치 **≤2px**·설명 일치·**네트워크 요청 0건**, ⑥ **격리 회귀**(사용자 B로 A의 spec·목업·asset 접근 차단), ⑦ **예약 경로 회귀**(SDK가 `/__mockspec/sdk.js`로 로드되고 저장이 `/__mockspec/api`로 성립). 테스트가 만든 사용자·프로젝트·Storage 오브젝트는 `afterAll`에서 삭제.
 - 완료: **전용 설정 `playwright.open-service.config.ts`**(포트 4300 — 사내판 4123·dev 3000과 충돌 회피, `next start`, workers 1). 기존 `playwright.config.ts`(사내판 Express)와 **완전 분리** — 대상 서버·인증 방식·저장소가 다르다. 실행은 `npm run test:e2e:web`. `apps/web/.env.local`이 없으면 스펙이 **스스로 스킵**(CI 안전).
-- 완료: **fixture 상대 base 변형** — `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`(`vite build --base=./ --outDir dist-relative`). 공개판은 `/m/{id}/` 경로 접두 서빙이라 루트 base 빌드의 `/assets/...`가 접두 밖으로 나가 깨진다(킥오프 §7.1). 사내판은 서브도메인이라 기존 루트 base fixture를 그대로 쓴다 — 두 변형이 공존하는 이유를 `scripts/zip.mjs` 주석에 명시.
+- 완료: **fixture 상대 base 변형** — `npm run fixtures:zip:relative` → `fixtures/todo-app-relative.zip`(`vite build --base=./ --outDir dist-relative`). 공개판은 `/m/{id}/` 경로 접두 서빙이라 루트 base 빌드의 `/assets/...`가 접두 밖으로 나가 깨진다(킥오프 7.1절). 사내판은 서브도메인이라 기존 루트 base fixture를 그대로 쓴다 — 두 변형이 공존하는 이유를 `scripts/zip.mjs` 주석에 명시.
 - 완료(실버그 발견·수정, **W9가 잡았다**): **`/__mockspec/sdk.js`가 108바이트 플레이스홀더를 200으로 서빙**하고 있었다. `packages/server`의 `readSdkBundle()`은 `createRequire(import.meta.url)` + `require.resolve()`로 런타임에 경로를 찾고 **실패하면 플레이스홀더 JS를 200으로 반환**한다 — Next 번들 컨텍스트에서 그 해석이 실패해, 편집기가 아예 안 뜨는데 응답은 200인 조용한 파손이었다. `apps/web/lib/sdk-bundle.ts`를 신설해 `?raw` **빌드 시점 인라인**으로 교체(뷰어 런타임과 동일한 처방 — 07-25 세션 참조). 번들이 없으면 **빌드가 실패**하므로 조용한 폴백이 재발할 수 없다.
 - 완료: **`/auth/confirm` 라우트 신설** — `token_hash`를 서버에서 `verifyOtp`로 검증해 세션 쿠키를 심는다. `/auth/callback`(PKCE 코드 교환)은 **링크를 요청한 그 브라우저**에 code_verifier가 있어야 성립해서, 노트북에서 요청하고 휴대폰에서 여는 실사용 케이스가 실패한다. 이 경로가 그걸 덮는다(Supabase 권장 패턴). E2E 로그인도 이 경로를 탄다 — 즉 테스트가 우회로를 쓰지 않고 앱의 실제 확인 경로를 검증한다.
 - 검증: `npm test` **339 passed**(44 파일), **W9 E2E 1본 통과**(실 Supabase, 13.8s), **사내판 E2E 4본 통과**(회귀 없음), `next build` green.
-- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 §10 종료 조건, 사용자 판단) → **② `main` 병합 PR(사용자 동의 필수, §6)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
-- 막힌 지점: 없음. 참고 2건: (1) 목업 zip이 **루트 base 빌드면 공개판에서 깨진다** — 코드로 막지 않았고 문서·가이드 안내도 아직 없다(킥오프 §7.1의 알려진 제약). 사용자 유입 전에 콘솔/가이드 문구로 안내할지 판단 필요. (2) 07-25에 적어 둔 잔재 프로젝트 `prj_dbgtest02`는 그대로 둔다(내 데이터 아님).
+- 다음 할 일: **① Vercel 배포 → "실사용 1회" 판정**(킥오프 10절 종료 조건, 사용자 판단) → **② `main` 병합 PR(사용자 동의 필수, 6절)**. 배포 선행 작업은 위 "현재 단계" 배너의 4항목(확장 host_permissions·Supabase Redirect URLs·상대 base 안내·zod 선택).
+- 막힌 지점: 없음. 참고 2건: (1) 목업 zip이 **루트 base 빌드면 공개판에서 깨진다** — 코드로 막지 않았고 문서·가이드 안내도 아직 없다(킥오프 7.1절의 알려진 제약). 사용자 유입 전에 콘솔/가이드 문구로 안내할지 판단 필요. (2) 07-25에 적어 둔 잔재 프로젝트 `prj_dbgtest02`는 그대로 둔다(내 데이터 아님).
 
 ### 2026-07-25 — export·/sample 500 수정 (W9 선결, 뷰어 런타임 인라인)
 - 브랜치: `feat/open-service-w8-abuse-guard` (W8과 같은 브랜치에 이어 커밋).
 - 증상: `POST /api/projects/{id}/export`와 **공개 페이지 `GET /sample`**(헤더에 링크됨)이 둘 다 500. 원인은 하나 — `packages/server`의 `readViewerScript()`가 `fs.readFile(new URL("../../../viewer/dist/main.js", import.meta.url))`인데, Next 번들 컨텍스트에서 `import.meta.url`이 재작성되고 `URL`이 다른 realm 클래스가 되어 `ERR_INVALID_ARG_TYPE`으로 죽는다. 서버리스 배포 번들에 뷰어 dist가 포함된다는 보장도 없다.
 - 완료: `apps/web/lib/export/viewer-script.ts` 신설 — `?raw` 임포트로 뷰어 번들을 **빌드 시점 문자열 인라인**(`next.config.mjs`에 `asset/source` 룰, `types/raw-modules.d.ts` 선언). sourceMappingURL 주석 제거는 여기서 한다. `build-export.ts`가 이 상수를 쓰고, `/sample`은 `buildSampleHtml(VIEWER_SCRIPT)`로 넘긴다.
 - 완료: `packages/server/src/routes/sample.ts`의 `buildSampleHtml`에 **선택 인자** `viewerScript?` 추가(생략 시 기존 Express 동작 그대로 — 사내판 무영향). 이것이 packages/server에 대한 유일한 변경.
-- 스펙 반영: technical-spec §8에 "배포 형태별 뷰어 런타임 주입 방법" 표 + 공개판이 `readViewerScript()`를 쓰면 안 되는 이유. 킥오프 §11 이력 1행.
+- 스펙 반영: technical-spec 8절에 "배포 형태별 뷰어 런타임 주입 방법" 표 + 공개판이 `readViewerScript()`를 쓰면 안 되는 이유. 킥오프 11절 이력 1행.
 - 검증: `npm test` **339 passed**(+4: `viewer-script.test.ts` — 인라인 여부·sourceMappingURL 부재·스냅샷 base64 조립·마스킹본 우선·외부 참조 0). `npm run build`·`next build`·`tsc --noEmit` green, **E2E 4본 통과**(Express 경로 회귀 없음).
 - **실 서버 검증(dev + 실 Supabase, 경로 D Bearer)**: 스냅샷 asset 업로드 → 화면 1·어노테이션 1 spec PUT → **export 200(46KB, `Content-Disposition` 정상)**. 산출물을 **Chromium에서 file://로 열어** 페이지 에러 0·**외부 네트워크 요청 0건**·스냅샷 iframe 1개·마커 ① 렌더·페이지 헤더 밴드("주문관리/주문 목록")·작성자 라벨·**산출물에 SCR 코드 미노출**까지 스크린샷으로 확인. `/sample`도 200(56KB)·에러 0·요청 0건·화면 3·어노테이션 8·흐름도 렌더 확인. 검증용 사용자·프로젝트·Storage 오브젝트는 삭제 정리.
 - 다음 할 일: **W9 E2E** — 공개 DoD(가입→업로드→편집→export→뷰어, 격리·예약 경로 회귀 포함) 자동화. 이제 4단계가 실동작하므로 그대로 시나리오화 가능.
@@ -420,7 +420,7 @@
 
 ### 2026-07-25 — W8 남용 방어 완료 (쿼터·레이트리밋·업로드 검증)
 - 브랜치: `feat/open-service-w8-abuse-guard` (open-service 기준, 미병합).
-- **스펙 먼저(§4)**: 킥오프 §7.5 신설(쿼터 6종·레이트리밋 4버킷 값, 저장소·주체 규칙, 업로드 검증 신뢰 경계, 압축비 기각 근거, manifest 와일드카드 금지) + §11 이력 1행. technical-spec §7.4 신설 + §9.2 W8 AC 보강. **값은 스펙이 계약, 코드는 `lib/abuse/limits.ts` 단일 소스** — `limits.test.ts`가 표와의 일치를 못박는다.
+- **스펙 먼저(4절)**: 킥오프 7.5절 신설(쿼터 6종·레이트리밋 4버킷 값, 저장소·주체 규칙, 업로드 검증 신뢰 경계, 압축비 기각 근거, manifest 와일드카드 금지) + 11절 이력 1행. technical-spec 7.4절 신설 + 9.2절 W8 AC 보강. **값은 스펙이 계약, 코드는 `lib/abuse/limits.ts` 단일 소스** — `limits.test.ts`가 표와의 일치를 못박는다.
 - 완료: **레이트리밋** — 마이그레이션 `20260725090000_rate_limit_counters`(테이블 + `consume_rate_limit()` SECURITY DEFINER 고정 윈도우, RLS 활성·정책 없음 = service_role 전용, `authenticated`·`anon` EXECUTE revoke, 지난 윈도우 행 확률적 청소). `lib/abuse/rate-limit.ts`(admin RPC, **fail-open** — 카운터 고장으로 정상 편집을 끊지 않는다. 보안 경계는 RLS·토큰이 별도로 강제), `guard.ts`의 `rateLimit()`·`accessSubject()`(세션=`usr:{uid}`, 경로 D Bearer=`prj:{id}`). 적용: 프로젝트 생성·PUT spec·assets·complete·export·token.
 - 완료: **쿼터** `lib/abuse/quota.ts` — 사용자당 프로젝트 수(20), 프로젝트당 목업 총 크기(50MB), asset 총 크기(100MB, 신규 크기 합산 사전 판정). 스냅샷 1건은 25MB(기존 50MB에서 축소).
 - 완료: **업로드 검증(zip bomb)** — 신뢰 경계를 `POST .../mockup/complete`로 명확화: Storage **실측** 총 바이트·오브젝트 수 게이트(manifest만 줄여 우회 불가 — manifest 밖 오브젝트까지 합산), 엔트리 존재는 재귀 list로 O(1) 확인, **본문 다운로드는 HTML만**(대용량 바이너리를 서버 메모리로 끌어오지 않음, 20개씩 배치). 클라이언트(브라우저 unzip) 게이트는 UX용으로 `process.ts`에 추가(zip 원본·해제 총 크기·파일 수).
@@ -434,7 +434,7 @@
 
 ### 2026-07-25 — 핸드오프 정리 (다음 세션은 임의 에이전트)
 - 완료: W1~W7 코드리뷰 검증(소유권 RLS·path traversal 방어·토큰 timingSafeEqual·dual-auth 저장 route 일관 — 인증 우회 경로 없음 확인). 이 세션 조언(W8 세부·host_permissions 좁히기)을 "현재 단계" 배너에 회수 고정.
-- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 병합 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` §1 참조.
+- 다음 할 일: **W8 남용 방어**(배너 참고 4항목) → W9 E2E → 트랙 완료 시 **main 병합 PR**(대규모 diff, 봇 리뷰 다수). 시작 규약은 배너·`AGENTS.md` 1절 참조.
 - 막힌 지점: 없음.
 
 ### 2026-07-25 — W6 경로 D 토큰 인증 + 확장 host_permissions 전환
@@ -520,7 +520,7 @@
 
 ### 2026-07-22 — W1 착수: Supabase DB 스키마·RLS·Storage 적용 (draftify-html)
 - 대상: 사용자가 새 Supabase 프로젝트 **`draftify-html`**(ref `dhzojuatkmafgwiwtdwe`, org `landfill72@naver.com's Org`, region ap-northeast-1 도쿄, plan **free**) 생성. free 2개 상한은 기존 `kids` 프로젝트를 정리해 확보(현 활성 = tmdb-quiz + draftify-html). 프로젝트 생성 시 "Enable automatic RLS"는 켜고(public 신규 테이블 RLS 자동), "Branching(GitHub 자동 배포)"은 끔(free는 Pro 기능·레포 브랜치 구조 불일치·MCP/CLI 직접 적용이 더 단순).
-- 완료(마이그레이션 코드로 관리 + MCP `apply_migration` 적용 — 킥오프 §5):
+- 완료(마이그레이션 코드로 관리 + MCP `apply_migration` 적용 — 킥오프 5절):
   - `apps/web/supabase/migrations/20260722072600_init_open_service_schema.sql` — 테이블 3종(`projects`·`project_tokens`·`project_exports`) + RLS(owner_id=auth.uid, 하위는 부모 projects JOIN) + 파생컬럼 트리거 `sync_project_derived`(spec→name·updated_at 강제) + 인덱스 + Storage 비공개 버킷 `mockups` + 오브젝트 정책 `owner_storage_all`(경로 projects/{id} 소유권).
   - `apps/web/supabase/migrations/20260722073000_harden_security_advisors.sql` — advisor WARN 3건 처리: ① `sync_project_derived` search_path=''로 고정 ② 자동-RLS 헬퍼 `rls_auto_enable()`의 anon/authenticated EXECUTE 회수(이벤트 트리거라 API 노출 불요, 자동 RLS 동작은 유지).
 - 검증: `list_tables` 3종 rls_enabled=true·rows=0 / `execute_sql` 집계 — public 정책 3·storage 정책 1·파생 트리거 1·버킷 존재·public=false / `get_advisors(security)` **0건**(하드닝 전 3건 → 후 0). `apps/web`는 아직 스캐폴드 안 함(supabase/migrations/만 존재) — W7에서 Next 앱 구성 시 config.toml 등 채움.
@@ -529,10 +529,10 @@
 
 ### 2026-07-22 — PR #37 병합 + 구조·작업방식 확정 (monorepo+새앱, worktree)
 - 완료: **PR #37(RFC→킥오프 승격) squash 병합**(`95e5a4d`, main). 리뷰 4건 반영 후 사용자 동의. main·open-service·origin/open-service 전부 `95e5a4d`로 정렬(트리 동일 확인 후 open-service를 병합 main 위로 reset — 내용 손실 0). 리뷰 반영 = Codex P1(export signed URL 다운로드 핸드오프) + CodeRabbit minor 3(PRD SSO 표기·README 상단·PROGRESS 검증). Gemini 종료, PR-Agent compliant.
-- 구조 결정(사용자 확인 질문 2건 해소, 킥오프 §8·§10 갱신): 사용자 우려 = "open-service 개발이 기존 소스를 건드리나 / 별도 레포로 분리해야 하나". 코드 확인 결과 sdk transport가 이미 예약 경로 `/__mockspec/api`를 써서(`transport.ts:45`) 클라이언트 3종은 거의 무변경. 확정 —
+- 구조 결정(사용자 확인 질문 2건 해소, 킥오프 8절·10절 갱신): 사용자 우려 = "open-service 개발이 기존 소스를 건드리나 / 별도 레포로 분리해야 하나". 코드 확인 결과 sdk transport가 이미 예약 경로 `/__mockspec/api`를 써서(`transport.ts:45`) 클라이언트 3종은 거의 무변경. 확정 —
   - **① 구조 = monorepo + 새 앱 `apps/web`(Next.js).** 별도 레포 분리 기각(shared·sdk·viewer 재사용이 전제라 복제·드리프트 비용만 큼). 기존 `packages/server`(Express)는 **손대지 않고 보존**, 새 앱이 워크스페이스 패키지를 import해 서버리스/콘솔/목업서빙 재구현. 두 서비스 한 레포 공존. shared는 additive만(proxy 타입 제거 안 함).
   - **② 작업 방식 = git worktree.** open-service는 별도 폴더 워크트리 `../Draftify-open-service`(브랜치 open-service)에서 작업, 메인 폴더 `Draftify-Html`은 main 유지(기존 Express 구동·비교용). 워크트리는 같은 `.git` 공유하는 두 번째 폴더일 뿐(별도 레포 아님, PR·히스토리 동일).
-  - 두 결정을 킥오프 §8(코드 영향 표 재작성 + 보존 원칙 확장)·§10(모든 W는 apps/web에 얹힘 주석)에 기록.
+  - 두 결정을 킥오프 8절(코드 영향 표 재작성 + 보존 원칙 확장)·10절(모든 W는 apps/web에 얹힘 주석)에 기록.
 - 워크트리 실제 생성 완료: `git worktree list`에 `Draftify-Html [main]` + `Draftify-open-service [open-service]` 확인.
 - 다음 할 일: **W1(Supabase 프로젝트·Auth·스키마·RLS 세팅)** 착수 — 의존 선두. 워크트리에서 `apps/web` 스캐폴드 전, W1은 Supabase 인프라 세팅이라 먼저 진행 가능. 이 구조/워크트리 결정을 담은 커밋은 open-service 브랜치에 있음(트랙 진행 중 PROGRESS·킥오프 갱신은 open-service에 쌓이고, 트랙 완료 시 main으로 병합).
 - 막힌 지점: 없음.
@@ -544,16 +544,16 @@
 - 막힌 지점: 없음.
 
 ### 2026-07-24 — PR #39 리뷰 반영 (feat/page-header-band)
-- 완료: Codex P2 — `createScene` order를 `max(order)+1`로 변경(결번 [0,2] 후 중복 order 방지), 중간 삭제→신규 장면 프리필 유닛 테스트. CodeRabbit E2E 5곳 `toHaveText` 정확 일치(흐름도 노드는 visible `text` 자식). viewer↔shared 동등성 테스트(`sceneDisplay.parity.test.ts`) + `readViewerScript`/킥오프 §11 18차에 단일 모듈 인라인 제약 문서화.
+- 완료: Codex P2 — `createScene` order를 `max(order)+1`로 변경(결번 [0,2] 후 중복 order 방지), 중간 삭제→신규 장면 프리필 유닛 테스트. CodeRabbit E2E 5곳 `toHaveText` 정확 일치(흐름도 노드는 visible `text` 자식). viewer↔shared 동등성 테스트(`sceneDisplay.parity.test.ts`) + `readViewerScript`/킥오프 11절 18차에 단일 모듈 인라인 제약 문서화.
 - 검증: typecheck·vitest **260 passed**, E2E **4본 통과**.
 - 다음 할 일: PR #39 CI green 확인 → 사용자 동의 후 main 병합.
 - 막힌 지점: 없음.
 
 ### 2026-07-24 — 이슈 #38 페이지 헤더 밴드 (feat/page-header-band)
 - 배경: 이슈 #38 최종 확정(사용자) — 로고 제외, 장면 레벨 `pageSectionLabel`·`headerTitle` 2종. 산출물 표시 = 방향 2(SCR 전역 숨김, 제목 슬롯 = `headerTitle ?? title`). 편집 화면은 SCR 스테이지 헤더 유지 + 밴드 위에 얹음.
-- 완료(AGENTS.md §4 순서):
-  - `guide/s1-kickoff-spec.md` §11 18차 + Scene 모델 필드 2종
-  - `docs/output-standard.md` §2(페이지 헤더 밴드 하위 + SCR 숨김)·§4 동기화
+- 완료(AGENTS.md 4절 순서):
+  - `guide/s1-kickoff-spec.md` 11절 18차 + Scene 모델 필드 2종
+  - `docs/output-standard.md` 2절(페이지 헤더 밴드 하위 + SCR 숨김)·4절 동기화
   - `packages/shared` — 타입·`sceneDisplay.ts` 헬퍼·contract/sceneDisplay 테스트
   - `packages/viewer` — `ViewerOptions.showScrCodes`(기본 false=산출물), 밴드 렌더, 사이드바·흐름도·전이 링크 SCR 분기
   - `packages/server/routes/export.ts` — 밴드 CSS
@@ -564,36 +564,36 @@
 - 막힌 지점: 없음
 
 ### 2026-07-22 — 공개 서비스 개편 RFC → 킥오프 스펙 승격 (open-service 브랜치)
-- 배경: PR #35(RFC)가 `42e1784`로 main 병합 완료됨을 확인(열린 PR 0). RFC §11 마지막 "다음 할 일"(RFC 승격)이 최전선 → 착수. 사용자 제약 확인·반영: **어떤 방식이든 기존 로컬 베이스 레포는 무손상 유지** — 개편은 이 레포의 장기 브랜치 `open-service` 위에 추가/이식으로만 쌓고 레포 파기·새 레포 없음(RFC §8·§9-3과 정합). 진행 방식은 "먼저 계획으로 정리" 후 실행(사용자 선택).
-- 완료(문서만, 코드 변경 0 — AGENTS.md §4 규범 문서 먼저):
+- 배경: PR #35(RFC)가 `42e1784`로 main 병합 완료됨을 확인(열린 PR 0). RFC 11절 마지막 "다음 할 일"(RFC 승격)이 최전선 → 착수. 사용자 제약 확인·반영: **어떤 방식이든 기존 로컬 베이스 레포는 무손상 유지** — 개편은 이 레포의 장기 브랜치 `open-service` 위에 추가/이식으로만 쌓고 레포 파기·새 레포 없음(RFC 8절·9-3절과 정합). 진행 방식은 "먼저 계획으로 정리" 후 실행(사용자 선택).
+- 완료(문서만, 코드 변경 0 — AGENTS.md 4절 규범 문서 먼저):
   - `open-service` 장기 브랜치 생성(base = 최신 main, main 무접촉).
-  - **`guide/open-service-kickoff-spec.md` 신설** — RFC의 확정 항목(D1~D8·§5 스키마·§6 함수·§7 격리·§8 코드 영향·§10 WBS)을 pathD 킥오프 구조로 착수 계약화. 0 한 줄 정의 / 1 범위 / 2 불변·재협상 / 3 D1~D8 / 4 아키텍처 / 5 스키마 / 6 함수 / 7 격리 / 8 코드 영향(+레포 보존 원칙 명시) / 9 유일 열린 질문(외부 공유, v1 밖) / 10 WBS W1~W9 + 공개 DoD / 11 이력. RFC는 근거로 보존·참조.
-  - **PRD 동기화**: NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증(Google OAuth·이메일 매직링크)+소유자 RLS로 대체 명시(file-based 배포엔 유지) / §7.1 로드맵 = **open-service 독립 트랙 행** 추가(단계 번호 안 잇는 이유 주석) / §7.2 = SSO 조건 ① 충족으로 YAGNI 해제 주석.
-  - **technical-spec §9.2**: WBS **W1~W9 블록** 편입(독립 트랙, W 번호·워크스트림 PR 방침 주석).
-  - **RFC 상태 전환**: 헤더 "RFC 초안(탐색)" → "킥오프 스펙으로 승격됨" + §11 승격 이력 1줄.
+  - **`guide/open-service-kickoff-spec.md` 신설** — RFC의 확정 항목(D1~D8·5절 스키마·6절 함수·7절 격리·8절 코드 영향·10절 WBS)을 pathD 킥오프 구조로 착수 계약화. 0 한 줄 정의 / 1 범위 / 2 불변·재협상 / 3 D1~D8 / 4 아키텍처 / 5 스키마 / 6 함수 / 7 격리 / 8 코드 영향(+레포 보존 원칙 명시) / 9 유일 열린 질문(외부 공유, v1 밖) / 10 WBS W1~W9 + 공개 DoD / 11 이력. RFC는 근거로 보존·참조.
+  - **PRD 동기화**: NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증(Google OAuth·이메일 매직링크)+소유자 RLS로 대체 명시(file-based 배포엔 유지) / 7.1절 로드맵 = **open-service 독립 트랙 행** 추가(단계 번호 안 잇는 이유 주석) / 7.2절 = SSO 조건 ① 충족으로 YAGNI 해제 주석.
+  - **technical-spec 9.2절**: WBS **W1~W9 블록** 편입(독립 트랙, W 번호·워크스트림 PR 방침 주석).
+  - **RFC 상태 전환**: 헤더 "RFC 초안(탐색)" → "킥오프 스펙으로 승격됨" + 11절 승격 이력 1줄.
   - **PROGRESS**: 공개 서비스 WBS 체크리스트(W1~W9) 추가 + 이 세션 로그.
-- 검증(문서 변경이라 빌드/테스트 대신 정합성 확인): ① `git diff` 전체 리뷰 — 코드 파일 변경 0건 확인(문서 6종만) ② 신규 킥오프의 크로스레퍼런스 링크(`open-service-kickoff-spec.md`)가 PRD·technical-spec·README·RFC에서 실제 파일을 가리키는지 `grep -l`로 확인 ③ WBS W1~W9가 킥오프 §10·technical-spec §9.2·PROGRESS 체크리스트 세 곳에서 일치하는지 대조 ④ 불변(§1.3 제1원칙 4개)·재협상(NFR-01·§7.2) 경계가 킥오프 §2와 PRD 개정문에서 상호 모순 없는지 확인 ⑤ PR #37 CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green.
-- 리뷰 반영(PR #37, `8b26e46` 2차 커밋): Codex P1(export signed URL 다운로드 핸드오프 — SDK/확장이 URL이 아닌 HTML을 저장하도록 302 리다이렉트/클라이언트 분기 명시, 킥오프 §6·W5) + CodeRabbit minor 3건(PRD "SSO/인증"→"인증"으로 SSO 프로토콜 미도입 구분 / README 상단 설명에 open-service 트랙 병기 / 이 검증 항목 추가). Gemini는 서비스 종료로 리뷰 없음, PR-Agent fully compliant.
+- 검증(문서 변경이라 빌드/테스트 대신 정합성 확인): ① `git diff` 전체 리뷰 — 코드 파일 변경 0건 확인(문서 6종만) ② 신규 킥오프의 크로스레퍼런스 링크(`open-service-kickoff-spec.md`)가 PRD·technical-spec·README·RFC에서 실제 파일을 가리키는지 `grep -l`로 확인 ③ WBS W1~W9가 킥오프 10절·technical-spec 9.2절·PROGRESS 체크리스트 세 곳에서 일치하는지 대조 ④ 불변(1.3절 제1원칙 4개)·재협상(NFR-01·7.2절) 경계가 킥오프 2절과 PRD 개정문에서 상호 모순 없는지 확인 ⑤ PR #37 CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green.
+- 리뷰 반영(PR #37, `8b26e46` 2차 커밋): Codex P1(export signed URL 다운로드 핸드오프 — SDK/확장이 URL이 아닌 HTML을 저장하도록 302 리다이렉트/클라이언트 분기 명시, 킥오프 6절·W5) + CodeRabbit minor 3건(PRD "SSO/인증"→"인증"으로 SSO 프로토콜 미도입 구분 / README 상단 설명에 open-service 트랙 병기 / 이 검증 항목 추가). Gemini는 서비스 종료로 리뷰 없음, PR-Agent fully compliant.
 - 다음 할 일: 승격 커밋 → **PR 오픈(이슈 #34 연결)** → 사용자 동의 후 `open-service` 브랜치는 장기 유지(main 병합이 아니라, 이후 W1~W9 워크스트림 PR이 이 브랜치로 병합). 첫 실 구현 워크스트림은 **W1(Supabase 세팅)** 이 의존 선두. 별도 이슈 #36(빌드 가이드)은 개편과 독립하게 대기.
-- 막힌 지점: 없음. (착수를 막는 유일한 열린 질문 §9-8 외부 공유는 v1 범위 밖.)
+- 막힌 지점: 없음. (착수를 막는 유일한 열린 질문 9-8절 외부 공유는 v1 범위 밖.)
 
 ### 2026-07-21 — 공개 서비스 개편 RFC 초안 (Vercel + Supabase, docs/open-service-rfc)
-- 배경(사용자 방향): 사내망·무인증 전제로 만든 현 제품을 **공개 URL로 기획자들이 직접 접속해 쓰는 멀티테넌트 서비스**로 여는 개편을 검토 착수. 가능성 타진 단계지만 방향은 "개편 프로젝트"로 확정. PRD §7.2 인증 도입 조건의 실수요 발생에 해당.
-- 논의로 확정된 결정 D1~D8(`guide/open-service-rfc.md` §3): ① 완전 공개 가입 + 단일 인증(구글 OAuth 또는 Supabase 이메일, 둘 다 무방·SSO 없음) ② 경로 B(URL 프록시) 공개판 제외 — 서버리스·공개판 부적합 + SSRF 표면 소멸, 공개판은 경로 A(zip)+D(확장)만 ③ 상주 컨테이너 불가 → **Vercel 확정** ④ 데이터·인증·저장은 **Supabase**(Postgres+Storage+Auth) ⑤ zip 해제를 브라우저로 이관(서버리스 영속 디스크 없음) ⑥ SDK 주입은 인제스트 시점 1회 ⑦ 목업 격리는 **경로 접두**(`/m/{id}/`) 방식 ⑧ 프레임워크 Next.js.
-- 산출: `guide/open-service-rfc.md` 신설 — §1 동기, §2 불변(§1.3 제1원칙 4개 유지)/재협상(NFR-01·§7.2만) 구분, §4 목표 아키텍처, §5 Postgres 스키마 스케치(SpecProject를 JSONB 통짜 + RLS 소유자 격리), §6 플로우별 서버리스 함수 설계, §7 경로 격리 메커니즘+절대경로 목업 제약 명시, §8 코드 영향(편집기·뷰어·타입 생존, 서버 계층만 이식), §9 열린 질문 7종, §10 WBS 스케치 W1~W9. **RFC(탐색)이며 아직 킥오프 스펙 아님** — 스코프 확정 시 킥오프로 승격하고 PRD·NFR-01·§7.2 동기화.
-- 진행: `docs/open-service-rfc` 브랜치 커밋(`59f76ba`)·push, **PR #35** 오픈, 엄브렐라 **이슈 #34** 개설(W1~W9 추적). PR #35 Gemini 리뷰 4건(전부 medium) 반영(2차 커밋): ① §5 컬럼/JSONB 중복 → spec 원천·파생 투영 동기화 명시 ② project_tokens·project_exports RLS 누락 → 부모 JOIN 소유자 정책 추가 ③ SDK 주입 주체 모호 → "클라이언트 브라우저 unzip+주입, 서버 검증만"(D5·D6 정합) ④ 목업 서빙 인가 미명시 → "소유자 인증 경유 v1·익명 없음" 확정 + 외부 공유는 §9-8 열린 질문화. Codex 지적 없음, CodeRabbit은 리뷰 한도 초과로 스킵(코드 실패 아님).
-- Codex 2차 리뷰(P1 2건) 모두 처리: **P1-A(Storage 오브젝트 RLS 누락) 반영** — Postgres 테이블 RLS는 storage.objects 미제약이라 D5 브라우저 직접 업로드에 대비해 projects/{id} 경로 소유권 검증 버킷 정책 + 버킷 비공개 추가(§5·§6·W1). **P1-B(신뢰불가 목업의 오리진 경계) 결정·반영** — 사용자 결정: v1=옵션 2(콘솔과 같은 오리진 + 소유자-전용 서빙 + "믿을 수 있는 ZIP만" 사용 제약), 방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL)를 승격 경로로 기록하고 §9-8 외부 공유 전 선행 필수화. D7·§7(7.1~7.4 재구성) 갱신. 오리진 격리는 콘솔↔목업 전체 사이만 필요 → 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
-- Codex 3차 리뷰(3건) 반영: ① P1 SPA history fallback — /m/{id}/ 라우팅이 확장자 없는 미존재 경로를 index.html로 폴백(FR-ONB-04·serve.ts 회귀 방지, §6·§7.1·W4) ② P1 미들웨어 스트리밍 불가 — 목업 서빙을 Route Handler로 이동(Edge 미들웨어는 본문 스트리밍 불가), 미들웨어는 인증·리라이트만 ③ P2 격리 오리진 자산 인가 — §7.3 승격 경로에서 오브젝트 단위 서명 URL 대신 usercontent Route Handler + 프로젝트 단위 단기 capability로 전체 오브젝트 인가.
-- 열린 질문 2건 결정: 인증 = **Google OAuth + Supabase 이메일 매직링크 둘 다 제공**(D1·W1 갱신), 권한 모델 확장 = **실수요까지 유보(YAGNI)**·멤버십 스키마 선반영 안 함. §9 재구성. 기존 `data/` 이관(§9-3)은 대기 — "완전 대체"가 레포 파기로 오해돼, 코드는 §8대로 이 레포에서 진화(shared·sdk·viewer 생존, server만 이식)하고 데이터 이관 여부만 남은 질문임을 명확화.
-- 기존 데이터 이관(§9-3) 결정: **이관 없음, 빈 DB로 시작.** 기존 data/는 내부 시연·설명용 폐기 대상 — 새 Supabase로 안 옮김.
-- 저강도 4건 확정: ④ 절대경로 목업 = v1 온보딩 문서화(현재 버전은 서브도메인이라 절대·상대 둘 다 동작, 깨짐은 경로 격리 신규 제약) — 빌드 가이드 user-guide.md 추가는 현재 버전에도 유효해 **별도 이슈 분리**. ⑤ 경로 D = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest+저장 URL 전환만(진짜 CORS는 §7.3 옵션1 승격 시). ⑥ 남용 방어 = W8. ⑦ 브랜치 = 이 레포에 장기 개편 브랜치(open-service)+워크스트림 PR. **상류·저강도 전부 확정, 남은 열린 질문은 §9-8(외부 공유, v1 밖)뿐.**
+- 배경(사용자 방향): 사내망·무인증 전제로 만든 현 제품을 **공개 URL로 기획자들이 직접 접속해 쓰는 멀티테넌트 서비스**로 여는 개편을 검토 착수. 가능성 타진 단계지만 방향은 "개편 프로젝트"로 확정. PRD 7.2절 인증 도입 조건의 실수요 발생에 해당.
+- 논의로 확정된 결정 D1~D8(`guide/open-service-rfc.md` 3절): ① 완전 공개 가입 + 단일 인증(구글 OAuth 또는 Supabase 이메일, 둘 다 무방·SSO 없음) ② 경로 B(URL 프록시) 공개판 제외 — 서버리스·공개판 부적합 + SSRF 표면 소멸, 공개판은 경로 A(zip)+D(확장)만 ③ 상주 컨테이너 불가 → **Vercel 확정** ④ 데이터·인증·저장은 **Supabase**(Postgres+Storage+Auth) ⑤ zip 해제를 브라우저로 이관(서버리스 영속 디스크 없음) ⑥ SDK 주입은 인제스트 시점 1회 ⑦ 목업 격리는 **경로 접두**(`/m/{id}/`) 방식 ⑧ 프레임워크 Next.js.
+- 산출: `guide/open-service-rfc.md` 신설 — 1절 동기, 2절 불변(1.3절 제1원칙 4개 유지)/재협상(NFR-01·7.2절만) 구분, 4절 목표 아키텍처, 5절 Postgres 스키마 스케치(SpecProject를 JSONB 통짜 + RLS 소유자 격리), 6절 플로우별 서버리스 함수 설계, 7절 경로 격리 메커니즘+절대경로 목업 제약 명시, 8절 코드 영향(편집기·뷰어·타입 생존, 서버 계층만 이식), 9절 열린 질문 7종, 10절 WBS 스케치 W1~W9. **RFC(탐색)이며 아직 킥오프 스펙 아님** — 스코프 확정 시 킥오프로 승격하고 PRD·NFR-01·7.2절 동기화.
+- 진행: `docs/open-service-rfc` 브랜치 커밋(`59f76ba`)·push, **PR #35** 오픈, 엄브렐라 **이슈 #34** 개설(W1~W9 추적). PR #35 Gemini 리뷰 4건(전부 medium) 반영(2차 커밋): ① 5절 컬럼/JSONB 중복 → spec 원천·파생 투영 동기화 명시 ② project_tokens·project_exports RLS 누락 → 부모 JOIN 소유자 정책 추가 ③ SDK 주입 주체 모호 → "클라이언트 브라우저 unzip+주입, 서버 검증만"(D5·D6 정합) ④ 목업 서빙 인가 미명시 → "소유자 인증 경유 v1·익명 없음" 확정 + 외부 공유는 9-8절 열린 질문화. Codex 지적 없음, CodeRabbit은 리뷰 한도 초과로 스킵(코드 실패 아님).
+- Codex 2차 리뷰(P1 2건) 모두 처리: **P1-A(Storage 오브젝트 RLS 누락) 반영** — Postgres 테이블 RLS는 storage.objects 미제약이라 D5 브라우저 직접 업로드에 대비해 projects/{id} 경로 소유권 검증 버킷 정책 + 버킷 비공개 추가(5절·6절·W1). **P1-B(신뢰불가 목업의 오리진 경계) 결정·반영** — 사용자 결정: v1=옵션 2(콘솔과 같은 오리진 + 소유자-전용 서빙 + "믿을 수 있는 ZIP만" 사용 제약), 방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL)를 승격 경로로 기록하고 9-8절 외부 공유 전 선행 필수화. D7·7절(7.1~7.4 재구성) 갱신. 오리진 격리는 콘솔↔목업 전체 사이만 필요 → 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
+- Codex 3차 리뷰(3건) 반영: ① P1 SPA history fallback — /m/{id}/ 라우팅이 확장자 없는 미존재 경로를 index.html로 폴백(FR-ONB-04·serve.ts 회귀 방지, 6절·7.1절·W4) ② P1 미들웨어 스트리밍 불가 — 목업 서빙을 Route Handler로 이동(Edge 미들웨어는 본문 스트리밍 불가), 미들웨어는 인증·리라이트만 ③ P2 격리 오리진 자산 인가 — 7.3절 승격 경로에서 오브젝트 단위 서명 URL 대신 usercontent Route Handler + 프로젝트 단위 단기 capability로 전체 오브젝트 인가.
+- 열린 질문 2건 결정: 인증 = **Google OAuth + Supabase 이메일 매직링크 둘 다 제공**(D1·W1 갱신), 권한 모델 확장 = **실수요까지 유보(YAGNI)**·멤버십 스키마 선반영 안 함. 9절 재구성. 기존 `data/` 이관(9-3절)은 대기 — "완전 대체"가 레포 파기로 오해돼, 코드는 8절 그대로 이 레포에서 진화(shared·sdk·viewer 생존, server만 이식)하고 데이터 이관 여부만 남은 질문임을 명확화.
+- 기존 데이터 이관(9-3절) 결정: **이관 없음, 빈 DB로 시작.** 기존 data/는 내부 시연·설명용 폐기 대상 — 새 Supabase로 안 옮김.
+- 저강도 4건 확정: ④ 절대경로 목업 = v1 온보딩 문서화(현재 버전은 서브도메인이라 절대·상대 둘 다 동작, 깨짐은 경로 격리 신규 제약) — 빌드 가이드 user-guide.md 추가는 현재 버전에도 유효해 **별도 이슈 분리**. ⑤ 경로 D = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest+저장 URL 전환만(진짜 CORS는 7.3절 옵션1 승격 시). ⑥ 남용 방어 = W8. ⑦ 브랜치 = 이 레포에 장기 개편 브랜치(open-service)+워크스트림 PR. **상류·저강도 전부 확정, 남은 열린 질문은 9-8절(외부 공유, v1 밖)뿐.**
 - 빌드 가이드 별도 이슈 **#36** 등록(분리 근거: 현재 버전에서도 상대경로 빌드 동작 → 개편과 독립).
-- CodeRabbit·Codex 4차 리뷰 반영: ① Codex P1 예약 경로 — 주입 SDK가 절대경로(/__mockspec/sdk.js)·transport /__mockspec/api라 콘솔 루트에 이 라우트 없으면 경로 A 편집 불가 → §4·§6 루트 예약경로 명시 + W4b 신설 ② Codex P2 기존 <base> — 브라우저는 첫 base만 인정, 인제스트는 삽입 아닌 교체(§7.1·W3) ③ CR Major 파생컬럼 — RLS로 못 막으니 DB 트리거로 spec에서 강제 동기화(§5) ④ CR Major asset 버킷 — 단일 버킷으로 통일해 RLS 1개가 mockup·asset 둘 다 커버(§4·§5) ⑤ CR Minor — W4 <base> 책임 D6과 일치·코드펜스 언어 지정.
-- 다음 할 일: PR #35 CI green 확인 → **병합**(사용자 동의함, "2번부터") → RFC main 안착 후 별도 브랜치에서 킥오프 승격(PRD §7.1·NFR-01·§7.2 동기화, WBS를 technical-spec §9.2로).
+- CodeRabbit·Codex 4차 리뷰 반영: ① Codex P1 예약 경로 — 주입 SDK가 절대경로(/__mockspec/sdk.js)·transport /__mockspec/api라 콘솔 루트에 이 라우트 없으면 경로 A 편집 불가 → 4절·6절 루트 예약경로 명시 + W4b 신설 ② Codex P2 기존 <base> — 브라우저는 첫 base만 인정, 인제스트는 삽입 아닌 교체(7.1절·W3) ③ CR Major 파생컬럼 — RLS로 못 막으니 DB 트리거로 spec에서 강제 동기화(5절) ④ CR Major asset 버킷 — 단일 버킷으로 통일해 RLS 1개가 mockup·asset 둘 다 커버(4절·5절) ⑤ CR Minor — W4 <base> 책임 D6과 일치·코드펜스 언어 지정.
+- 다음 할 일: PR #35 CI green 확인 → **병합**(사용자 동의함, "2번부터") → RFC main 안착 후 별도 브랜치에서 킥오프 승격(PRD 7.1절·NFR-01·7.2절 동기화, WBS를 technical-spec 9.2절로).
 - 막힌 지점: 없음.
 
 ### 2026-07-19 — PR #33 main 병합 완료 (헤더 DOCS → 샘플 보기, 이슈 #30 종결)
-- 완료: 사용자 동의로 squash 병합(`025c2ea`), 이슈 #30 자동 닫힘, 로컬·원격 브랜치 삭제. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green. 리뷰 처리 — Gemini medium·CodeRabbit minor(같은 주제)는 스냅샷 base64 모듈 로드 시 1회 인코딩 + `Promise<string>` 캐시(동시 최초 요청 중복 빌드 방지·실패 시 캐시 비워 재시도)로 반영(`bebda00`). Codex P2 "세션 로그 날짜가 미래(07-18이어야)"는 기각 — 커밋 UTC 시각 기준 지적이고 작업자 로컬(KST) 실제 날짜는 07-19가 맞음(PR #26·#27 동일 선례, AGENTS §3 '실제 날짜'는 로컬 기준).
+- 완료: 사용자 동의로 squash 병합(`025c2ea`), 이슈 #30 자동 닫힘, 로컬·원격 브랜치 삭제. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green. 리뷰 처리 — Gemini medium·CodeRabbit minor(같은 주제)는 스냅샷 base64 모듈 로드 시 1회 인코딩 + `Promise<string>` 캐시(동시 최초 요청 중복 빌드 방지·실패 시 캐시 비워 재시도)로 반영(`bebda00`). Codex P2 "세션 로그 날짜가 미래(07-18이어야)"는 기각 — 커밋 UTC 시각 기준 지적이고 작업자 로컬(KST) 실제 날짜는 07-19가 맞음(PR #26·#27 동일 선례, AGENTS 3절 '실제 날짜'는 로컬 기준).
 - 다음 할 일: 남은 열린 이슈 — #12·#13(실수요 대기). 이슈 #18 검토 후보 (c)는 Nexacro 실 DOM 재현 확보 후 별도 이슈 등록.
 - 막힌 지점: 없음.
 
@@ -612,12 +612,12 @@
 - 막힌 지점: 없음.
 
 ### 2026-07-18 — PR #31 main 병합 완료 (SPA 라우트 변경 제안 배너, 이슈 #18 종결)
-- 완료: 리뷰 반영 3건 후 사용자 동의로 squash 병합(`73c8104`), 이슈 #18 자동 닫힘. 반영 내역 — ① CodeRabbit nitpick: `registerScene`의 route 조합을 `currentRoute()` 재사용으로. ② Codex P2: "세션 1회" 소진 기준을 감지 시점 → **배너가 실제 표시된 시점**으로 확정(킥오프 §11 17차, detailed-spec·ID-09 동기화) — 닫힌 패널에서 생겼다가 표시 전에 소멸한 제안은 route를 소진하지 않는다. ③ Codex 후속 P2: peek로 접힌 동안(`inert`)도 미표시로 간주해 seen 조건에 `!peek` 추가. 각각 회귀 테스트 포함, sdk vitest 83 passed. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green, PR Agent 최종 재검토 Non-compliant 없음.
+- 완료: 리뷰 반영 3건 후 사용자 동의로 squash 병합(`73c8104`), 이슈 #18 자동 닫힘. 반영 내역 — ① CodeRabbit nitpick: `registerScene`의 route 조합을 `currentRoute()` 재사용으로. ② Codex P2: "세션 1회" 소진 기준을 감지 시점 → **배너가 실제 표시된 시점**으로 확정(킥오프 11절 17차, detailed-spec·ID-09 동기화) — 닫힌 패널에서 생겼다가 표시 전에 소멸한 제안은 route를 소진하지 않는다. ③ Codex 후속 P2: peek로 접힌 동안(`inert`)도 미표시로 간주해 seen 조건에 `!peek` 추가. 각각 회귀 테스트 포함, sdk vitest 83 passed. CI 4체크(verify ×2·pr_agent_job·CodeRabbit) green, PR Agent 최종 재검토 Non-compliant 없음.
 - 다음 할 일: 이슈 #18 검토 후보 (c) — URL 불변 Nexacro MDI의 숨김/가림 DOM 마커 처리는 실사용 DOM 재현 확보 후 별도 이슈로 등록해 결정. 열린 이슈 — #30(DOCS 메뉴 정리 결정 대기), #12·#13(실수요 대기).
 - 막힌 지점: 없음.
 
 ### 2026-07-17 — 이슈 #18 SPA 라우트 변경 제안 배너 (feat/route-change-banner)
-- 완료: 누락된 P0 FR-EDT-06을 T30으로 WBS에 추가하고 킥오프 §11 16차에서 감지 경계를 확정. SDK가 `pathname+search+hash` 실제 변경을 `pushState`·`replaceState`·`popstate`·`hashchange`로 감지해 패널 상단에 "새 화면으로 등록할까요? [등록] [무시]"를 route별 세션 1회 제안한다. 최초 route는 이미 본 것으로 처리하고, 패널 닫힘/편집·미리보기 모드와 무관하게 감지하며, 이미 본 route로 돌아오면 낡은 제안을 제거한다. [등록]은 기존 화면 등록·캡처 흐름을 재사용하고 자동 화면 전환·route 매칭은 하지 않는다. user-guide와 콘솔 `/guide` 동기화. PR #31 Gemini 리뷰 medium 1건(후속 history 래퍼가 남아도 cleanup 뒤 콜백 실행 방지)을 `stopped` 가드+회귀 테스트로 반영. 검증: build·typecheck 성공, vitest 214 passed(+7), Playwright E2E 4본 통과(S1에서 실제 history route 배너→등록), 실 Chromium 1440×900에서 패널 상단 배치·문구·버튼 확인.
+- 완료: 누락된 P0 FR-EDT-06을 T30으로 WBS에 추가하고 킥오프 11절 16차에서 감지 경계를 확정. SDK가 `pathname+search+hash` 실제 변경을 `pushState`·`replaceState`·`popstate`·`hashchange`로 감지해 패널 상단에 "새 화면으로 등록할까요? [등록] [무시]"를 route별 세션 1회 제안한다. 최초 route는 이미 본 것으로 처리하고, 패널 닫힘/편집·미리보기 모드와 무관하게 감지하며, 이미 본 route로 돌아오면 낡은 제안을 제거한다. [등록]은 기존 화면 등록·캡처 흐름을 재사용하고 자동 화면 전환·route 매칭은 하지 않는다. user-guide와 콘솔 `/guide` 동기화. PR #31 Gemini 리뷰 medium 1건(후속 history 래퍼가 남아도 cleanup 뒤 콜백 실행 방지)을 `stopped` 가드+회귀 테스트로 반영. 검증: build·typecheck 성공, vitest 214 passed(+7), Playwright E2E 4본 통과(S1에서 실제 history route 배너→등록), 실 Chromium 1440×900에서 패널 상단 배치·문구·버튼 확인.
 - 다음 할 일: draft PR 리뷰 후 사용자 동의를 받아 병합. URL이 바뀌지 않는 Nexacro MDI의 숨김/가림 DOM 마커 처리는 실사용 DOM 재현 확보 후 별도 이슈로 결정.
 - 막힌 지점: 없음.
 
@@ -642,7 +642,7 @@
 
 ### 2026-07-17 — PR #26·#27 main 병합 완료 (README 스크린샷 · PR-Agent concurrency 수정)
 - 사용자 동의 후 순서대로 병합: **PR #26**(`7d819cf`) — 병합 전 Codex P2 1건 반영(연결 코드 복사는 발급 세션 한정 명시, `b967699`) → **PR #27**(`1525a26`) — #26과 PROGRESS.md 충돌을 rebase로 해소(두 로그 항목 보존) 후 병합. 로컬·원격 브랜치 삭제.
-- 리뷰 기각 1건: Codex의 "PROGRESS 날짜를 07-16으로 고쳐라" — 커밋의 UTC 시각 기준 지적이며 로컬(KST) 실제 날짜는 2026-07-17이 맞음. AGENTS §3의 "실제 날짜"는 작업자 로컬 기준으로 유지.
+- 리뷰 기각 1건: Codex의 "PROGRESS 날짜를 07-16으로 고쳐라" — 커밋의 UTC 시각 기준 지적이며 로컬(KST) 실제 날짜는 2026-07-17이 맞음. AGENTS 3절의 "실제 날짜"는 작업자 로컬 기준으로 유지.
 - 관찰: #27의 rebase 전 run에서 `pr_agent_job`이 3m23s 정상 완주(pass) — 수정 효과는 이후 PR들에서 봇 댓글 경합 시 취소가 없는지로 계속 확인.
 - 다음 할 일: 열린 이슈 — #18(타 화면 마커 잔존, 방향 논의 필요), #12·#13(실수요 대기).
 - 막힌 지점: 없음.
@@ -670,30 +670,30 @@
 - 다음 할 일: 실사용 프로젝트에서 좌상단 부착 + 동적 텍스트 마커(점선) 위치를 재-export로 최종 확인. 이슈 #18(타 화면 마커 잔존)·#13·#12는 대기.
 - 막힌 지점: 없음.
 
-### 2026-07-16 — 이슈 #22: 앵커 해석 우선순위 보강 — selector 유일 해석·서명 불일치를 rect fallback보다 우선 (킥오프 §11 15차)
-- 브랜치: `fix/anchor-resolve-priority` (**#17 브랜치 `feat/marker-top-left-default` 위에 스택** — §11 차수·테스트 기준 일관성. PR은 #17의 PR #23 병합 후 rebase하여 오픈).
+### 2026-07-16 — 이슈 #22: 앵커 해석 우선순위 보강 — selector 유일 해석·서명 불일치를 rect fallback보다 우선 (킥오프 11절 15차)
+- 브랜치: `fix/anchor-resolve-priority` (**#17 브랜치 `feat/marker-top-left-default` 위에 스택** — 11절 차수·테스트 기준 일관성. PR은 #17의 PR #23 병합 후 rebase하여 오픈).
 - 배경(실사용 버그 조사): 퀴즈형 SPA 프로젝트 산출물에서 일부 마커가 편집 화면보다 정확히 179~180px 왼쪽으로 이탈. Chromium 계측으로 원인 확정 —
   ① 타이머(`"12s"→"13s"`)·랜덤 문구 등 **동적 텍스트**가 부착 시점과 캡처 시점 사이에 바뀌어, selector가 올바른 요소를 유일하게 찾고도 서명 불일치로 기각 → rect fallback.
   ② rect는 패널 도킹(−360px) 레이아웃에서 측정되는데 캡처는 마진 제거 전체 폭이라, 중앙 정렬 페이지에서 fallback 마커가 요소보다 180px(=360/2, 우측 정렬은 360px) 왼쪽. 편집 화면은 도킹 레이아웃이라 같은 좌표가 우연히 정확해 보임 → "산출물만 왼쪽" 현상.
   ③ **#17(좌상단 변경)과 무관** — 구 산식 `(x+w)·폭`으로도 동일 편차 재현 확인.
 - 결정(사용자): 방안 1 — 재해석에 2.5단계 추가. 재탐색 실패 시 selector가 **유일하게** 해석되면 그 요소를 rect보다 우선, 점선(위치 불확실) 유지, selector 갱신·저장 안 함. 방안 2(rect 좌표계 정합)는 편집 중 fallback이 반대로 어긋나는 트레이드오프로 범위 제외(필요 시 후속). **이슈 #22 등록.**
-- 완료(AGENTS §4 순서): 킥오프 §6.2 서술+§11 15차 개정 → detailed-spec §3.5 재해석 단계(3단계 신설) · technical-spec §4.3(2.5단계) → 구현: sdk `anchor.ts` `resolveAnchor`에 `selector-mismatch` 모드(querySelectorAll 유일성 가드), `useMarkers.ts` uncertain 반영, viewer `main.ts` 복제 구현 동일+점선 클래스·전용 툴팁("요소 내용이 변경되어 위치가 불확실함") → 테스트: sdk anchor·viewer unit에 selector-mismatch 2케이스씩(유일 해석 성공 / 비유일이면 rect-fallback 유지).
+- 완료(AGENTS 4절 순서): 킥오프 6.2절 서술+11절 15차 개정 → detailed-spec 3.5절 재해석 단계(3단계 신설) · technical-spec 4.3절(2.5단계) → 구현: sdk `anchor.ts` `resolveAnchor`에 `selector-mismatch` 모드(querySelectorAll 유일성 가드), `useMarkers.ts` uncertain 반영, viewer `main.ts` 복제 구현 동일+점선 클래스·전용 툴팁("요소 내용이 변경되어 위치가 불확실함") → 테스트: sdk anchor·viewer unit에 selector-mismatch 2케이스씩(유일 해석 성공 / 비유일이면 rect-fallback 유지).
 - 검증: `npm test` **200 passed**(196+신규 4), `npm run test:e2e` **4본 통과**(빌드 포함). 실사용 프로젝트 실데이터 재계측(Chromium): 이탈했던 3건(타이머·명대사·보기)이 전부 **요소 위 점선(dx=0)**으로 부착 — 종전 −179~−180px 편차 해소. 정상 해석 항목(파랑) 동작 불변.
-- 커밋 `7d8895c` → push → **PR #24 오픈**(base=#23 스택, #23 병합 시 main으로 자동 전환). PR #24 자체 리뷰 지적 0건(gemini "no feedback"·PR-Agent fully compliant·CodeRabbit은 비기본 base라 스킵). #23 리뷰 3건 반영(`bdfec28`) 후 rebase(`a271537`) — §11 15차 행을 14차 뒤 시간순으로 재배치, unit 201 passed·E2E 4본 green 재확인.
+- 커밋 `7d8895c` → push → **PR #24 오픈**(base=#23 스택, #23 병합 시 main으로 자동 전환). PR #24 자체 리뷰 지적 0건(gemini "no feedback"·PR-Agent fully compliant·CodeRabbit은 비기본 base라 스킵). #23 리뷰 3건 반영(`bdfec28`) 후 rebase(`a271537`) — 11절 15차 행을 14차 뒤 시간순으로 재배치, unit 201 passed·E2E 4본 green 재확인.
 - 다음 할 일: PR #23 병합 동의 → 병합 → PR #24 base 자동 전환 확인·CI green → 병합 동의 → #22 닫기.
 - 막힌 지점: 없음.
 
-### 2026-07-16 — 이슈 #17: 마커 기본 부착 위치 우상단 → 좌상단 변경 (킥오프 §11 14차 개정)
+### 2026-07-16 — 이슈 #17: 마커 기본 부착 위치 우상단 → 좌상단 변경 (킥오프 11절 14차 개정)
 - 브랜치: `feat/marker-top-left-default`.
-- AGENTS §4 절차 준수 — 규범 문서 먼저 개정 후 구현:
-  - **킥오프 §11 14차 개정** 추가(사유: Nexacro류 실사용에서 넓은 컨테이너 앵커의 우상단 마커가 패널 대역에 몰림, 실측상 좌상단은 전부 가시). §5 `markerOffset` 주석·§6.2 마커 드래그·기본 위치 절 동기화.
-  - docs 동기화: detailed-spec §3.3(부착 시퀀스)·§3.5(기본 위치, 스크롤 추종 기준) / technical-spec §2.2 주석·§4.3(기본 위치 항목 신설). output-standard는 마커 위치 규칙 언급이 없어 변경 없음(확인 완료).
+- AGENTS 4절 절차 준수 — 규범 문서 먼저 개정 후 구현:
+  - **킥오프 11절 14차 개정** 추가(사유: Nexacro류 실사용에서 넓은 컨테이너 앵커의 우상단 마커가 패널 대역에 몰림, 실측상 좌상단은 전부 가시). 5절 `markerOffset` 주석·6.2절 마커 드래그·기본 위치 절 동기화.
+  - docs 동기화: detailed-spec 3.3절(부착 시퀀스)·3.5절(기본 위치, 스크롤 추종 기준) / technical-spec 2.2절 주석·4.3절(기본 위치 항목 신설). output-standard는 마커 위치 규칙 언급이 없어 변경 없음(확인 완료).
 - 구현: shared `types.ts` 주석 / sdk `useMarkers.ts`(`r.right`→`r.left`, rect fallback `(x+w)·폭`→`x·폭`) / sdk `App.tsx` `markerDocPoint`(스크롤 추종 기준점) 동일 변경 + 주석 3곳 / `styles.ts` 주석 / viewer `main.ts` 복제 구현(`rect.right`→`rect.left`, fallback 동일).
 - 테스트: E2E 3본(s1·s2·pathD)의 마커 x 검증을 `rect.right`→`Math.max(14, rect.left)`로 — **뷰어는 마커 잘림 방지로 좌표를 14px 안쪽 클램프**(`.ms-stage-wrap overflow:hidden` + 28px 마커 중심 렌더)하는데, 좌상단 부착부터는 문서 왼쪽 가장자리 요소(body margin 8px)가 실제로 걸리므로 테스트가 동일 규칙을 반영(첫 실행에서 pathD dx=6 실측 — 14−8). y도 동일 클램프 반영. App.test.ts는 스페이서 reach 기대값(2048→1948)·주석 갱신.
 - 검증: `npm test` **196 passed**, `npm run test:e2e` **4본 통과**(빌드 포함). 첫 E2E의 s1 실패는 pathD 중단 잔재 프로젝트로 인한 연쇄(strict mode)였고 원인 수정 후 재실행 green.
 - 유의(이슈 본문 분석 그대로): 좌상단은 기본값 최적화이고 가시성 보장책은 기 구현된 스크롤 추종+peek. `markerOffset`은 상대값이라 기존 드래그 조정 마커는 자동 이행 불가 — 기존 산출물은 테스트용 폐기(사용자 승인).
 - 커밋 `00ac0d2` → push → **PR #23 오픈**. 사용자 실사용 확인: 편집 화면 좌상단 부착 정상. "산출물 일부 마커 좌편차" 보고는 조사 결과 본 변경과 무관한 기존 결함으로 판명 → 이슈 #22로 분리(위 로그).
-- **리뷰 3건 반영**(`bdfec28`): ① 편집기 마커 렌더·markerDocPoint에 뷰어와 동일한 문서 좌표 14px 클램프 — 좌상단 부착부터 문서 가장자리 요소의 마커가 잘리는 WYSIWYG 불일치(gemini 2건·codex P2, 같은 주제). 스크롤로 문서 안쪽이 보일 땐 발동 안 하도록 뷰포트 좌표 환산, 회귀 unit 1건 추가 ② E2E 3본 마커 좌표 검증에 iframe contentWindow.scrollX/scrollY 보정(coderabbit) ③ §11 13차·14차 행 순서 시간순 교정(coderabbit). 검증: unit 197 passed·E2E 4본 green.
+- **리뷰 3건 반영**(`bdfec28`): ① 편집기 마커 렌더·markerDocPoint에 뷰어와 동일한 문서 좌표 14px 클램프 — 좌상단 부착부터 문서 가장자리 요소의 마커가 잘리는 WYSIWYG 불일치(gemini 2건·codex P2, 같은 주제). 스크롤로 문서 안쪽이 보일 땐 발동 안 하도록 뷰포트 좌표 환산, 회귀 unit 1건 추가 ② E2E 3본 마커 좌표 검증에 iframe contentWindow.scrollX/scrollY 보정(coderabbit) ③ 11절 13차·14차 행 순서 시간순 교정(coderabbit). 검증: unit 197 passed·E2E 4본 green.
 - **`bdfec28` 후속 재리뷰 2건 판단 — 둘 다 기각** (같은 클램프 줄, 좌표계 전제 상이): ⓐ coderabbit Critical "클램프에서 `- window.scrollX/Y` 제거" — `style.left`가 문서 좌표라는 전제가 오류. `.marker`는 `position: fixed`(뷰포트 좌표, styles.ts)이고 useMarkers가 스크롤마다 재계산하므로, `14 - scrollX`는 문서 좌표 클램프를 뷰포트로 환산한 것이며 마커는 문서 x=14에 정확히 고정됨(수치 검증). 제안대로 하면 뷰포트 기준 클램프가 되어 왼쪽으로 스크롤된 요소의 마커가 요소에서 이탈해 뷰포트 가장자리에 고정되는 실버그 발생 ⓑ codex P2 "뷰포트 가장자리 기준으로 클램프" — 마커는 요소와 함께 화면 밖으로 나가는 것이 올바른 동작(뷰어도 동일 — 마커 레이어가 콘텐츠와 함께 스크롤). 뷰포트 고정은 ⓐ와 같은 이탈 버그. 부분 잘림 마커의 추종 미발동(vx≥0)은 #19에서 의도적으로 유지한 결정(상·좌 중심 기준 — 불필요 스크롤 방지).
 - 다음 할 일: PR #23 CI green → 병합 동의 → 병합 → 이슈 #17 닫기.
 - 막힌 지점: 없음.
@@ -712,7 +712,7 @@
 
 ### 2026-07-16 — PR #21 Gemini 리뷰 4건 반영
 - 브랜치: \`feat/console-ui-redesign\` (PR #21). Gemini 인라인 리뷰 4건(전부 medium) 반영 (\`packages/server/src/routes/console.ts\`):
-  - ① Pretendard 웹폰트 로드 — CSS 상단에 jsdelivr dynamic-subset \`@import\` 추가(쓰인 글자 범위만 다운로드, family명 "Pretendard" 유지). 폐쇄망 등 CDN 미도달 시 기존 font-family 폴백 체인으로 자연 대체. 산출물 네트워크 0건 원칙(PRD §1.3-4)은 산출물 HTML 대상이라 콘솔 페이지는 무관.
+  - ① Pretendard 웹폰트 로드 — CSS 상단에 jsdelivr dynamic-subset \`@import\` 추가(쓰인 글자 범위만 다운로드, family명 "Pretendard" 유지). 폐쇄망 등 CDN 미도달 시 기존 font-family 폴백 체인으로 자연 대체. 산출물 네트워크 0건 원칙(PRD 1.3-4절)은 산출물 HTML 대상이라 콘솔 페이지는 무관.
   - ② 제출 버튼 \`margin-left: 130px\` 매직 넘버 — \`--c-label-w\`(120px)·\`--c-row-gap\`(10px) CSS 변수 도입, \`.c-row\`/\`.c-row label\`/제출 버튼/\`.c-hint\`(같은 130px 의존이라 함께) 전부 변수·\`calc()\`로 동기화.
   - ③ \`lastExportAt\` 부재 시 "내보내기 1회 (undefined)" 노출 — 값이 있을 때만 괄호 날짜 표기.
   - ④ \`renderList\`에서 \`#project-count\` 부재 시 TypeError로 목록 렌더 전체 실패 — \`if (countEl)\` 가드.
@@ -748,7 +748,7 @@
 - 배경(사용자 요청): The-PR-Agent/pr-agent GitHub Action을 Gemini API key로 붙여 이 프로젝트 PR의 자동 코드 리뷰를 얻고 싶다. 검토만 한 뒤 도입 여부 확정 → 도입 진행(본 세션). CodeRabbit·Codex·Gemini Code Assist 외부 봇과 병행. 사용자 결정으로 **자동 리뷰 ON**(`auto_review` + push `handle_push_trigger`), `/describe`·`/improve`는 수동. 모델은 Gemini 3.5 Flash(주) + 3.1 Flash-Lite(폴백/가벼운 작업).
 - 완료(신규 2파일, 회귀 0, 후속 피드백 반영 포함):
   - `.github/workflows/pr-agent.yml` — `uses: the-pr-agent/pr-agent@main` + `config.model: "gemini/gemini-3.5-flash"`(GA 코딩/agent 최적화) + `config.fallback_models: '["gemini/gemini-3.1-flash-lite"]'`(폴백) + `GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}`(시크릿 참조 — 평문 키는 절대 yml에 넣지 않음, 공개 리포라 유출→Google 자동 폐기). 최종 트리거는 `pull_request(opened/reopened/ready_for_review/synchronize)` + `issue_comment`. 자동 모드는 사용자 결정에 따라 `auto_review: "true"`로 켰고, `/describe`·`/improve`는 계속 수동. Codex P2 후속: `synchronize`만 yml에 넣으면 PR-Agent가 내부적으로 스킵(`Skipping action: synchronize`)하므로 `handle_push_trigger: "true"` + `push_commands: '["/review"]'` 추가 — push 후에도 자동 리뷰가 실제 실행됨. 리뷰 피드백 반영으로 `issue_comment` 실행의 concurrency 그룹을 `github.event.pull_request.number || github.event.issue.number || github.ref` 기반으로 바꿔, 다른 PR의 수동 `/review`가 서로 취소되지 않게 수정. 기존 `ci.yml`과는 여전히 독립 그룹이라 상호 취소 없음. `permissions: pull-requests·issues·contents write`. `pull_request` 이벤트라 fork PR에서도 시크릿 미노출(공식 권장 보안 프로파일).
-  - `.pr_agent.toml` — 모델 작업별 분배 + 프로젝트 특화 리뷰 튜닝. `[config] model_weak = "gemini/gemini-3.1-flash-lite"` — `/describe`·`/ask`·라인 질문·changelog 가벼운 작업은 비용 효율형 3.1 Flash-Lite로 분산(미설정 시 주 모델 3.5 Flash로 치러져 비용/속도 손해). `model_reasoning`은 미설정(3.5 Flash가 충분히 강해 `/improve` 자기반성에 재사용). `[pr_reviewer].extra_instructions`에 4개 설계 제1원칙(PRD §1.3) 위반을 최우선 검출하라는 가이드 삽입: LLM 추론 코드 경로·`data-spec-id` 1순위 혼입·서버 헤드리스 캡처·산출물 네트워크 0건 위반. 그 외 앵커 다중 시그니처·번호 규칙·SSRF 3겹·`<script>` 0개 검증·AGENTS.md 규약(브랜치 접두 등)·한국어 산출물·용어("화면"/"화면 이동")도 검출 대상. `[pr_code_suggestions]`는 임계치 7(노이즈 절감), 제안 4개 상한이며, CodeRabbit 지적대로 미지원 `[best_practices]` 섹션은 제거하고 `extra_instructions`를 `[pr_code_suggestions]`에 병합해 `/improve` 경로에도 실제 적용되게 정리.
+  - `.pr_agent.toml` — 모델 작업별 분배 + 프로젝트 특화 리뷰 튜닝. `[config] model_weak = "gemini/gemini-3.1-flash-lite"` — `/describe`·`/ask`·라인 질문·changelog 가벼운 작업은 비용 효율형 3.1 Flash-Lite로 분산(미설정 시 주 모델 3.5 Flash로 치러져 비용/속도 손해). `model_reasoning`은 미설정(3.5 Flash가 충분히 강해 `/improve` 자기반성에 재사용). `[pr_reviewer].extra_instructions`에 4개 설계 제1원칙(PRD 1.3절) 위반을 최우선 검출하라는 가이드 삽입: LLM 추론 코드 경로·`data-spec-id` 1순위 혼입·서버 헤드리스 캡처·산출물 네트워크 0건 위반. 그 외 앵커 다중 시그니처·번호 규칙·SSRF 3겹·`<script>` 0개 검증·AGENTS.md 규약(브랜치 접두 등)·한국어 산출물·용어("화면"/"화면 이동")도 검출 대상. `[pr_code_suggestions]`는 임계치 7(노이즈 절감), 제안 4개 상한이며, CodeRabbit 지적대로 미지원 `[best_practices]` 섹션은 제거하고 `extra_instructions`를 `[pr_code_suggestions]`에 병합해 `/improve` 경로에도 실제 적용되게 정리.
 - 모델 교체 근거(사용자 결정): 구형 2.5-flash에서 신형 Gemini **3.5 Flash**(주, 코딩/agent 최적화, Google AI 문서 GA) + **3.1 Flash-Lite**(폴백/가벼운 작업, Google Cloud 문서 GA, 1,048,576 토큰). 식별자는 Google AI Studio `gemini-3.5-flash` / `gemini-3.1-flash-lite`, PR-Agent `gemini/` 접두 필요. 레지스트리 등록은 PR-Agent PR #2432 + `pr_agent/algo/__init__.py` 확인.
 - 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **196 passed**(본 세션 패키지 코드 변화 0이라 단순 회귀 확인). TOML·YAML 구문은 Python tomllib·grep으로 파싱 확인. 모델 식별자 정확성은 Google AI API 문서 + PR-Agent 레지스트리 소스로 이중 확인.
 - **보안 주치(사용자 절대 금지)**: yml에 평문 API 키를 넣고 푸시하지 말 것 — 공개 리포라 GitHub secret 스캐닝 + Google 자동 폐기 + 과금 유출 트리거. 시크릿은 `${{ secrets.GEMINI_API_KEY }}` 참조방식만(이미 되어 있음). 사용자 의무는 GitHub UI 1분.
@@ -763,7 +763,7 @@
 - 완료: 중단된 로컬 작업 트리를 복구하고 PR #19의 최신 리뷰 스레드를 대조했다. `b34f20b` 후속 Codex P2(추종 정착 700ms 대기 중 패널을 닫거나 화면·선택이 바뀌어도 이전 어노테이션 보정 `scrollTo`가 뒤늦게 발동)에 대해 ① 패널 열림·현재 화면 변경 시 대기 타이머 해제 ② 예약 당시 어노테이션과 현재 선택이 다르면 콜백 무효화를 적용했다. 패널 닫기·선택 변경 회귀 테스트 2건으로 두 경로를 고정하고 커밋 `6e1ea53`으로 PR #19에 push했다.
 - 검증: SDK 타깃 테스트 19 passed, `npm run typecheck`·`npm run build` 통과, `npm test` **196 passed**, `npm run test:e2e` **4본 통과**, `git diff --check` 통과. 샌드박스 내 첫 전체 테스트는 로컬 `listen` EPERM으로 실패했고 권한 허용 재실행에서 전부 통과했다(코드 실패 아님). GitHub Actions verify **1m4s·1m12s 모두 green**, CodeRabbit pass. 기존 single-file-core IIFE `import.meta` 빌드 경고는 불변.
 - 다음 할 일: **main 병합은 사용자 동의 후**. 병합 후 서버 재기동·확장 새로고침으로 실 화면 peek UX 확인, 이후 #17 착수.
-- 막힌 지점: 코드·검증 블로커 없음. main 병합은 AGENTS.md §6에 따라 사용자 동의 대기.
+- 막힌 지점: 코드·검증 블로커 없음. main 병합은 AGENTS.md 6절에 따라 사용자 동의 대기.
 
 ### 2026-07-16 — PR #19 오픈 + CI green + 리뷰 7건 반영
 - **PR #19** (이슈 #8 대응 브랜치) push·오픈, CI verify green(1m10s)·CodeRabbit pass. 리뷰 지적 7건(gemini 1·codex 1·coderabbit 5) 전부 반영: ① checkTimer 언마운트 정리(gemini) ② **peek 안내를 패널 겹침 대역으로 한정**(codex P2 — 뷰포트 밖 마커에 접어도 소용없는 [패널 접고 마커 보기]가 뜨던 것 제거, fixed-body 하니스에서 "안내 없음" 확인) ③ contentScrollSize가 스페이서 설치 후 콘텐츠 변화를 못 따라가던 것 — body가 static이면 실시간 body.scrollWidth 사용(coderabbit) ④ 도킹 effect가 패널 닫힘 상태에서도 페이지 인라인 margin/transition을 덮어쓰던 것 — 도킹 중일 때만 적용+양쪽 원복(coderabbit) ⑤ 가시성 판정에 마커 반폭(12px, 패널 쪽 경계만 — 상·좌는 중심 기준 유지해 상단 요소 클릭마다 불필요 스크롤 방지)(coderabbit) ⑥ 내부 컨테이너 스크롤 후 문서 좌표 변동 — 정착 후 신선한 좌표로 window 목표 1회 보정 재시도(coderabbit) ⑦ peek 시 숨은 패널 inert + 포커스를 탭으로 이동(coderabbit a11y).
@@ -772,9 +772,9 @@
 - 막힌 지점: 없음.
 
 ### 2026-07-16 — 이슈 2건 등록: #17(마커 좌상단 부착, 우선 착수) · #18(타 화면 마커 잔존 — 의도/갭/제약)
-- 배경(사용자 결정): ① 방안 B(마커 좌상단 부착)를 진행하기로 확정 — 계약 변경(킥오프 §11 절차·markerOffset 기준점·뷰어·E2E)이 커서 **별도 이슈 #17로 등록, 우선순위 높음**. 기존 산출물은 테스트용 폐기 가능(사용자)이라 하위 호환 부담 없음. 대칭 맹점(앱 자체 스크롤 시 좌상단이 왼쪽 밖)은 기 구현된 추종+peek가 보완 — 좌상단은 기본값 최적화, 보장책은 peek. ② 실사용 질문 "앱에서 다른 화면으로 이동해도 이전 화면 마커가 남아 보임 — 버그/의도/제약?"을 **이슈 #18**로 등록. 분석: 셋 다 일부 해당 — 의도(ID-09 현재 장면=패널 선택, 라우트 자동 연동 없음) + 스펙 미구현 갭(FR-EDT-06 라우트 변경 배너 미구현) + 제약(Nexacro MDI는 URL 불변이라 배너로도 감지 불가, 숨김 DOM이 남으면 앵커가 계속 해석됨). 검토 후보 (a)가이드 문서화 (b)배너 구현 (c)불가시 앵커 마커 흐림 처리.
+- 배경(사용자 결정): ① 방안 B(마커 좌상단 부착)를 진행하기로 확정 — 계약 변경(킥오프 11절 절차·markerOffset 기준점·뷰어·E2E)이 커서 **별도 이슈 #17로 등록, 우선순위 높음**. 기존 산출물은 테스트용 폐기 가능(사용자)이라 하위 호환 부담 없음. 대칭 맹점(앱 자체 스크롤 시 좌상단이 왼쪽 밖)은 기 구현된 추종+peek가 보완 — 좌상단은 기본값 최적화, 보장책은 peek. ② 실사용 질문 "앱에서 다른 화면으로 이동해도 이전 화면 마커가 남아 보임 — 버그/의도/제약?"을 **이슈 #18**로 등록. 분석: 셋 다 일부 해당 — 의도(ID-09 현재 장면=패널 선택, 라우트 자동 연동 없음) + 스펙 미구현 갭(FR-EDT-06 라우트 변경 배너 미구현) + 제약(Nexacro MDI는 URL 불변이라 배너로도 감지 불가, 숨김 DOM이 남으면 앵커가 계속 해석됨). 검토 후보 (a)가이드 문서화 (b)배너 구현 (c)불가시 앵커 마커 흐림 처리.
 - 참고: 공개 저장소이므로 이슈 본문에 내부 프로젝트명은 쓰지 않음(일반화 표현).
-- 다음 할 일: 현 브랜치(#8 대응) 사용자 검토·push·PR 후 → #17 착수(AGENTS §4 절차: 킥오프 결정 개정 먼저).
+- 다음 할 일: 현 브랜치(#8 대응) 사용자 검토·push·PR 후 → #17 착수(AGENTS 4절 절차: 킥오프 결정 개정 먼저).
 - 막힌 지점: 없음.
 
 ### 2026-07-16 — 이슈 #8 4차: 페이지 시프트 철회 → 패널 비켜주기(peek)로 교체 (사용자 UX 결정)
@@ -816,15 +816,15 @@
 - 완료(App.tsx): ① 패널 목록에서 어노테이션 선택 시 앵커 재해석 요소를 `scrollIntoView({behavior:'smooth', block:'center', inline:'center'})` — 내부 overflow 컨테이너 포함. rect fallback(앵커 미해석)이면 저장된 rect 비율 좌표로 `window.scrollTo`. 마커·목업 요소 클릭 선택(이미 뷰포트 안)과 이미 선택된 항목 재클릭(편집 중 재정렬 방지)은 스크롤하지 않음. ② **스크롤 스페이서** — 도킹 margin-right는 고정폭 페이지의 스크롤 범위를 못 늘려 문서 오른쪽 끝 360px 띠가 최대 스크롤에서도 패널에 가림(Chromium 실측: 루트 margin/padding 모두 scrollWidth 불변, height 0 박스도 무효). 추종 시 불가시 스페이서(`data-mockspec-scroll-spacer` + 캡처 제외 마킹 `data-mockspec-root`, 1px·visibility:hidden)를 본문에 두어 콘텐츠 폭+360px까지 스크롤 확장, 패널 닫으면 제거. ③ **rect 분모 보정**(anchor.ts `contentScrollSize` 신설) — 스페이서가 root.scrollWidth를 부풀리므로 앵커 rect 비율·마커 fallback 좌표의 분모는 스페이서 제외 콘텐츠 크기로 통일. 뷰어(스냅샷엔 스페이서 없음)와의 좌표 계약 유지.
 - **발견(중요)**: 이슈의 권장 후보(scrollIntoView)만으로는 수용 기준("오른쪽-끝-요소")을 못 채운다 — Playwright 실 검증에서 최대 스크롤 도달 후에도 해당 요소가 도킹 패널 밑에 깔림. 스페이서가 이 잔여를 해소.
 - 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **192 passed**(+4: 선택 스크롤·마커 클릭 무스크롤·rect fallback scrollTo·스페이서 수명주기), `npm run test:e2e` **4본 통과**. **실 Chromium 하니스**(3000px 고정폭 fixture + 1280px 뷰포트): 오른쪽 끝(x2800) 요소 선택 → scrollX 2080으로 패널에 안 가리는 영역(720~833) 정착 / 왼쪽 선택 시 복귀 / 스페이서 존재 중 생성한 앵커 rect.x=0.5 정확(미보정 시 0.446) / 패널 닫기 시 스페이서 제거, 4 PASS.
-- 문서 동기화: detailed-spec §3.5에 추종·스페이서·분모 보정 명세 추가.
+- 문서 동기화: detailed-spec 3.5절에 추종·스페이서·분모 보정 명세 추가.
 - 주의: SDK 변경 — 서버 재기동(빌드 반영) + 확장(경로 D) 새로고침 후 적용.
 - 다음 할 일: 사용자 검토 → push·PR → CI green → 병합 동의 → 병합 → 이슈 #8 닫힘 확인. 이후 #11(콘솔 UI, 방향 합의 선행).
 - 막힌 지점: 없음.
 
-### 2026-07-16 — 용어 개정: "동결" → "캡처" 전면 교체 (킥오프 §11 13차)
-- 브랜치: `chore/term-freeze-to-capture` → **PR #16으로 main 병합 완료**(2026-07-16, rebase·CI green·리뷰 4건 반영(§11 13차 이력 행이 일괄 교체에 덮여 "캡처→캡처"로 훼손된 것을 "동결→캡처"로 복원 + 괄호 뒤 조사 3곳), codex 날짜 지적 1건은 오탐으로 답글 처리(KST 자정 이후 작업이라 07-16이 실제 날짜), 로컬·원격 브랜치 삭제). 병합 후 main 재빌드 완료 — 확장·서버 dist에 새 용어 반영 확인.
+### 2026-07-16 — 용어 개정: "동결" → "캡처" 전면 교체 (킥오프 11절 13차)
+- 브랜치: `chore/term-freeze-to-capture` → **PR #16으로 main 병합 완료**(2026-07-16, rebase·CI green·리뷰 4건 반영(11절 13차 이력 행이 일괄 교체에 덮여 "캡처→캡처"로 훼손된 것을 "동결→캡처"로 복원 + 괄호 뒤 조사 3곳), codex 날짜 지적 1건은 오탐으로 답글 처리(KST 자정 이후 작업이라 07-16이 실제 날짜), 로컬·원격 브랜치 삭제). 병합 후 main 재빌드 완료 — 확장·서버 dist에 새 용어 반영 확인.
 - 배경(사용자 결정): "동결"은 기술 내부 관점의 단어로 기획자 대상 목업 기획 서비스 성격에 부적합. 대체어 "캡처", 범위는 문서까지 전면 교체로 사용자 확정.
-- 완료: AGENTS §4 절차 준수 — 킥오프 §11 13차 이력 기록 후 34개 파일 일괄 교체(규범 docs 7종 + guide 규범 절 + SDK/서버/뷰어의 한국어 문자열·주석·테스트명 + E2E). 받침 조사 교정(캡처은→캡처는 등 22곳). **유지한 것**: 코드 식별자(`freeze*`·`FreezeError`·`frozenAt`), 역사 기록(PROGRESS 세션 로그, s1-킥오프 §11 기존 행 3건·pathD-킥오프 §9 이력 절 — 교체 후 원문 복원) — 10차 개정(장면→화면)과 동일 원칙.
+- 완료: AGENTS 4절 절차 준수 — 킥오프 11절 13차 이력 기록 후 34개 파일 일괄 교체(규범 docs 7종 + guide 규범 절 + SDK/서버/뷰어의 한국어 문자열·주석·테스트명 + E2E). 받침 조사 교정(캡처은→캡처는 등 22곳). **유지한 것**: 코드 식별자(`freeze*`·`FreezeError`·`frozenAt`), 역사 기록(PROGRESS 세션 로그, s1-킥오프 11절 기존 행 3건·pathD-킥오프 9절 이력 절 — 교체 후 원문 복원) — 10차 개정(장면→화면)과 동일 원칙.
 - 검증: `npm run typecheck`·`npm run build` 통과, `npm test` **188 passed**, `npm run test:e2e` **4본 통과**. 잔여 "동결"은 PROGRESS.md(52)와 킥오프 이력 행(5)뿐임을 grep 전수 확인. UI 라벨 실확인: "캡처 중…"·"캡처 실패 — 재시도"·"✓ 캡처됨"·재캡처 버튼.
 - 같은 날 선행 조치: 어제 "동결 실패 지속" 재보고의 원인은 **낡은 빌드**(PR #14 병합 후 main 재빌드 누락 — 확장 dist가 수정 없는 sdk.js를 포함)로 확정, main 재빌드 완료. 사용자 조치 필요: 서버 재기동 + chrome://extensions 확장 새로고침 후 재캡처.
 - 다음 할 일: 사용자 검토 → push·PR → CI green → 병합 동의 → 병합. 이후 이슈 #8 착수.
@@ -832,13 +832,13 @@
 
 ### 2026-07-15 — AGENTS.md 규약 보강: 세션 시작 시 원격 동기화 의무화
 - 배경(사용자 결정): 새 세션이 원격(origin/main) 최신과 비교하는 장치가 없었다 — 규약은 로컬 `PROGRESS.md`를 읽으라고만 했고, 다른 머신·에이전트가 병합한 결과가 원격에만 있으면 낡은 진실을 읽게 된다. hook 자동화 대신 **규약으로 강제**하기로 결정.
-- 완료: AGENTS.md §1에 0번 절차 신설 — 문서를 읽기 전에 `git fetch origin` 후 로컬 main이 뒤처져 있으면 `git pull --ff-only`로 동기화.
+- 완료: AGENTS.md 1절에 0번 절차 신설 — 문서를 읽기 전에 `git fetch origin` 후 로컬 main이 뒤처져 있으면 `git pull --ff-only`로 동기화.
 - 다음 할 일: 없음(규약 단독). 이슈 작업은 #8 착수 대기.
 - 막힌 지점: 없음.
 
 ### 2026-07-15 — 동결 실패 수정: 비실행 데이터 <script>(ld+json) 무해화
 - 브랜치: `fix/freeze-data-scripts` → **PR #14로 main 병합 완료**(2026-07-15, rebase·CI green·리뷰 1건 반영(gemini high + codex P2 동일 지적 — 복원 기준 노드(nextSibling)가 동결 중 라이브 페이지 DOM 변동으로 사라지면 insertBefore가 NotFoundError로 성공한 동결을 깨는 문제 → 기준 소실 시 부모 끝에 복원 + 회귀 테스트 1건, **188 passed**), 로컬·원격 브랜치 삭제).
-- 배경(실사용): 경로 D로 `m.hanatour.com` 연결 시 "동결 실패 — 재시도". 실 Chromium 재현으로 원인 확정 — 페이지의 SSR SEO 스키마 `<script type="application/ld+json">` 1개를 single-file `blockScripts`가 **실행 스크립트가 아니라서 남기고**, 우리 검증(countScripts, §7.1 모든 script 0개)이 FreezeError로 폐기. FreezeError는 설계상 폴백 재시도 없음. **S1 최초 커밋(da85f1a)의 옵션으로도 동일 재현 — 잠재해 있던 갭이며 최근 커밋(#9·#10 뷰어 CSS, PR #5·#6)의 회귀 아님.** 기존 실사용 페이지에 ld+json이 없어 드러나지 않았을 뿐.
+- 배경(실사용): 경로 D로 `m.hanatour.com` 연결 시 "동결 실패 — 재시도". 실 Chromium 재현으로 원인 확정 — 페이지의 SSR SEO 스키마 `<script type="application/ld+json">` 1개를 single-file `blockScripts`가 **실행 스크립트가 아니라서 남기고**, 우리 검증(countScripts, 7.1절 모든 script 0개)이 FreezeError로 폐기. FreezeError는 설계상 폴백 재시도 없음. **S1 최초 커밋(da85f1a)의 옵션으로도 동일 재현 — 잠재해 있던 갭이며 최근 커밋(#9·#10 뷰어 CSS, PR #5·#6)의 회귀 아님.** 기존 실사용 페이지에 ld+json이 없어 드러나지 않았을 뿐.
 - 완료: `neutralizeDataScripts()` 신설(freeze.ts) — 동결 직전 비실행 type의 script(ld+json·JSON·템플릿 등)를 라이브 DOM에서 임시 제거, finally에서 nextSibling 기준 원위치 복원(neutralizeMedia와 동일 패턴). 열린 shadow DOM 재귀 + 패널(data-mockspec-root) 제외 동일. 실행 계열(빈 type·JS MIME·module)은 blockScripts 담당이라 손대지 않음. **검증 기준(모든 script 0개)은 완화하지 않음** — 제거는 동결 입력, 강제는 verify 출력으로 역할 분리.
 - 검증: 신규 단위 테스트 3건(데이터/실행 분리·인접 복원 순서·shadow 재귀+패널 제외). `npm run typecheck`·`npm run build` 통과, `npm test` **187 passed**(+3), `npm run test:e2e` **4본 통과**. **실 Chromium 재검증: m.hanatour.com 동결 성공(11.2MB, script 0개 검증 통과)** — 수정 전 동일 하니스에서 FreezeError 재현됐던 페이지.
 - 주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 실패했던 프로젝트(prj_j2zq93bwfk)는 재동결만 하면 됨.
@@ -865,7 +865,7 @@
 ### 2026-07-15 — README에 경로 D 화면 소개 절 신설 (스크린샷 4장)
 - 브랜치: `docs/readme-pathd-screenshots` → **main 병합 완료**(2026-07-15, fast-forward — 문서·이미지만이라 사용자 지시로 CI 없이 직행, 브랜치 삭제). **공개 저장소이므로 콘솔 스크린샷의 연결 코드(실 토큰) 값은 병합 전 가림 처리** — 가림 전 이미지는 원격에 푸시된 적 없음.
 - 배경(사용자 요청): README에 경로 D(내 화면에서 편집) 사용 흐름을 화면으로 소개.
-- 완료: `docs/images/`에 실사용 스크린샷 4장 추가(`pathD-1-console-connect-code` 콘솔 등록·연결 코드 발급 / `pathD-2-extension-popup` 확장 연결 / `pathD-3-live-edit` 실 화면 위 편집 / `pathD-4-export-viewer` 산출물, 합계 ~1.2MB). README에 "화면으로 보는 경로 D" 절 신설(4단계 캡션+이미지, 가이드 §3 링크), 세 경로 표의 D 행에 절 앵커 추가, 서두 "경로 A만 다룬다" 문구를 실제 구성에 맞게 동기화.
+- 완료: `docs/images/`에 실사용 스크린샷 4장 추가(`pathD-1-console-connect-code` 콘솔 등록·연결 코드 발급 / `pathD-2-extension-popup` 확장 연결 / `pathD-3-live-edit` 실 화면 위 편집 / `pathD-4-export-viewer` 산출물, 합계 ~1.2MB). README에 "화면으로 보는 경로 D" 절 신설(4단계 캡션+이미지, 가이드 3절 링크), 세 경로 표의 D 행에 절 앵커 추가, 서두 "경로 A만 다룬다" 문구를 실제 구성에 맞게 동기화.
 - 검증: 문서·이미지만 변경(코드 무변경). 앵커는 GitHub slug 규칙 확인.
 - 다음 할 일: 사용자 검토 → main 병합 동의 → 병합.
 - 막힌 지점: 없음.
@@ -887,19 +887,19 @@
 - 다음 할 일: 없음(문서 정비 단독).
 - 막힌 지점: 없음.
 
-### 2026-07-14 — 어노테이션 끝 번호 재사용 (킥오프 §11 12차)
+### 2026-07-14 — 어노테이션 끝 번호 재사용 (킥오프 11절 12차)
 - 브랜치: `fix/annotation-trailing-number-reuse` → **PR #6로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). Gemini Code Assist 리뷰는 피드백 없음, 인라인 스레드·일반 댓글 0건.
 - 배경(사용자 결정): 기존 단조 증가 카운터는 `1,2,3,4 → 1,3,4 → 신규 5 → 5 삭제 → 신규 6`으로 작성 중 마지막 항목을 삭제·재생성할 때 번호가 불필요하게 커졌다. 모든 번호를 당기는 재정렬은 기존 마커·참조 번호를 바꾸므로 제외.
 - 완료: `addAnnotation`이 저장된 `annoNumberSeq`를 맹신하지 않고 현재 장면의 남은 최대 번호+1을 계산. 직접 삭제·[빈 어노테이션 정리] 모두 `annoNumberSeq`를 같은 규칙으로 갱신. 결과는 `1,3,4 → 신규 5`, 5 삭제 후 신규도 다시 5이며 중간 결번 2는 유지. 빈 어노테이션 정리 확인 문구도 끝 번호 재사용 가능으로 변경.
-- 문서 동기화: 킥오프 §6.3·§11(12차), PRD R6, detailed-spec §3.4·POL-M02, technical-spec 데이터 모델·테스트, output-standard §1.2, shared 타입 주석. 과거 산출물과 새 산출물에서 재사용된 마지막 번호가 다른 항목을 가리킬 수 있는 트레이드오프와 전역 유일 `ann_*` 내부 ID의 역할을 명시.
+- 문서 동기화: 킥오프 6.3절·11절(12차), PRD R6, detailed-spec 3.4절·POL-M02, technical-spec 데이터 모델·테스트, output-standard 1.2절, shared 타입 주석. 과거 산출물과 새 산출물에서 재사용된 마지막 번호가 다른 항목을 가리킬 수 있는 트레이드오프와 전역 유일 `ann_*` 내부 ID의 역할을 명시.
 - 검증: 신규 회귀 테스트 2건(직접 삭제, 빈 어노테이션 정리). `npm run typecheck`·`npm run build` 통과, `npm test` **184 passed**, `npm run test:e2e` **4본 통과**, PR #6 GitHub Actions `verify` green. 샌드박스 내 최초 전체 테스트는 로컬 listen EPERM으로 실패했으나 권한 허용 재실행에서 전부 통과(코드 실패 아님). 빌드의 기존 single-file-core IIFE `import.meta` 경고는 유지.
 - **주의: SDK 변경 — 서버 재기동(빌드 반영) 후 적용. 기존 프로젝트는 다음 어노테이션 추가 시 현재 저장된 번호에서 자동 계산되므로 데이터 마이그레이션 불필요.**
 - 다음 할 일: 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3.
 - 막힌 지점: 없음.
 
-### 2026-07-14 — 동결 크기 절감: 폰트·비디오·오디오 콘텐츠 미임베드 (킥오프 §11 11차)
+### 2026-07-14 — 동결 크기 절감: 폰트·비디오·오디오 콘텐츠 미임베드 (킥오프 11절 11차)
 - 브랜치: `feat/freeze-block-fonts-media` → **PR #5로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 반영(gemini): neutralizeMedia가 라이트 DOM만 훑어 **open shadow DOM 미디어를 놓치는 갭** — single-file이 options.shadowRoots로 open shadow root를 직렬화함을 확인, open shadow root로 재귀하도록 수정(패널 data-mockspec-root shadow는 제외). shadow DOM 제거·복원 회귀 테스트 2건 + 실 Chromium(shadow 내부 video/audio 미임베드·요소 유지·라이브 복원) 재검증.
-- 배경(사용자 결정): 스냅샷 비대화 케이스 분석 중 사용자가 "기획서는 디폴트 폰트로 충분, 비디오·오디오는 최대로 봐야 섬네일이고 섬네일도 과할 수 있어 와이어프레임 영역만 잡으면 된다"고 결정. 기존엔 `blockFonts`가 폴백(크래시) 경로에서만 발동 → 정상 성공한 CJK 페이지가 수 MB 폰트를 상시 임베드, 비디오·오디오는 미차단. "원본과 시각적 동일" 계약을 바꾸므로 AGENTS.md §4 절차대로 킥오프 §7·§11(11차)·T6 DoD 먼저 개정 후 구현.
+- 배경(사용자 결정): 스냅샷 비대화 케이스 분석 중 사용자가 "기획서는 디폴트 폰트로 충분, 비디오·오디오는 최대로 봐야 섬네일이고 섬네일도 과할 수 있어 와이어프레임 영역만 잡으면 된다"고 결정. 기존엔 `blockFonts`가 폴백(크래시) 경로에서만 발동 → 정상 성공한 CJK 페이지가 수 MB 폰트를 상시 임베드, 비디오·오디오는 미차단. "원본과 시각적 동일" 계약을 바꾸므로 AGENTS.md 4절 절차대로 킥오프 7절·11절(11차)·T6 DoD 먼저 개정 후 구현.
 - 완료(freeze.ts): ① FREEZE_OPTIONS 1차에 **`blockFonts:true`**(시스템 폰트) + `removeUnusedFonts`·`removeAlternativeFonts`(크래시 진원) off → 크기 + 크래시 표면 동시 감소 ② **`blockVideos:true`**(비디오는 포스터+링크 대체) ③ **`neutralizeMedia`** 신설 — single-file에 blockAudios 옵션이 없고 blockVideos도 오디오·비디오 poster는 못 막으므로, 동결 직전 audio·video·source의 `src`/`srcset`/`poster`를 임시 제거(요소=레이아웃 영역 유지) 후 finally 원복(margin 패턴과 동일). SAFE_FALLBACK도 스프레드로 동일 차단 유지.
 - **발견(중요)**: `blockAudios`는 single-file-core에 없는 옵션(있는 건 blockVideos뿐) — 그래서 오디오/포스터는 옵션이 아니라 neutralizeMedia로 처리.
 - 검증: `npm test` **180 passed**(+4: 1차 옵션 blockFonts/blockVideos 검증, neutralizeMedia 제거·요소 유지·복원), `npm run test:e2e` 4본 통과. **실 Chromium 검증(하니스)**: 웹폰트(40KB)+비디오/오디오(60KB)+포스터(30KB) fixture를 로컬 서버로 띄워 실제 single-file 동결 → 스냅샷 **82KB→2KB**, fontEmbedded/videoEmbedded 모두 false, `<video>`·`<audio>` 요소·본문 텍스트는 유지.
@@ -909,12 +909,12 @@
 
 ### 2026-07-14 — 작성자 라벨 + 산출물 이력 (T29, FR-CON-03·FR-EXP-08)
 - 브랜치: `feat/owner-label-export-history` → **PR #4로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 반영: gemini 봇 2건 — ① 손상된 exports.json이 GET /projects를 500으로 깨뜨림 → 파싱 실패 시 빈 이력 자가 치유 ② 동시 append 경쟁 → 프로젝트별 쓰기 직렬화(serialize promise 체인). codex 봇 P2 1건은 ②와 중복(원본 커밋 앵커)이라 답글로 정리. 각각 회귀 테스트 추가(vitest 178).
-- 배경: 후속 판단 잔여 중 사용자 선택. S2 로드맵(아키텍처 §6·§3.5)에 원래 있던 항목 — 인증 없이 표시·오삭제 방지용 라벨(POL-M09) + 산출물 이력(FR-EXP-08). 사용자 결정 2건: **이력=메타 전용**(htmlRef 파일 보관 미채택 — 수십 MB 산출물을 매번 쌓지 않음, 재다운로드는 재-export로 충분), **라벨=ownerLabel 1개**(members[] 보류 — 편집자 1인 규칙과 겹쳐 실수요 미확인).
+- 배경: 후속 판단 잔여 중 사용자 선택. S2 로드맵(아키텍처 6절·3.5절)에 원래 있던 항목 — 인증 없이 표시·오삭제 방지용 라벨(POL-M09) + 산출물 이력(FR-EXP-08). 사용자 결정 2건: **이력=메타 전용**(htmlRef 파일 보관 미채택 — 수십 MB 산출물을 매번 쌓지 않음, 재다운로드는 재-export로 충분), **라벨=ownerLabel 1개**(members[] 보류 — 편집자 1인 규칙과 겹쳐 실수요 미확인).
 - 완료(shared): `SpecProject.ownerLabel?`(선택, 표시용) 승격 + `ExportRecord`·`ProjectListItem` 타입 신설. 왕복 무손실·필드 부재 하위 호환.
 - 완료(server): ① `exportStore.ts` 신설 — `exports.json`(서버 소유 별도 파일, spec.json 밖 — PUT 전체 교체가 서버 기록 덮어쓰는 것 방지, token.json과 동일 이유)에 이력 메타 append + 목록 요약(`exportCount`·`lastExportAt`) ② `POST /export`가 성공 시 이력 기록(best-effort — 이력 실패가 export를 막지 않음), 마스킹본 사용 시 `masked:true` ③ `createProject`가 ownerLabel 수용, 세 등록 핸들러(zip·URL·snippet) 모두 `parseOwnerLabel`(공백 정리·60자 컷) ④ `GET /projects`가 항목마다 이력 요약 동봉.
 - 완료(콘솔): 세 생성 폼에 "작성자(선택)" 입력, 카드 메타에 작성자·"내보내기 N회(날짜)", **삭제 confirm에 프로젝트명+작성자**(오삭제 방지), export 성공 후 목록 갱신(이력 요약 반영).
 - 완료(뷰어): 산출물 헤더 메타에 "작성자 {라벨}"(있을 때만).
-- 문서 동기화: technical-spec §2(ownerLabel 필드)·§2.2(예정 필드 갱신 — htmlRef 미채택·members 보류 근거)·§6 API표·§6.3(이력 신설)·§9.2 WBS T29, detailed-spec §2.2·§4.1, PRD §5·후속 판단 표. (기존 스펙이 예고만 한 필드의 구현 — 킥오프 §11 결정 변경 아님, 착수 확정 기록만)
+- 문서 동기화: technical-spec 2절(ownerLabel 필드)·2.2절(예정 필드 갱신 — htmlRef 미채택·members 보류 근거)·6절 API표·6.3절(이력 신설)·9.2절 WBS T29, detailed-spec 2.2절·4.1절, PRD 5절·후속 판단 표. (기존 스펙이 예고만 한 필드의 구현 — 킥오프 11절 결정 변경 아님, 착수 확정 기록만)
 - 검증: `npm run typecheck`·build exit 0, `npm test` **176 passed**(+7: shared 라벨 왕복 1 / export 이력 2 / store-api 라벨 생성·빈값 2 / 콘솔 폼 배선 1 / 뷰어 헤더 1), `npm run test:e2e` **4본 통과**. **실 서버(임시 데이터 디렉토리) 구동**: 라벨 생성(공백 "  김기획  "→"김기획")→export 2회→목록 `{ownerLabel:"김기획",exportCount:2,lastExportAt}`, 뷰어 헤더 "작성자 김기획 · 생성…", 콘솔 카드 "김기획 · … · 내보내기 2회", 삭제 confirm "'라벨 검증 프로젝트' (작성자: 김기획) …", 산출물 임베드 spec.ownerLabel="김기획" 확인.
 - 다음 할 일: 사용자 검토 → main 병합 동의 → 병합. 이후 후속 판단 잔여(스크린샷 fallback·옵션 S) 또는 S3.
 - 막힌 지점: 없음.
@@ -923,16 +923,16 @@
 - 브랜치: `fix/viewer-internal-vertical-scroll` → **PR #3로 main 병합 완료**(2026-07-14, rebase·CI green, 로컬·원격 브랜치 삭제). 리뷰 피드백 1건(gemini 봇 — E2E 페이지 스크롤 검증의 서브픽셀 간헐 실패 가능성) 반영: 1px 허용 오차.
 - 배경: 후속 판단 잔여 4건 중 사용자가 이 항목을 선택(이전 세션 제안의 채택 답변). 기존엔 `.ms-shell{min-height:100vh}`라 긴 스냅샷에서 **페이지 전체가 세로 스크롤** — 헤더·화면 목록·어노테이션 패널이 시야에서 사라짐.
 - 완료(export.ts `VIEWER_CSS`만, 뷰어 JS 무변경): ① `.ms-shell`을 `height:100vh` 고정 — 세로 스크롤이 3컬럼 각자 내부로(컬럼들은 기존에 이미 `overflow:auto`) ② `.ms-layout`에 `grid-template-rows:minmax(0,1fr)` — auto 행이 콘텐츠 높이로 커져 셸을 넘치면 내부 스크롤이 안 생기는 문제 차단 ③ 흐름도 `.ms-flow-body`에 `max-height:40vh; overflow:auto` — 큰 그래프가 본문을 밀어내지 않게 ④ 모바일(≤900px, 1단 스택)은 `height:auto`로 페이지 스크롤 유지.
-- 문서 동기화: detailed-spec §4.1 표에 "스크롤" 행 신설, user-guide §6에 3컬럼 내부 스크롤 서술 갱신 (기존 스펙은 스크롤 방식 무언급이라 킥오프 §11 절차 비대상).
+- 문서 동기화: detailed-spec 4.1절 표에 "스크롤" 행 신설, user-guide 6절에 3컬럼 내부 스크롤 서술 갱신 (기존 스펙은 스크롤 방식 무언급이라 킥오프 11절 절차 비대상).
 - 검증: `npm run typecheck`·build exit 0, `npm test` 169 passed, `npm run test:e2e` **4본 통과**(transitions spec에 "페이지 세로 스크롤 없음 + `.ms-main` 내부 세로 스크롤" assertion 추가 — 장면 1이 captureHeight 800 > 뷰포트 720). **실 Chromium**: 산출물 file:// 오픈 → 중앙 305px 스크롤 후에도 헤더 top=0·사이드바·패널 가시·`windowScrollY:0` 스크린샷 확인.
 - **주의: 뷰어 CSS 변경 — 기존 산출물엔 반영 안 됨, 재-export 필요 (재동결은 불필요).**
 - 다음 할 일: 사용자 재-export로 새 레이아웃 확인(선택). 이후 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S) 또는 S3 — 사용자 입력 대기.
 - 막힌 지점: 없음.
 
-### 2026-07-12 — 용어 개정: 사용자 표면 "장면"→"화면", "전이"→"화면 이동" (킥오프 §11 10차)
+### 2026-07-12 — 용어 개정: 사용자 표면 "장면"→"화면", "전이"→"화면 이동" (킥오프 11절 10차)
 - 브랜치: `fix/ui-terms-screen-move` → **PR #2로 main 병합 완료**(2026-07-12, CI green·rebase, 브랜치 삭제).
 - 배경(사용자 결정): "전이"는 기획 실무에서 처음 듣는 비통용어, "장면"도 "화면"이 통용 — 표면 용어를 통용어로.
-- 완료: SDK 패널(섹션 제목·버튼 "+ 현재 화면 등록"·placeholder·안내문·드롭다운 "이동 없음")·뷰어(사이드바·메타·플레이스홀더·흐름도 노드 툴팁)·콘솔(메타·confirm·마스킹 문구)의 표시 문자열 전량 + README·user-guide 전면 + PRD §2 용어표(표면↔모델 매핑 명시). **코드 식별자(Scene·scn_·SCR-###)·스키마(transition)·스펙 본문 모델 용어·이력 문서는 유지** — 이유는 §11 10차.
+- 완료: SDK 패널(섹션 제목·버튼 "+ 현재 화면 등록"·placeholder·안내문·드롭다운 "이동 없음")·뷰어(사이드바·메타·플레이스홀더·흐름도 노드 툴팁)·콘솔(메타·confirm·마스킹 문구)의 표시 문자열 전량 + README·user-guide 전면 + PRD 2절 용어표(표면↔모델 매핑 명시). **코드 식별자(Scene·scn_·SCR-###)·스키마(transition)·스펙 본문 모델 용어·이력 문서는 유지** — 이유는 11절 10차.
 - 검증: `npm test` 169 passed·`npm run test:e2e` 4본 통과(버튼명·콘솔 메타 문자열 의존 테스트 동기화).
 - 다음 할 일: 후속 판단 잔여 또는 S3 — 사용자 입력 대기.
 - 막힌 지점: 없음.
@@ -946,13 +946,13 @@
 ### 2026-07-12 — 사용 가이드 신설 (docs/user-guide.md — 세 연결 방식 상세)
 - 브랜치: `fix/viewer-capture-width` (같은 브랜치에 docs 커밋).
 - 배경(사용자 요청): "3가지 모드 각각 사용법·제약·적합한 경우·동작 원리를 담은 상세 가이드 필요 — 특히 '내 화면에서 편집'은 사용 방식이 까다로움."
-- 완료: **docs/user-guide.md** — §0 한눈에 고르기(결정 플로우+비교표), §1~3 경로 A·B·D 각각 사용법/동작 원리/제약/적합(경로 D는 설치·연결·트러블슈팅 표까지 상세), §4 편집 공통(전이 포함), §5 마스킹, §6 산출물 읽는 법. 루트 README를 "빠른 시작"으로 재정의하고 세 경로 표+가이드 링크 추가, docs/README 문서 지도에 등록.
-- 사용자 질문 답변 기록: **전이(프로세스 묶기)는 경로 D 전용이 아니라 "편집 패널 전용"(세 경로 공통)** — 어노테이션의 속성이라 라이브 편집에서만 지정하는 것은 의도된 설계("편집은 라이브, 산출물은 동결"). 콘솔=관리, 뷰어=읽기 전용. 가이드 §4에 명시.
+- 완료: **docs/user-guide.md** — 0절 한눈에 고르기(결정 플로우+비교표), 1절~3 경로 A·B·D 각각 사용법/동작 원리/제약/적합(경로 D는 설치·연결·트러블슈팅 표까지 상세), 4절 편집 공통(전이 포함), 5절 마스킹, 6절 산출물 읽는 법. 루트 README를 "빠른 시작"으로 재정의하고 세 경로 표+가이드 링크 추가, docs/README 문서 지도에 등록.
+- 사용자 질문 답변 기록: **전이(프로세스 묶기)는 경로 D 전용이 아니라 "편집 패널 전용"(세 경로 공통)** — 어노테이션의 속성이라 라이브 편집에서만 지정하는 것은 의도된 설계("편집은 라이브, 산출물은 동결"). 콘솔=관리, 뷰어=읽기 전용. 가이드 4절에 명시.
 - 검증: 문서만 변경.
 - 다음 할 일: 사용자 검토 → 스택 main 병합 동의 대기.
 - 막힌 지점: 없음.
 
-### 2026-07-12 — 실사용 13차: 경로 D 내보내기 64MiB 실패 + 스냅샷 수십 MB 절감 (킥오프 §11 9차)
+### 2026-07-12 — 실사용 13차: 경로 D 내보내기 64MiB 실패 + 스냅샷 수십 MB 절감 (킥오프 11절 9차)
 - 브랜치: `fix/viewer-capture-width` (12차에 이어 커밋).
 - 배경(실사용): ① 경로 D 편집 패널 [내보내기]가 **"Message exceeded maximum allowed size of 64MiB"** — 산출물 HTML 전체가 background→content script 확장 메시지로 릴레이되는데 Chrome 메시징은 64MiB 하드 리밋 ② 사용자: "페이지 몇 개가 수십 MB — 사용하기 어렵다" — single-file이 고해상도 이미지(영화 포스터 등)를 원본 그대로 base64 임베드.
 - 완료(①): **export를 chrome.downloads 직행으로** — `TransportRequest.download` 표시 → background가 본문 릴레이 대신 `chrome.downloads.download(url, POST, Bearer 헤더)` 호출(manifest `downloads` 권한 추가). 응답은 합성 마커(`x-mockspec-native-download`)만 릴레이, 패널은 "브라우저 다운로드로 저장을 시작했습니다" 표시. 경로 A·B(fetch transport)는 기존 blob 흐름 그대로. 경로 가드: 다운로드는 자기 프로젝트 export 경로만.
@@ -966,7 +966,7 @@
 - 브랜치: `fix/viewer-capture-width` (11차에 이어 커밋).
 - 배경(실사용, c.html): ① tmdb-quiz(React·Tailwind `h-screen`) 산출물에서 어노테이션 5·7(메인 메뉴·박스오피스)의 **아래쪽 콘텐츠가 안 보임** — 100vh류 페이지는 html/body가 뷰포트 높이라 scrollHeight가 항상 iframe 높이와 같고, 뷰어 최소값 480px에 잠겨 `overflow:hidden` 안쪽 콘텐츠(실측 최하단 590px)가 잘림. 마커는 요소 좌표(504~590)라 흰 영역에 뜸 ② **장면 제목에 목업 페이지의 `document.title`("tmdb-quiz")이 자동으로 붙음** — SPA는 `<title>`이 불변이라 모든 장면이 같은 무의미한 제목. 사용자 판정 "불필요".
 - 완료(①): **`Scene.captureHeight`**(동결 시점 `documentElement.clientHeight`) 기록 — `setSceneSnapshot(…, capture: {width, height})`. 뷰어는 captureHeight를 기준 높이로 먼저 리플로우(캡처 레이아웃 재현). **구 스냅샷 구제**: captureHeight 없고 scrollHeight가 뷰포트에 잠긴 경우 요소 실제 최하단까지 확장 — vh 성분은 확장을 따라 다시 커지므로 **secant 외삽으로 고정점 수렴**(상한 4000px, k≥0.98이면 발산 판정). **정착 레이스**: 로드 직후(~150ms)는 웹폰트 적용·초기 레이아웃 정착 전이라 수 px 부족하게 수렴(실측 50ms=696 vs 150ms+=700) — 더블 rAF·`fonts.ready`·300ms 백스톱 3중 재계산(멱등)으로 해소.
-- 완료(②, 킥오프 §11 8차): 장면 제목 **기본값 document.title 철회** — 빈 값 생성 + 패널 장면 목록에 **제목 인라인 입력**(`updateSceneTitle`, placeholder "장면 제목"). detailed-spec §3.2·technical-spec §2·s1-kickoff 동기화.
+- 완료(②, 킥오프 11절 8차): 장면 제목 **기본값 document.title 철회** — 빈 값 생성 + 패널 장면 목록에 **제목 인라인 입력**(`updateSceneTitle`, placeholder "장면 제목"). detailed-spec 3.2절·technical-spec 2절·s1-kickoff 동기화.
 - 검증: `npm run typecheck`·build exit 0, `npm test` 163 passed(+2: setSceneSnapshot 캡처 크기 / 장면 제목 빈 값 생성·인라인 명명), `npm run test:e2e` 4본 통과(transitions에 iframe=captureHeight(800) 검증 추가). **실 c.html 데이터 재조립 검증(구제 경로)**: SCR-004 iframe 480→700 수렴, 박스오피스 "보임", 하단 메뉴 전체 노출, 마커 5·7 콘텐츠 정렬 — 스크린샷 확인.
 - **주의: 서버 재기동 + 재-export 필요. 기존 장면은 재동결해야 captureHeight가 채워짐(구제 로직으로 재동결 없이도 대부분 노출).**
 - 다음 할 일: 사용자 재검증 → 전이·흐름도와 함께 main 병합 동의 대기. 별건: 뷰어 세로 스크롤을 중앙 내부로(3컬럼 고정) 제안은 사용자 답변 대기.
@@ -983,10 +983,10 @@
 
 ### 2026-07-12 — 다중 장면 전이 + 흐름도 구현 (T26~T28, FR-EDT-10·FR-EXP-06)
 - 브랜치: `feat/scene-transitions` (main 미병합, 동의 대기). 착수 배경: S2.5 종료 후 "후속 판단" 중 사용자가 전이+흐름도를 1순위로 선택.
-- **결정(사용자, 킥오프 s1 §11 7차 개정)**: 흐름도 렌더러 **Mermaid → 자체 경량 SVG** — 산출물이 단독 HTML·네트워크 0건이라 Mermaid는 ~3MB 번들 내장이 필요(뷰어 런타임 19KB의 150배), 장면 그래프 규모(수십 노드 이하)엔 계층 배치+화살표+간선 라벨의 자체 SVG로 충분. PRD·detailed-spec·output-standard·technical-spec 동기화 완료.
-- 완료(T26 shared): `Annotation.transition { toSceneId, condition? }`을 §2.2 예정 필드에서 본 모델로 승격. 왕복 무손실·필드 부재 하위 호환 테스트.
+- **결정(사용자, 킥오프 s1 11절 7차 개정)**: 흐름도 렌더러 **Mermaid → 자체 경량 SVG** — 산출물이 단독 HTML·네트워크 0건이라 Mermaid는 ~3MB 번들 내장이 필요(뷰어 런타임 19KB의 150배), 장면 그래프 규모(수십 노드 이하)엔 계층 배치+화살표+간선 라벨의 자체 SVG로 충분. PRD·detailed-spec·output-standard·technical-spec 동기화 완료.
+- 완료(T26 shared): `Annotation.transition { toSceneId, condition? }`을 2.2절 예정 필드에서 본 모델로 승격. 왕복 무손실·필드 부재 하위 호환 테스트.
 - 완료(T27 SDK): 어노테이션 폼에 전이 드롭다운(**다른 장면만** 나열)+조건 텍스트(전이 선택 시에만 노출, 빈 조건은 필드 미저장). `deleteScene`이 삭제 장면을 향한 transition을 함께 제거(dangling 방지). focusShield의 클릭 포커스 차단 대상에 SELECT 추가(Nexacro류 대응).
-- 완료(T28 뷰어·산출물): ① 어노테이션 카드에 **전이 링크** "조건 → SCR-### 제목 보기" — 클릭 시 장면 전환(실행 대신 이동), 대상 장면 없으면 미표시 ② 헤더 아래 **프로세스 흐름도 섹션**(output-standard §2 섹션 2) — 자체 SVG: back-간선 제외 longest-path 계층 배치(순환 무한루프 없음), 병렬 전이 라벨 " / " 병합, 정방향 베지어+역방향 하단 우회, 노드 클릭 시 장면 전환, 접기 토글, 전이 0건이면 섹션 생략 ③ `.ms-shell`을 flex 컬럼으로(흐름도 유무 모두 본문이 잔여 높이 채움), 흐름도는 섹션 내부만 가로 스크롤.
+- 완료(T28 뷰어·산출물): ① 어노테이션 카드에 **전이 링크** "조건 → SCR-### 제목 보기" — 클릭 시 장면 전환(실행 대신 이동), 대상 장면 없으면 미표시 ② 헤더 아래 **프로세스 흐름도 섹션**(output-standard 2절 섹션 2) — 자체 SVG: back-간선 제외 longest-path 계층 배치(순환 무한루프 없음), 병렬 전이 라벨 " / " 병합, 정방향 베지어+역방향 하단 우회, 노드 클릭 시 장면 전환, 접기 토글, 전이 0건이면 섹션 생략 ③ `.ms-shell`을 flex 컬럼으로(흐름도 유무 모두 본문이 잔여 높이 채움), 흐름도는 섹션 내부만 가로 스크롤.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **160 passed**(+11: shared 왕복 1 / state 전이 지정·장면삭제 정리 2 / App 드롭다운 왕복·단일 장면 미노출 2 / focusShield SELECT / viewer 간선 정리·계층·순환·통합 렌더·생략·접기 6). `npm run test:e2e` **4본 통과**(신규 `e2e/transitions.spec.ts` — snippet API로 전이 spec 구성→export→file://에서 흐름도 노드/라벨·전이 링크 전환·네트워크 0건·프로젝트 정리). **실 Chromium 시각 확인**: 분기+순환(로그인→홈/오류, 오류→로그인) 그래프에서 계층·라벨·순환 우회 곡선·링크 클릭 전환 스크린샷 검증.
 - **주의: 뷰어/export 코드 변경 — 기존 산출물엔 반영 안 됨, 재-export 필요. SDK 변경으로 서버 재기동(빌드 반영)도 필요.**
 - 다음 할 일: 사용자 실사용 검증(전이 지정→export→흐름도 확인) → main 병합 동의 → 병합. 이후 후속 판단 잔여(스크린샷 fallback·작성자 라벨·옵션 S) 또는 S3.
@@ -1085,7 +1085,7 @@
 
 ### 2026-07-11 — T24 경로 D E2E (로그인 뒤 화면 DoD) 완료
 - 브랜치: `feat/s25-ext-e2e-t24` (T22→T23 위에 스택, main 미병합 — 순서대로 병합 대기).
-- 완료: **`e2e/pathD-dod.spec.ts`** (pathD 킥오프 §7 DoD) — ① 로그인 fixture를 테스트 내장 http 서버로 서빙(빌드 배선 없음): `/`(폼)·`POST /login`(host-only 쿠키)·`/protected`(쿠키 없으면 302) ② 확장 unpacked 로드(`launchPersistentContext` + `--load-extension`, `channel:"chromium"` 신 headless) + 팝업 storage로 오리진↔프로젝트(토큰) 바인딩 ③ **직접 로그인**(폼 제출→쿠키)→보호 화면→확장 SDK 주입→장면 등록·어노테이션 2개·**동결·저장(토큰 릴레이)** ④ 콘솔에서 마스킹 규칙(`홍길동`→`고객`, 토큰은 sessionStorage 선주입으로 prompt 회피) 적용→export ⑤ 새 컨텍스트 file:// 오픈→**마스킹 원문 0회**·치환문 존재·마커 2개 위치 오차 ≤2px·설명 일치·**네트워크 0건** ⑥ 보안 회귀: 토큰 없는 PUT 401.
+- 완료: **`e2e/pathD-dod.spec.ts`** (pathD 킥오프 7절 DoD) — ① 로그인 fixture를 테스트 내장 http 서버로 서빙(빌드 배선 없음): `/`(폼)·`POST /login`(host-only 쿠키)·`/protected`(쿠키 없으면 302) ② 확장 unpacked 로드(`launchPersistentContext` + `--load-extension`, `channel:"chromium"` 신 headless) + 팝업 storage로 오리진↔프로젝트(토큰) 바인딩 ③ **직접 로그인**(폼 제출→쿠키)→보호 화면→확장 SDK 주입→장면 등록·어노테이션 2개·**동결·저장(토큰 릴레이)** ④ 콘솔에서 마스킹 규칙(`홍길동`→`고객`, 토큰은 sessionStorage 선주입으로 prompt 회피) 적용→export ⑤ 새 컨텍스트 file:// 오픈→**마스킹 원문 0회**·치환문 존재·마커 2개 위치 오차 ≤2px·설명 일치·**네트워크 0건** ⑥ 보안 회귀: 토큰 없는 PUT 401.
 - 실버그(테스트가 잡음): pathD spec이 알파벳 순 **먼저** 실행되어 남긴 snippet 프로젝트가 콘솔 목록에 잔류 → S1/S2(단일 프로젝트 목록 가정, strict-mode 버튼 매칭)가 깨짐. **pathD가 끝에서 자기 프로젝트를 DELETE**해 공유 서버 잔재 제거(S1/S2 DoD 미변경).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 136 passed, `npx playwright test` **3본 통과**(S1·S2·경로 D). 확장 dist는 `npm run build`가 자동 조립.
 - 다음 할 일: **T25** — docs/ 최종 동기화(구현 결과 반영)·실사용 판정 기록으로 S2.5 종료.
@@ -1098,7 +1098,7 @@
 - 완료(서버): PUT에서 snippet 프로젝트의 **mockupSource를 서버 소유로 보호**(클라이언트 조작 무시) + `X-Mockspec-Page-Origin`을 `lastSeenOrigin`으로 스탬프(헤더 없으면 기존 유지).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **136 passed**(+4: 브리지 상관·동시 2건 교차 없음 / 오류 reject / 타임아웃→큐 인계 / 서버 lastSeenOrigin 스탬프+mockupSource 조작 무시). `npm run test:e2e` 2 passed 회귀 없음. **실 Chromium 스크래치(전 과정)**: 실서버 기동→snippet 등록→확장 바인딩→fixture 페이지에서 **프로젝트 로드(GET 브리지)→장면 등록→동결→스냅샷 업로드→PUT 저장** 성공, 서버 spec에 장면 1·snapshotAsset·`lastSeenOrigin=페이지 오리진` 확인.
 - 참고(테스트 인프라): vitest happy-dom은 window가 프록시라 postMessage의 `ev.source === window` 가드와 불일치 — 테스트는 `source` 없는 MessageEvent 직접 dispatch로 우회(가드는 유지, 실브라우저는 스크래치가 커버). App.test의 fetch 스텁은 "init 없음=GET" 가정이었어서 메서드 기준으로 수정.
-- 다음 할 일: **T24 E2E 로그인 시나리오** — 로그인 fixture(폼+보호 화면) 작성, Playwright `launchPersistentContext`+`--load-extension`으로 pathD 킥오프 §7 DoD 자동화(마스킹·export·보안 회귀 포함).
+- 다음 할 일: **T24 E2E 로그인 시나리오** — 로그인 fixture(폼+보호 화면) 작성, Playwright `launchPersistentContext`+`--load-extension`으로 pathD 킥오프 7절 DoD 자동화(마스킹·export·보안 회귀 포함).
 - 막힌 지점: 없음.
 
 ### 2026-07-11 — T22 확장 스캐폴드 + content script SDK 주입 완료
@@ -1109,7 +1109,7 @@
   ③ `src/popup.ts`+`popup.html` — 현재 탭 오리진에 프로젝트 ID·토큰·서버 주소 바인딩(chrome.storage.local, activeTab) — **T23 몫이던 팝업 바인딩을 선행**(주입 검증에 필요)
   ④ `src/binding.ts` — 오리진별 바인딩 저장 모듈 ⑤ `src/background.ts` — 설치 로그만(저장 릴레이는 T23) ⑥ `build.mjs` — 엔트리별 vite lib(IIFE) 빌드 + manifest/popup.html/sdk.js(재사용) 조립 → `dist/`가 unpacked 로드 대상. 신규 번들러 의존성 0(vite 재사용), `@types/chrome`만 devDep 추가.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 132 passed·`npm run test:e2e` 2 passed 회귀 없음. **실 Chromium(Playwright persistent context + `--load-extension`, channel "chromium" 신 headless)**: 바인딩 저장 → fixture 페이지에서 SDK 호스트 주입·FAB 렌더·패널 오픈 확인, 패널은 "불러오기 실패" 표시(정상 — API 릴레이 전), **미바인딩 오리진 미주입** 확인. 스크래치 스크립트, 커밋 안 함.
-- 참고: 구 headless shell은 확장 미지원 — `channel: "chromium"` 필요 (킥오프 §7 참고 문구 실측 확인). 빈 background.js는 SW 등록이 안 잡혀 onInstalled 리스너 1개 추가.
+- 참고: 구 headless shell은 확장 미지원 — `channel: "chromium"` 필요 (킥오프 7절 참고 문구 실측 확인). 빈 background.js는 SW 등록이 안 잡혀 onInstalled 리스너 1개 추가.
 - 다음 할 일: **T23 background 저장 릴레이** — SDK api 계층에 transport 훅(페이지 → content script postMessage → background fetch(serverUrl+Bearer)) + `lastSeenOrigin` 스탬프. 팝업 바인딩은 T22에서 선행 완료.
 - 막힌 지점: 없음.
 
@@ -1118,14 +1118,14 @@
 - 완료(서버): ① `POST /projects`의 JSON 분기에 `source:"snippet"` 라우팅 — `handleSnippetRegistration`(이름 검증→생성→토큰 발급→201 `{project, token}`, 오리진 검증·도달성 없음 — fetch하지 않는 경로) ② `POST /projects/:id/token`(재발급, 201 `{token}`, 구 토큰 즉시 무효)·`DELETE /projects/:id/token`(폐기, 204) — 경로 D 한정(그 외 400).
 - 완료(콘솔): ① 3번째 탭 **[내 화면에서 편집 (확장)]** — 이름 입력→생성→**토큰 1회 표시**(복사 버튼, 프로젝트 ID, unpacked 로드·팝업 연결 안내) ② 목록 뱃지 "확장"·`lastSeenOrigin` 메타 ③ snippet 프로젝트 액션: 편집 열기 대신 **[토큰 재발급]**(confirm→새 토큰 prompt 표시) ④ **T20 넘김 사항 해소** — 내보내기·마스킹 적용 시 `snippetAuthHeaders`가 토큰을 물어(sessionStorage 세션 보관) Bearer로 전송, 401이면 보관 토큰 폐기+재입력 유도.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **132 passed**(+6: snippet 등록 201+응답 토큰 실동작 / 이름 없음 400 / 재발급 구토큰 401·신토큰 200 / 폐기 후 401 / upload에 토큰 API 400 / 콘솔 3택 HTML). `npm run test:e2e` 2 passed 회귀 없음. **실 Chrome**: 콘솔 3번째 탭 렌더·폼·안내 확인(제출 흐름은 vitest가 커버).
-- 다음 할 일: **T22 확장 스캐폴드 + content script SDK 주입** — MV3 manifest·기존 sdk.js 번들 재사용·unpacked 로드로 임의 페이지에 FAB·패널 (pathD 킥오프 §2·§7).
+- 다음 할 일: **T22 확장 스캐폴드 + content script SDK 주입** — MV3 manifest·기존 sdk.js 번들 재사용·unpacked 로드로 임의 페이지에 FAB·패널 (pathD 킥오프 2절·7절).
 - 막힌 지점: 없음.
 
 ### 2026-07-11 — T20 저장 경로 토큰 인증 완료
 - 브랜치: `feat/s25-save-auth-t20` (`feat/s25-token-model-t19` 위에 스택, main 미병합 — T19→T20 순 병합 대기).
-- 완료: ① `errors.ts`에 `UNAUTHORIZED(401)` 추가(ID-10 확장 여지대로) ② `routes/projects.ts::requireSnippetToken` 미들웨어 — `snippet` 프로젝트의 **PUT/assets/export**에만 `Authorization: Bearer` 검증(불일치·부재 401), upload·proxy 프로젝트는 기존 무인증 그대로(ID-03 same-origin 전제 유지). GET(초기 로드)·목록·삭제는 게이트 밖(스펙 §6 — 저장 계열만).
+- 완료: ① `errors.ts`에 `UNAUTHORIZED(401)` 추가(ID-10 확장 여지대로) ② `routes/projects.ts::requireSnippetToken` 미들웨어 — `snippet` 프로젝트의 **PUT/assets/export**에만 `Authorization: Bearer` 검증(불일치·부재 401), upload·proxy 프로젝트는 기존 무인증 그대로(ID-03 same-origin 전제 유지). GET(초기 로드)·목록·삭제는 게이트 밖(스펙 6절 — 저장 계열만).
 - 보류(의도): `lastSeenOrigin` 스탬프는 T23으로 — 확장 background 경유 저장은 Origin이 `chrome-extension://`이라 페이지 오리진 전달 방식(헤더 등)이 확장 구현에서 정해진 뒤에 넣는 것이 맞음.
-- **T21 넘김 사항**: 콘솔(루트 도메인)의 내보내기 버튼은 토큰이 없어 snippet 프로젝트에서 401이 됨 — 스펙(§6)이 export 토큰 필수를 명시하므로 게이트는 유지, 콘솔 UX(버튼 숨김 또는 "확장에서 내보내기" 안내)는 T21에서 처리.
+- **T21 넘김 사항**: 콘솔(루트 도메인)의 내보내기 버튼은 토큰이 없어 snippet 프로젝트에서 401이 됨 — 스펙(6절)이 export 토큰 필수를 명시하므로 게이트는 유지, 콘솔 UX(버튼 숨김 또는 "확장에서 내보내기" 안내)는 T21에서 처리.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **126 passed**(+6: PUT 401→Bearer 200 / assets 401→201 / export 401→200 / 타 프로젝트 토큰 401 / GET 무토큰 통과 / upload 프로젝트 무인증 회귀 없음). `npm run test:e2e` 2 passed 회귀 없음.
 - 다음 할 일: **T21 콘솔 온보딩 3번째 선택지** — `[내 화면에서 편집 (확장)]` 폼, `POST /projects`에 `{name, source:"snippet"}` 수용+토큰 발급 응답, 설치·토큰 안내, 목록 뱃지, snippet 내보내기 UX(위 넘김 사항).
 - 막힌 지점: 없음.
@@ -1136,30 +1136,30 @@
 - 완료: **server/store** — ① `paths.ts::tokenFile`(projectDir 하위 `token.json` — spec.json 밖, PUT 전체 교체와 격리) ② `tokenStore.ts` 신설: `issueToken`(`tok_`+192bit base64url, **SHA-256 해시만 보관**, 평문 1회 반환, 재발급 시 구 토큰 즉시 무효), `verifyToken`(timingSafeEqual, 미발급·불일치 false), `revokeToken`, `hasToken` ③ `projectStore.createProject`에 `{type:"snippet"}` 분기.
 - 확인: `serve.ts`·`console.ts`의 `mockupSource.type` 분기는 if 기반이라 신규 변형에 타입 안전 — snippet 프로젝트의 서빙·콘솔 표시는 T21 몫.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **120 passed**(+7: shared 계약 snippet 왕복·토큰 필드 부재 1 / tokenStore 6 — 발급·검증·오토큰 거부 / 메타에 평문·해시 격리(spec.json에 미포함) / 재발급 무효 / 폐기·hasToken / 프로젝트 삭제 시 정리 / snippet 생성 왕복 무손실). `npm run test:e2e` 2 passed 회귀 없음.
-- 다음 할 일: **T20 저장 경로 토큰 인증** — 경로 D 프로젝트의 PUT/assets/export에 Bearer 게이트(401), 타 프로젝트 토큰 거부 (pathD 킥오프 §4.1, technical-spec §6 예외 문단).
+- 다음 할 일: **T20 저장 경로 토큰 인증** — 경로 D 프로젝트의 PUT/assets/export에 Bearer 게이트(401), 타 프로젝트 토큰 거부 (pathD 킥오프 4.1절, technical-spec 6절 예외 문단).
 - 막힌 지점: 없음.
 
 ### 2026-07-11 — 경로 D 확정 승격 (주입=옵션 E 확장, 사용자 결정) + docs/ 동기화 → S2.5 개시
 - 브랜치: `docs/pathD-kickoff-draft` → `main` 병합 완료(2026-07-11, fast-forward)·push. 병합 후 브랜치 삭제 (초안·확정 커밋 2건 포함).
 - 사용자 결정: **주입 메커니즘 = 옵션 E(브라우저 확장)**. 옵션 S(스니펫)는 범위 밖(후속 실수요 판단).
-- 완료: `guide/pathD-kickoff-spec.md` **초안→확정 승격** — §8 결정 5건 해소(①E 확장 ②토큰=별도 메타 파일 해시·만료 없음·수동 재발급 ③unpacked 로드 ④동결 cross-origin 완화 범위 밖 ⑤로드맵 S2.5). 파생 단순화: 저장 CORS 미구현(background 경유라 불필요 — S 도입 시에만). §9 이력 기록.
-- 완료: **docs/ 동기화** — PRD(§4.2 경로 D를 "클라이언트 주입(확장)"으로 재정의+결정 플로우에 "로그인해야 보인다" 분기, FR-ONB-06 재정의, §5 우선순위 주석, §7.1 로드맵에 S2.5 행 신설·S2 "구현 완료·실사용 판정 대기"), detailed-spec(§2.3에 [S2.5] 3번째 선택지), technical-spec(§2 데이터 모델 snippet 변형, §6 토큰 인증 예외+`POST /projects/:id/token`, §7.3 신설(SSRF 표면 없음·저장 토큰·CORS 미구현·CSP 무관), §9.2에 T19~T25), docs/README(guide 목록 5번).
+- 완료: `guide/pathD-kickoff-spec.md` **초안→확정 승격** — 8절 결정 5건 해소(①E 확장 ②토큰=별도 메타 파일 해시·만료 없음·수동 재발급 ③unpacked 로드 ④동결 cross-origin 완화 범위 밖 ⑤로드맵 S2.5). 파생 단순화: 저장 CORS 미구현(background 경유라 불필요 — S 도입 시에만). 9절 이력 기록.
+- 완료: **docs/ 동기화** — PRD(4.2절 경로 D를 "클라이언트 주입(확장)"으로 재정의+결정 플로우에 "로그인해야 보인다" 분기, FR-ONB-06 재정의, 5절 우선순위 주석, 7.1절 로드맵에 S2.5 행 신설·S2 "구현 완료·실사용 판정 대기"), detailed-spec(2.3절에 [S2.5] 3번째 선택지), technical-spec(2절 데이터 모델 snippet 변형, 6절 토큰 인증 예외+`POST /projects/:id/token`, 7.3절 신설(SSRF 표면 없음·저장 토큰·CORS 미구현·CSP 무관), 9.2절에 T19~T25), docs/README(guide 목록 5번).
 - 검증: 문서만 변경.
-- 다음 할 일: **T19 구현부터** — 브랜치 `feat/`로 분리, `snippet` 변형 + 토큰 발급/해시검증/폐기 (pathD 킥오프 §4.1·§5). 이 문서 브랜치의 main 병합은 사용자 동의 대기.
+- 다음 할 일: **T19 구현부터** — 브랜치 `feat/`로 분리, `snippet` 변형 + 토큰 발급/해시검증/폐기 (pathD 킥오프 4.1절·5절). 이 문서 브랜치의 main 병합은 사용자 동의 대기.
 - 막힌 지점: 없음.
 
 ### 2026-07-11 — 경로 D(클라이언트 주입) 실수요 발생 + 킥오프 초안 작성
-- 브랜치: `docs/pathD-kickoff-draft` (main 미병합). 초안 문서만 추가 — docs/ 동기화는 §8 확정 후로 보류.
-- 배경(실수요): 경로 B 실사용 중(hana-color.vercel.app 등록·편집·동결까지 실측 성공) 사용자가 **"직접 로그인해 둔 상태의 화면을 쓰고 싶다"**는 요구 제기. 경로 B(서버 프록시)는 익명 fetch라 원리상 불가(외부 IdP 리다이렉트 502). 이는 **PRD 리스크 R5가 예고한 "안 풀리는 인증은 경로 D로 우회"** 지점 — S2 종료 후 실수요 판단 시점 도달(PRD §265).
-- 완료: `guide/pathD-kickoff-spec.md` **초안** — S2 킥오프와 동일 형식. 핵심: ① 아키텍처 차이(서버 프록시 vs 클라이언트 주입) ② **주입 메커니즘 갈림길**(옵션 S 스니펫=가볍지만 CSP 못 뚫음 / 옵션 E 확장=content script로 CSP·CORS 우회, 로그인 실화면 커버, 착수 비용 큼 → **초안 권장 E 주+S 보조**) ③ SSRF는 사라지고 **저장 엔드포인트 토큰 인증+CORS**가 새 표면 ④ 마스킹·편집·동결·뷰어·export는 S1/S2 재사용(설계 원칙 #3) ⑤ 데이터 모델 `mockupSource: snippet` 변형(아키텍처 §4 line 131이 예고) ⑥ WBS T19~T25(T19~T21은 메커니즘 무관 선행 가능) ⑦ DoD=로그인 뒤 보호 화면으로 기획서 완성.
-- 검증: 문서만. 근거 대조 — 아키텍처 §4(경로 D)·§5.2(경로 D 우회)·line 131(snippet), PRD FR-ONB-06·R5·§265, s2-kickoff §2.1·§4.2.
-- 다음 할 일: **§8 결정 대기** — (1) 주입 메커니즘 S/E/단계안 (2) 토큰 저장·수명 (3) 확장 배포 방식 (4) 동결 cross-origin 완화 (5) 로드맵 위치. 사용자가 (1)을 정하면 문서를 확정 승격 → docs/ 동기화 → 구현(T19부터).
+- 브랜치: `docs/pathD-kickoff-draft` (main 미병합). 초안 문서만 추가 — docs/ 동기화는 8절 확정 후로 보류.
+- 배경(실수요): 경로 B 실사용 중(hana-color.vercel.app 등록·편집·동결까지 실측 성공) 사용자가 **"직접 로그인해 둔 상태의 화면을 쓰고 싶다"**는 요구 제기. 경로 B(서버 프록시)는 익명 fetch라 원리상 불가(외부 IdP 리다이렉트 502). 이는 **PRD 리스크 R5가 예고한 "안 풀리는 인증은 경로 D로 우회"** 지점 — S2 종료 후 실수요 판단 시점 도달(PRD 265절).
+- 완료: `guide/pathD-kickoff-spec.md` **초안** — S2 킥오프와 동일 형식. 핵심: ① 아키텍처 차이(서버 프록시 vs 클라이언트 주입) ② **주입 메커니즘 갈림길**(옵션 S 스니펫=가볍지만 CSP 못 뚫음 / 옵션 E 확장=content script로 CSP·CORS 우회, 로그인 실화면 커버, 착수 비용 큼 → **초안 권장 E 주+S 보조**) ③ SSRF는 사라지고 **저장 엔드포인트 토큰 인증+CORS**가 새 표면 ④ 마스킹·편집·동결·뷰어·export는 S1/S2 재사용(설계 원칙 #3) ⑤ 데이터 모델 `mockupSource: snippet` 변형(아키텍처 4절 line 131이 예고) ⑥ WBS T19~T25(T19~T21은 메커니즘 무관 선행 가능) ⑦ DoD=로그인 뒤 보호 화면으로 기획서 완성.
+- 검증: 문서만. 근거 대조 — 아키텍처 4절(경로 D)·5.2절(경로 D 우회)·line 131(snippet), PRD FR-ONB-06·R5·265절, s2-kickoff 2.1절·4.2절.
+- 다음 할 일: **8절 결정 대기** — (1) 주입 메커니즘 S/E/단계안 (2) 토큰 저장·수명 (3) 확장 배포 방식 (4) 동결 cross-origin 완화 (5) 로드맵 위치. 사용자가 (1)을 정하면 문서를 확정 승격 → docs/ 동기화 → 구현(T19부터).
 - 막힌 지점: 주입 메커니즘 결정이 경로 D 규모를 좌우 — 사용자 판단 필요.
 
 ### 2026-07-11 — T18 CI 파이프라인 완료 + 원격 저장소 개설 (S2 WBS 종료)
 - 브랜치: `chore/ci-github-actions-t18` → `main` 병합 완료(2026-07-11, fast-forward)·`origin/main` push. 병합 후 브랜치 삭제.
 - 원격 개설: 사용자가 `https://github.com/landfill/draftify-html`(public) 제공. `origin` 추가 후 `main` 초기 push(민감 파일 없음 확인 — `data/`·`.env`·`node_modules` gitignore, 추적 파일에 secret 패턴 0). `package-lock.json` 커밋돼 있어 `npm ci` 가능.
-- 완료: `.github/workflows/ci.yml` — 킥오프 s2 §7대로 `npm ci` → typecheck → build → test → **Playwright Chromium 설치** → test:e2e. push(전 브랜치)·PR 트리거. `concurrency`로 같은 ref 진행 실행 취소, 실패 시 playwright-report 아티팩트 업로드. 명령 자체는 러너 중립(원격 이식 대비).
+- 완료: `.github/workflows/ci.yml` — 킥오프 s2 7절 그대로 `npm ci` → typecheck → build → test → **Playwright Chromium 설치** → test:e2e. push(전 브랜치)·PR 트리거. `concurrency`로 같은 ref 진행 실행 취소, 실패 시 playwright-report 아티팩트 업로드. 명령 자체는 러너 중립(원격 이식 대비).
 - 검증: **로컬** — typecheck·build·test 113 passed·test:e2e 2 passed(S1+S2) 전부 통과. **원격 첫 실행 green**(run 29108846721, verify job 58s, 전 단계 ✓). 스펙 T18 DoD("원격 개설 후 첫 실행 green") 충족.
 - 참고: CI 로그에 `actions/checkout@v4`·`setup-node@v4`가 내부 Node 20 런타임 deprecated 경고 — 액션 자체 런타임 문제(Node 24로 자동 강제 실행), 우리 프로젝트 무관·무해. 후속 액션 메이저 갱신 시 자연 해소.
 - 다음 할 일: **S2 WBS 종료.** 이 브랜치 main 병합(동의 대기) → 병합 후 push. 이후는 S2 실사용 판정(프록시 온보딩·마스킹) 또는 S3 계획 입력.
@@ -1211,51 +1211,51 @@
 
 ### 2026-07-10 — T13 프록시 코어 + SDK 주입 완료
 - 브랜치: `feat/s2-proxy-core-t13` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 110 passed 재확인). 병합 후 브랜치 삭제.
-- 완료: **`routes/proxy.ts`** (technical-spec §3.3, 킥오프 s2 §2) — transport는 **node:http/https + `lookup: guardedLookup`** 확정(undici 미설치로 global fetch는 IP 고정 불가, s2 §9 기록). ① 요청 전달: hop-by-hop·Host·Accept-Encoding·Content-Length 제거 후 Host=오리진·`Accept-Encoding: identity` 재설정, GET/HEAD는 end·그 외 req.pipe ② HTML만 버퍼링 가공: 오리진 절대 URL→프로토콜 상대(`//{proxyHost}`) 재작성 → SDK 태그 주입(inject.ts 재사용) → Content-Length 재계산. 비HTML은 스트림 통과 ③ 응답 헤더에서 CSP·CSP-Report-Only·X-Frame-Options 제거 ④ 리다이렉트 manual: 오리진 내부는 Location을 프록시 경로로 재작성, 밖이면 502 ⑤ 매 요청 재검증(§4.1 ②): 프로토콜+allowlist 동기 재확인, IP는 guardedLookup이 연결 시 검증·고정.
+- 완료: **`routes/proxy.ts`** (technical-spec 3.3절, 킥오프 s2 2절) — transport는 **node:http/https + `lookup: guardedLookup`** 확정(undici 미설치로 global fetch는 IP 고정 불가, s2 9절 기록). ① 요청 전달: hop-by-hop·Host·Accept-Encoding·Content-Length 제거 후 Host=오리진·`Accept-Encoding: identity` 재설정, GET/HEAD는 end·그 외 req.pipe ② HTML만 버퍼링 가공: 오리진 절대 URL→프로토콜 상대(`//{proxyHost}`) 재작성 → SDK 태그 주입(inject.ts 재사용) → Content-Length 재계산. 비HTML은 스트림 통과 ③ 응답 헤더에서 CSP·CSP-Report-Only·X-Frame-Options 제거 ④ 리다이렉트 manual: 오리진 내부는 Location을 프록시 경로로 재작성, 밖이면 502 ⑤ 매 요청 재검증(4.1절 ②): 프로토콜+allowlist 동기 재확인, IP는 guardedLookup이 연결 시 검증·고정.
 - 완료(가드·에러 확장): ① `ssrfGuard`에 `MOCKSPEC_PROXY_ALLOW_LOOPBACK` dev/test 스위치 — 127/8·::1·unspecified만 완화(메타데이터·ULA·링크로컬 유지). `isBlockedAddress`/`validateOrigin`/`createGuardedLookup`에 `allowLoopback` 스레딩 ② `errors.ts`에 `BAD_GATEWAY(502)` 추가.
 - **실버그(테스트가 잡음)**: IP 리터럴 오리진(`127.0.0.1`)은 Node가 `lookup`을 호출하지 않아 IP 고정 가드가 우회됨(루프백 OFF인데 200 통과). 프록시 핸들러가 리터럴을 `isBlockedAddress`로 **동기 직접 검증**하도록 수정 — hostname 오리진은 기존대로 guardedLookup이 연결 시 검증.
 - **타입 수정**: guardedLookup 반환 타입을 Node `net.LookupFunction`으로 정렬(family가 `number|"IPv4"|"IPv6"`라 좁은 시그니처는 http.request의 lookup에 비할당). 통합 콜백 `(err, address|addresses, family?)` 사용.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **110 passed**(+7: 프록시 통합 — 실 업스트림 http 서버(127.0.0.1) 대상. HTML 주입+절대 URL 재작성+CSP/XFO 제거 / JSON 통과 / 내부 리다이렉트 경로 재작성 / 외부 리다이렉트 502 / 예약경로 sdk.js 로컬 서빙 / allowlist 축소 시 502 / 루프백 OFF 시 IP 가드 502). `npm run test:e2e` 1 passed(4.0s) 회귀 없음. 프록시 통합 테스트가 실 소켓 왕복을 구동하므로 별도 런타임 확인 생략.
-- 문서 동기화: 킥오프 §2.1(transport 문구·IP 리터럴 주의)·§9(T13 결정 3건), technical-spec §3.3·§7.2(루프백 스위치·hard-deny 목록 보강)·§6(BAD_GATEWAY).
-- 다음 할 일: **T14 쿠키 재바인딩** — 프록시 응답의 `Set-Cookie` Domain 제거(host-only)·http일 때 Secure 제거. 현재 T13은 Set-Cookie를 그대로 통과시킴(seam 존재). 킥오프 s2 §4.2.
+- 문서 동기화: 킥오프 2.1절(transport 문구·IP 리터럴 주의)·9절(T13 결정 3건), technical-spec 3.3절·7.2절(루프백 스위치·hard-deny 목록 보강)·6절(BAD_GATEWAY).
+- 다음 할 일: **T14 쿠키 재바인딩** — 프록시 응답의 `Set-Cookie` Domain 제거(host-only)·http일 때 Secure 제거. 현재 T13은 Set-Cookie를 그대로 통과시킴(seam 존재). 킥오프 s2 4.2절.
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — T12 SSRF 가드 모듈 완료
 - 브랜치: `feat/s2-ssrf-guard-t12` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 103 passed 재확인). 병합 후 브랜치 삭제.
-- 완료: **`packages/server/src/proxy/ssrfGuard.ts`** (킥오프 s2 §4.1, technical-spec §7.2) — transport 비의존 순수 모듈. ① `getAllowlist`/`isAllowlisted` — `MOCKSPEC_PROXY_ALLOWLIST` env 파싱(콤마·trim·소문자), 정확 일치 + `*.` 서브도메인 와일드카드(1단계 이상, 접미 위조 차단), 빈 목록=deny-by-default ② `isBlockedAddress` — hard-deny IP: 0.0.0.0/8·127/8·169.254/16(메타데이터)·::1·::·fe80::/10·fc00::/7(ULA)·IPv4-mapped 언랩·비IP. **사설 대역(10/172.16/192.168)은 미차단**(사내 스테이징) ③ `validateOrigin` — 프로토콜(http/https)→allowlist→resolve→IP 검증, 다중 A레코드 중 하나라도 위험하면 거부, `SsrfError(reason)` ④ `createGuardedLookup` — `dns.lookup` 호환 훅으로 **IP 고정**(매 연결 resolve→검증→안전 IP만 소켓 오픈). 리졸버 주입 가능(테스트는 실 DNS 미접촉).
+- 완료: **`packages/server/src/proxy/ssrfGuard.ts`** (킥오프 s2 4.1절, technical-spec 7.2절) — transport 비의존 순수 모듈. ① `getAllowlist`/`isAllowlisted` — `MOCKSPEC_PROXY_ALLOWLIST` env 파싱(콤마·trim·소문자), 정확 일치 + `*.` 서브도메인 와일드카드(1단계 이상, 접미 위조 차단), 빈 목록=deny-by-default ② `isBlockedAddress` — hard-deny IP: 0.0.0.0/8·127/8·169.254/16(메타데이터)·::1·::·fe80::/10·fc00::/7(ULA)·IPv4-mapped 언랩·비IP. **사설 대역(10/172.16/192.168)은 미차단**(사내 스테이징) ③ `validateOrigin` — 프로토콜(http/https)→allowlist→resolve→IP 검증, 다중 A레코드 중 하나라도 위험하면 거부, `SsrfError(reason)` ④ `createGuardedLookup` — `dns.lookup` 호환 훅으로 **IP 고정**(매 연결 resolve→검증→안전 IP만 소켓 오픈). 리졸버 주입 가능(테스트는 실 DNS 미접촉).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **103 passed**(+19: allowlist 5, hard-deny IP 3, validateOrigin 7, lookup 훅 4). **실측**: 빌드 산출물의 guardedLookup을 실 `node:http` 요청의 `lookup` 옵션에 꽂아 `localhost`(→127.0.0.1) 연결이 ENOTFOUND로 차단됨을 확인(요청이 서버에 미도달 = 유출 0). 스크래치 스크립트, 커밋 안 함.
-- 다음 할 일: **T13 프록시 코어** — transport 확정이 첫 결정(node:http/https + `lookup: guardedLookup` 이 의존성 0·실측 통과라 유력, undici Agent는 패키지 추가 필요). §2.1 "global fetch" 문구를 그 결정에 맞춰 갱신(s2 §9 이력에 이미 재검토 플래그). 이후 HTML 버퍼링·절대 URL 재작성·SDK 주입·CSP/XFO 제거·리다이렉트 manual.
+- 다음 할 일: **T13 프록시 코어** — transport 확정이 첫 결정(node:http/https + `lookup: guardedLookup` 이 의존성 0·실측 통과라 유력, undici Agent는 패키지 추가 필요). 2.1절 "global fetch" 문구를 그 결정에 맞춰 갱신(s2 9절 이력에 이미 재검토 플래그). 이후 HTML 버퍼링·절대 URL 재작성·SDK 주입·CSP/XFO 제거·리다이렉트 manual.
 - 막힌 지점: 없음. (transport 선택은 T13 정상 결정 사항)
 
 ### 2026-07-10 — T11 shared 타입 확장 완료
 - 브랜치: `feat/s2-shared-types-t11` → `main` 병합 완료(2026-07-10, fast-forward, 병합 후 vitest 84 passed 재확인). 병합 후 브랜치 삭제.
-- 완료: **shared 타입 S2 확장** (킥오프 s2 §1) — ① `MockupSource`를 discriminated union으로 (`UploadMockupSource | ProxyMockupSource`, proxy는 `originUrl`·`registeredAt`) ② `SpecProject.maskingRules?: MaskingRule[]`(`id`·`find`·`replace`, 평문 부분 일치) ③ `Scene.maskedSnapshotAsset?`·`maskedAt?`. 전부 optional 추가라 `version: 1` 유지. index.ts export에 신규 타입 3종 추가.
-- 완료(부수): ① `projectStore.ts::referencedAssets`가 `maskedSnapshotAsset`도 참조로 인정 — 이 수정 없이는 PUT 시 마스킹본이 고아로 오인·삭제됨(ID-11 상호작용, 킥오프 s2 §6에 명시된 유지 사항) ② `sdk/state.test.ts`의 `.originalFilename` 직접 접근을 union 안전 비교로 교체.
+- 완료: **shared 타입 S2 확장** (킥오프 s2 1절) — ① `MockupSource`를 discriminated union으로 (`UploadMockupSource | ProxyMockupSource`, proxy는 `originUrl`·`registeredAt`) ② `SpecProject.maskingRules?: MaskingRule[]`(`id`·`find`·`replace`, 평문 부분 일치) ③ `Scene.maskedSnapshotAsset?`·`maskedAt?`. 전부 optional 추가라 `version: 1` 유지. index.ts export에 신규 타입 3종 추가.
+- 완료(부수): ① `projectStore.ts::referencedAssets`가 `maskedSnapshotAsset`도 참조로 인정 — 이 수정 없이는 PUT 시 마스킹본이 고아로 오인·삭제됨(ID-11 상호작용, 킥오프 s2 6절에 명시된 유지 사항) ② `sdk/state.test.ts`의 `.originalFilename` 직접 접근을 union 안전 비교로 교체.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **84 passed**(+3: shared 계약에 proxy 소스·마스킹 필드 직렬화 왕복 / S1 형태(S2 필드 없음) spec PUT 왕복 무손실 하위 호환 / 마스킹본 asset 유지→참조 해제 시 삭제·원본 보존). 기존 왕복 무손실 테스트 fixture에 S2 필드 포함. `npm run test:e2e` 1 passed(4.1s) 회귀 없음.
-- 다음 할 일: T12 — SSRF 가드 모듈 (allowlist 매칭·hard-deny IP·IP 고정 연결, technical-spec §7.2). **T13(프록시 코어)은 T12 없이 노출 금지.**
+- 다음 할 일: T12 — SSRF 가드 모듈 (allowlist 매칭·hard-deny IP·IP 고정 연결, technical-spec 7.2절). **T13(프록시 코어)은 T12 없이 노출 금지.**
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — S2 킥오프 스펙 초판 작성 + docs/ 동기화
 - 브랜치: `docs/s2-kickoff-spec` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.
 - 완료: `guide/s2-kickoff-spec.md` 초판 — 범위는 사용자 확정(경로 B + 필수 보안 + 마스킹 + CI 포함, 경로 D·전이·흐름도·스크린샷 fallback·라벨·이력은 범위 밖). 주요 결정: ① 프록시는 Node 내장 fetch(undici) 직접 구현, HTML만 버퍼링·가공(절대 URL 재작성→SDK 주입→CSP/XFO 스트립), 비HTML 스트림 통과, 리다이렉트는 manual로 클라이언트 왕복(hop별 재검증 대체), WebSocket 미지원 절단 ② SSRF는 `MOCKSPEC_PROXY_ALLOWLIST` env(deny-by-default) + hard-deny IP(메타데이터·루프백·자기 자신, 사설 대역은 예외) + resolve된 IP 고정 연결(DNS rebinding 차단) ③ 쿠키는 Set-Cookie Domain 제거(host-only 재바인딩)+http 시 Secure 제거까지만, SSO는 안 뚫음 ④ 마스킹은 규칙 기반 find→replace(평문 부분 일치, 정규식·클릭 편집기 기각), 콘솔 브라우저 DOMParser로 마스킹본 생성(서버 HTML 파싱 금지), 원본 보존·재마스킹, export는 마스킹본 우선 ⑤ 데이터 모델은 optional 추가만(version 1 유지, S1 파일 호환) ⑥ CI는 GitHub Actions 1본(전제: 원격 개설은 사용자 결정 — 현재 로컬 전용 레포). WBS T11~T18 + S2 DoD(프록시 E2E + 마스킹 원문 0회 + 보안 회귀) 정의.
-- 검증: 문서만 변경. 결정 근거는 PRD §4.2·NFR-03, technical-spec §3.3·§7.2, 서비스 아키텍처 가이드 §4·§5, s1-kickoff-spec §11과 대조.
-- 완료(추가, 같은 날): **docs/ 동기화** — PRD(§7.1 로드맵 표에 S2 확정 범위·"후속 판단" 행 신설, §5 우선순위 주석: P1 중 S2 확정은 FR-ONB-05·FR-EDT-11뿐), detailed-spec(§2.3 온보딩 경로 선택 폼 구체화, §3.12 마스킹 규칙 기반으로 구체화), technical-spec(§1.3 proxy.ts, §2 데이터 모델에 [S2] 필드 통합·§2.2를 "후속 확장"으로 재명명, §3.3 프록시 상세, §6 API [S2] 표기, §7.2 보안 표 구체화, §9.2 WBS T11~T18·§9.3 S2 DoD 신설, §10 [S2] 확정 결정 3행), docs/README(guide 목록에 s2-kickoff-spec).
-- 다음 할 일: 구현 T11(shared 타입 확장)부터 — 브랜치 분리(`feat/`), 킥오프 s2 §8 의존 순서대로.
+- 검증: 문서만 변경. 결정 근거는 PRD 4.2절·NFR-03, technical-spec 3.3절·7.2절, 서비스 아키텍처 가이드 4절·5절, s1-kickoff-spec 11절과 대조.
+- 완료(추가, 같은 날): **docs/ 동기화** — PRD(7.1절 로드맵 표에 S2 확정 범위·"후속 판단" 행 신설, 5절 우선순위 주석: P1 중 S2 확정은 FR-ONB-05·FR-EDT-11뿐), detailed-spec(2.3절 온보딩 경로 선택 폼 구체화, 3.12절 마스킹 규칙 기반으로 구체화), technical-spec(1.3절 proxy.ts, 2절 데이터 모델에 [S2] 필드 통합·2.2절을 "후속 확장"으로 재명명, 3.3절 프록시 상세, 6절 API [S2] 표기, 7.2절 보안 표 구체화, 9.2절 WBS T11~T18·9.3절 S2 DoD 신설, 10절 [S2] 확정 결정 3행), docs/README(guide 목록에 s2-kickoff-spec).
+- 다음 할 일: 구현 T11(shared 타입 확장)부터 — 브랜치 분리(`feat/`), 킥오프 s2 8절 의존 순서대로.
 - 막힌 지점: T18(CI)은 원격 저장소 개설 여부·호스팅(GitHub 여부)이 사용자 결정 사항. 워크플로우 파일 작성 자체는 가능.
 
 ### 2026-07-10 — S1 실사용 판정 기록 → S1 종료
 - 브랜치: `docs/s1-verdict` (main 미병합, 동의 대기).
-- 완료: 킥오프 스펙 §11에 **S1 실사용 판정 "가능"** 기록 — 사용자가 실제 목업으로 기획서 1부를 목업 팀 도움 없이 완성. 최초 시도에서 발견된 편집 UX 5건(마커 고정 위치·중복 생성·핀 먼저 워크플로우·패널 스크롤·내보내기 동선)은 4~6차 개정 + fix로 당일 반영, 재검증 통과로 확정. S2 계획 입력(온보딩 경로 B/D 우선순위, zip 마찰 해소 확인)도 함께 기록.
-- 검증: 문서만 변경. §10 DoD의 마지막 조건(판정 기록) 충족 — **S1 종료.** S2 우선순위는 경로 B(URL 프록시)로 결정(사용자, 같은 날), 킥오프 §11 S2 입력에 근거·비용과 함께 기록.
-- 다음 할 일 (새 세션 시작점): **S2 계획 수립.** 우선순위는 경로 B(URL 프록시)로 결정됨 — 킥오프 §11 "S2 계획 입력"에 근거·비용 기록. 진행 방식은 S1과 동일: ① S2 킥오프 스펙(범위·결정·WBS)을 guide/에 작성 → ② docs/ 동기화 → ③ 구현. 참조: PRD §4.2(경로 B)·FR-ONB-05·NFR-03(SSRF), technical-spec §3.3(프록시 설계 초안)·§7.2, 리스크 R5. 선택 과제: CI 파이프라인(현재 테스트 로컬 실행만).
+- 완료: 킥오프 스펙 11절에 **S1 실사용 판정 "가능"** 기록 — 사용자가 실제 목업으로 기획서 1부를 목업 팀 도움 없이 완성. 최초 시도에서 발견된 편집 UX 5건(마커 고정 위치·중복 생성·핀 먼저 워크플로우·패널 스크롤·내보내기 동선)은 4~6차 개정 + fix로 당일 반영, 재검증 통과로 확정. S2 계획 입력(온보딩 경로 B/D 우선순위, zip 마찰 해소 확인)도 함께 기록.
+- 검증: 문서만 변경. 10절 DoD의 마지막 조건(판정 기록) 충족 — **S1 종료.** S2 우선순위는 경로 B(URL 프록시)로 결정(사용자, 같은 날), 킥오프 11절 S2 입력에 근거·비용과 함께 기록.
+- 다음 할 일 (새 세션 시작점): **S2 계획 수립.** 우선순위는 경로 B(URL 프록시)로 결정됨 — 킥오프 11절 "S2 계획 입력"에 근거·비용 기록. 진행 방식은 S1과 동일: ① S2 킥오프 스펙(범위·결정·WBS)을 guide/에 작성 → ② docs/ 동기화 → ③ 구현. 참조: PRD 4.2절(경로 B)·FR-ONB-05·NFR-03(SSRF), technical-spec 3.3절(프록시 설계 초안)·7.2절, 리스크 R5. 선택 과제: CI 파이프라인(현재 테스트 로컬 실행만).
 - 막힌 지점: 없음.
 
-### 2026-07-10 — 편집 화면 내보내기 버튼 (실사용 3회 피드백 ②, 킥오프 §11 6차 개정)
+### 2026-07-10 — 편집 화면 내보내기 버튼 (실사용 3회 피드백 ②, 킥오프 11절 6차 개정)
 - 브랜치: `feat/editor-export` (`fix/panel-scroll` 위에 스택) → `main` 병합 완료(2026-07-10, fix→feat 순 fast-forward). 병합 후 두 브랜치 삭제.
 - 배경: 내보내기가 콘솔에만 있어 편집 후 목록 화면으로 빠져나가야 다운로드 가능 — 편집→확인 루프를 끊는 동선. export 엔드포인트는 이미 same-origin 프록시로 서브도메인에 열려 있어 **서버 변경 없음**.
-- 완료: 패널 하단 고정 푸터에 **[내보내기 (HTML 다운로드)]** 버튼 — 콘솔과 동일 규칙(스냅샷 없는 장면 N개 확인 다이얼로그, 50MB 경고는 버튼 아래 힌트), `api.ts::exportProjectHtml`(+`filenameFromDisposition` — filename* 한글 우선, ASCII fallback), blob 다운로드. 프로젝트 로드 전·진행 중 비활성. detailed-spec §3.9 신설(기존 3.9~3.11 → 3.10~3.12 밀림, technical-spec 교차 참조 1건 갱신 — 기존 §3.10 오참조도 함께 수정).
+- 완료: 패널 하단 고정 푸터에 **[내보내기 (HTML 다운로드)]** 버튼 — 콘솔과 동일 규칙(스냅샷 없는 장면 N개 확인 다이얼로그, 50MB 경고는 버튼 아래 힌트), `api.ts::exportProjectHtml`(+`filenameFromDisposition` — filename* 한글 우선, ASCII fallback), blob 다운로드. 프로젝트 로드 전·진행 중 비활성. detailed-spec 3.9절 신설(기존 3.9~3.11 → 3.10~3.12 밀림, technical-spec 교차 참조 1건 갱신 — 기존 3.10절 오참조도 함께 수정).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **81 passed**(+2: 내보내기 버튼 → confirm 경유 → export POST → filename* 파일명으로 다운로드 트리거 / confirm 취소 시 미호출), `npm run test:e2e` 1 passed(4.1s).
-- 다음 할 일: 실사용 재검증(패널 스크롤·편집 내보내기·미작성 핀·마커 드래그) → 판정 기록(킥오프 §11) → S2 계획.
+- 다음 할 일: 실사용 재검증(패널 스크롤·편집 내보내기·미작성 핀·마커 드래그) → 판정 기록(킥오프 11절) → S2 계획.
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — 패널 스크롤 결함 픽스 (실사용 3회 피드백 ①)
@@ -1265,66 +1265,66 @@
 - 다음 할 일: 없음 (feat/editor-export에서 이어짐).
 - 막힌 지점: 없음.
 
-### 2026-07-10 — 실사용 2회 피드백: 빈 어노테이션 자동 삭제 철회 → 미작성 핀 (킥오프 §11 5차 개정)
+### 2026-07-10 — 실사용 2회 피드백: 빈 어노테이션 자동 삭제 철회 → 미작성 핀 (킥오프 11절 5차 개정)
 - 브랜치: `feat/empty-ann-pins` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.
 - 배경: 4차 개정의 "빈 어노테이션 선택 해제 시 자동 삭제"가 실사용에서 "요소를 차례로 찍어두고 내용을 한 번에 작성"하는 워크플로우와 정면 충돌(연속 클릭 시 이전 핀이 계속 소멸, 번호만 증가). 오클릭 잔재의 주범(중복 생성)은 4차 ②(클릭=선택)가 이미 해결하므로 자동 삭제를 철회하고 가시화+사용자 주도 정리로 대체.
 - 완료: ① 자동 삭제 effect 제거 — 빈 어노테이션은 "미작성 핀"으로 유지, title placeholder 원복 ② 미작성 구분 스타일 — 마커 `marker--empty`(반투명)+툴팁, 목록 `ann--empty`(점선 테두리) ③ 패널 [빈 어노테이션 정리 (N)] 버튼 — 현재 장면의 미작성 핀 일괄 삭제(확인 1회, 미작성 0개면 버튼 숨김). `state.ts::isEmptyAnnotation`/`deleteEmptyAnnotations` 신설. 장면 전환·패널 닫기 시 선택 해제는 유지(다른 장면 소속 선택 잔류 방지 목적).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **79 passed**(테스트 교체 1+신규 1: 연속 클릭 시 핀 2개 유지+번호 1·2+미작성 스타일 표시 / 정리 버튼이 미작성만 삭제+버튼 카운트+정리 후 숨김), `npm run test:e2e` 1 passed(4.1s). 테스트 픽스처의 `#root`에 `data-mockspec-root` 마킹 추가(main.tsx 실제 호스트와 동일 — 패널 클릭이 부착 시퀀스에 오탐되던 테스트 결함 수정).
-- 다음 할 일: 실사용 재검증(핀 먼저·작성 나중 워크플로우, 마커 드래그 체감 포함) → 판정 기록(킥오프 §11) → S2 계획 입력.
+- 다음 할 일: 실사용 재검증(핀 먼저·작성 나중 워크플로우, 마커 드래그 체감 포함) → 판정 기록(킥오프 11절) → S2 계획 입력.
 - 막힌 지점: 없음.
 
-### 2026-07-10 — 실사용 피드백 반영: 마커 드래그 + 부착 UX (킥오프 §11 4차 개정)
+### 2026-07-10 — 실사용 피드백 반영: 마커 드래그 + 부착 UX (킥오프 11절 4차 개정)
 - 브랜치: `feat/marker-drag-attach-ux` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.
-- 배경: 사용자 실사용 1회에서 피드백 2건 — (a) 마커가 요소 우상단 고정이라 위치 조정 불가, (b) 클릭=생성 방식의 중복 생성·오클릭 잔재 혼란. 대안 검토 후 "클릭=생성 유지 + 기존 요소 클릭은 선택(Shift+클릭=추가) + 빈 어노테이션 자동 정리 + 마커 드래그" 채택(핀 도구 분리·확인 팝오버는 매 부착 비용으로 기각). 규약 §4 절차: 킥오프 §5·§6.2·§11(4차 개정) → detailed-spec §3.3/§3.4/§3.5·technical-spec 데이터 모델 동기화 → 구현.
+- 배경: 사용자 실사용 1회에서 피드백 2건 — (a) 마커가 요소 우상단 고정이라 위치 조정 불가, (b) 클릭=생성 방식의 중복 생성·오클릭 잔재 혼란. 대안 검토 후 "클릭=생성 유지 + 기존 요소 클릭은 선택(Shift+클릭=추가) + 빈 어노테이션 자동 정리 + 마커 드래그" 채택(핀 도구 분리·확인 팝오버는 매 부착 비용으로 기각). 규약 4절 절차: 킥오프 5절·6.2절·11절(4차 개정) → detailed-spec 3.3절/3.4절/3.5절·technical-spec 데이터 모델 동기화 → 구현.
 - 완료: **`Annotation.markerOffset?: {dx,dy}`**(shared) — 절대 좌표가 아닌 기본 위치(요소 우상단) 기준 상대 오프셋이라 앵커 재해석(요소 추적)과 공존. SDK 마커 pointerdown 드래그(편집 모드 한정, 이동 임계값 4px로 클릭/드래그 구분, 드래그 직후 click 억제 플래그는 setTimeout 0으로 해제해 잔류 방지), viewer도 동일 오프셋 적용(SDK↔산출물 대칭).
 - 완료: **부착 UX** — 편집 모드 클릭 시 대상 요소에 현재 장면 어노테이션이 있으면(resolveAnchor 요소 동일성 비교) 선택으로 전환, Shift+클릭은 강제 생성. title·description 모두 공백인 어노테이션은 선택 해제 시(다른 선택·장면 전환·패널 닫기) 자동 삭제 — 소비 번호는 재사용 안 함(기존 규칙 유지). 패널 힌트·title placeholder("비워두면 선택 해제 시 자동 삭제")로 안내.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **78 passed**(+3 App 통합: 중복 방지+Shift 추가 / 빈 어노테이션 자동 정리+번호 미재사용 / 드래그 오프셋 커밋+임계값 이하 무시. store-api 왕복 fixture에 markerOffset 포함해 서버 무손실 확인), `npm run test:e2e` 1 passed(4.0s — 기본 위치 오차 ≤2px 회귀 없음). **실 Chrome 드래그 검증은 미수행** — 드래그 UX 체감(관성·겹침)은 다음 실사용에서 확인 요망.
-- 다음 할 일: 실사용 재검증(마커 드래그·부착 UX 포함, 실 Chrome 드래그 체감 확인) 후 판정을 킥오프 §11에 기록 → S2 계획 입력.
+- 다음 할 일: 실사용 재검증(마커 드래그·부착 UX 포함, 실 Chrome 드래그 체감 확인) 후 판정을 킥오프 11절에 기록 → S2 계획 입력.
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — 루트 README.md 사용 가이드 신설
 - 브랜치: `docs/root-readme-usage-guide` → `main` 병합 완료(2026-07-10, fast-forward). 병합 후 브랜치 삭제.
 - 배경: 실사용 판정을 앞두고 "서버 실행·사용 방법"이 어느 문서에도 없음을 확인 — 기존 문서는 전부 만드는 사람 관점(스펙·규약·진행 로그). 가이드 부재 시 실사용에 "저장소를 아는 사람"의 도움이 필요해져 S1 취지(목업 팀 도움 없이)와 어긋남.
-- 완료(추가, 브랜치 `docs/readme-subdomain-wording` → main 병합 2026-07-10): §1 서브도메인 불릿을 자동 동작 톤으로 다듬고 격리·절대경로 근거 한 줄 요약 — 작업 지시처럼 읽힌다는 사용자 피드백 반영.
+- 완료(추가, 브랜치 `docs/readme-subdomain-wording` → main 병합 2026-07-10): 1절 서브도메인 불릿을 자동 동작 톤으로 다듬고 격리·절대경로 근거 한 줄 요약 — 작업 지시처럼 읽힌다는 사용자 피드백 반영.
 - 완료: 루트 `README.md` 신설 — 요구 환경, 서버 실행(PORT·MOCKSPEC_DATA_DIR env), 목업 zip 준비(빌드 산출물·언랩·200MB·base 조건), 업로드→편집(장면 등록·어노테이션·모드·자동 저장), 내보내기→file:// 검증 체크리스트, 테스트 명령, 저장소 구조. `docs/README.md` 서두에 상호 링크 추가.
-- 검증: 문서만 변경 — 코드·테스트 무영향. 가이드 내용은 detailed-spec §2~4·technical-spec §3·킥오프 §4와 대조해 작성.
-- 다음 할 일: 실사용 1회(팀 내 실제 목업으로 기획서 1부) → "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 §11에 기록 → S2 계획 입력.
+- 검증: 문서만 변경 — 코드·테스트 무영향. 가이드 내용은 detailed-spec 2절~4·technical-spec 3절·킥오프 4절과 대조해 작성.
+- 다음 할 일: 실사용 1회(팀 내 실제 목업으로 기획서 1부) → "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 11절에 기록 → S2 계획 입력.
 - 막힌 지점: 없음.
 
 ### 2026-07-10 — zip 최상위 폴더 자동 언랩 (실사용 준비 개선)
 - 브랜치: `feat/zip-root-unwrap` → `main` 병합 완료(2026-07-10, fast-forward). 병합된 작업 브랜치들(T6~T10·fix 포함)은 로컬에서 삭제 정리.
-- 배경: 사용자는 보통 `dist` 폴더를 통째로 압축하므로 zip 루트가 `dist/`가 되어 "루트 index.html 없음"(T9 검증)으로 거부됨 — 실사용 판정 전에 발견된 UX 함정. 규약 §4 절차로 진행: 킥오프 §11 **3차 개정** 기록 → §4 본문 추가 → `technical-spec.md` §3.2·`detailed-spec.md` §2.2/엣지 표 동기화 → 구현.
+- 배경: 사용자는 보통 `dist` 폴더를 통째로 압축하므로 zip 루트가 `dist/`가 되어 "루트 index.html 없음"(T9 검증)으로 거부됨 — 실사용 판정 전에 발견된 UX 함정. 규약 4절 절차로 진행: 킥오프 11절 **3차 개정** 기록 → 4절 본문 추가 → `technical-spec.md` 3.2절·`detailed-spec.md` 2.2절/엣지 표 동기화 → 구현.
 - 완료: `extract.ts::commonRootPrefix` — 제외 필터 적용 후 모든 엔트리가 공유하는 최상위 디렉토리 체인(중첩 `project/dist`도 전부)을 벗겨 루트로 승격. 각 엔트리는 파일명 1세그먼트를 반드시 남기고, `..`·`.` 세그먼트는 접두 불가(zip-slip 검증은 언랩된 경로에 그대로 적용 — 우회 불가). `ExtractResult.strippedRoot`로 업로드 응답에 포함, 콘솔이 "최상위 폴더 'dist/'를 벗겨 해제했습니다" 표시.
 - 검증: `npm run typecheck` exit 0, `npm test` **75 passed**(+7: extract 언랩 6 — 단일/중첩/루트 파일 존재 시 무언랩/제외 대상 공존/단일 파일/zip-slip 우회 불가, 업로드 API 1 — dist째 zip 201 + 언랩 루트 서빙 확인), `npm run test:e2e` 1 passed(4.1s) 회귀 없음.
-- 다음 할 일: 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 §11에 기록 → S2 계획 입력. 선택: CI 파이프라인.
+- 다음 할 일: 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 11절에 기록 → S2 계획 입력. 선택: CI 파이프라인.
 - 막힌 지점: 없음.
 
 ### 2026-07-09 — T10 Playwright E2E 완료 (S1 WBS 전 항목 종료)
 - 브랜치: `feat/e2e-playwright-t10` → `main` 병합 완료(2026-07-09, fast-forward, 병합 후 vitest 68 passed 재확인).
 - 완료: **fixtures/todo-app** (ID-12) — Vite + vanilla TS SPA, 외부 런타임 의존성 0, 라우트 2개(`/` 할 일 목록: 입력창·추가·항목별 완료/삭제, `/stats` 통계: 필터 버튼 2개), history 라우팅(SPA fallback 검증), 부착 대상 4+, 상태 따라 텍스트 바뀌는 요소(`#todo-count`). npm workspace로 편입, `npm run fixtures:zip`이 빌드 후 `fixtures/todo-app.zip`(5KB, gitignore) 생성.
-- 완료: **Playwright E2E 1본** — `e2e/s1-dod.spec.ts`가 §9.1 시나리오 그대로: 콘솔 UI로 zip 업로드 → 편집 화면(shadow DOM은 Playwright가 관통)에서 장면 2개 등록(등록 즉시 동결 배지 2개 확인)·어노테이션 각 2개 부착·설명 입력·저장됨 확인 → 콘솔에서 export 다운로드 → **새 브라우저 컨텍스트에서 file:// 오픈** 후 검증: 장면 2개 전환 왕복, 마커 4개가 대상 요소 우상단(오차 ≤2px, is-uncertain 0), 설명 텍스트 일치, 마커↔목록 상호 하이라이트, **네트워크 요청 = 문서 file:// 1건뿐(외부 0건)**.
+- 완료: **Playwright E2E 1본** — `e2e/s1-dod.spec.ts`가 9.1절 시나리오 그대로: 콘솔 UI로 zip 업로드 → 편집 화면(shadow DOM은 Playwright가 관통)에서 장면 2개 등록(등록 즉시 동결 배지 2개 확인)·어노테이션 각 2개 부착·설명 입력·저장됨 확인 → 콘솔에서 export 다운로드 → **새 브라우저 컨텍스트에서 file:// 오픈** 후 검증: 장면 2개 전환 왕복, 마커 4개가 대상 요소 우상단(오차 ≤2px, is-uncertain 0), 설명 텍스트 일치, 마커↔목록 상호 하이라이트, **네트워크 요청 = 문서 file:// 1건뿐(외부 0건)**.
 - 완료: 설정 — `playwright.config.ts`(webServer가 dist 서버를 PORT 4123·전용 data dir로 기동, globalSetup이 매 실행 초기화), 루트 `test:e2e` 스크립트(빌드→fixtures zip→playwright). vitest include는 `packages/**`라 e2e와 상호 간섭 없음.
 - 검증: `npm run test:e2e` **1 passed (4.4s)** — 첫 실행 통과. `npm test` 68 passed·`npm run typecheck` exit 0 회귀 없음.
-- 다음 할 일: **S1 WBS 종료.** 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 §11에 기록 → S2 계획 입력 (§9.1). 선택: CI 파이프라인(현재 로컬 실행만).
+- 다음 할 일: **S1 WBS 종료.** 실사용 1회(팀 내 실제 목업으로 기획서 1부) 후 "목업 팀 도움 없이 가능했는가" 판정을 킥오프 스펙 11절에 기록 → S2 계획 입력 (9.1절). 선택: CI 파이프라인(현재 로컬 실행만).
 - 막힌 지점: 없음. 참고: Playwright Chromium은 로컬 캐시(~94MB) 설치 필요 — `npx playwright install chromium`.
 
 ### 2026-07-09 — 편집기 포커스 강탈 + viewer 마커 결함 2건 픽스
 - 브랜치: `fix/editor-focus-viewer-markers` (`feat/console-page-t9` 위에 스택) → `main` 병합 완료(2026-07-09, T9 → fix 순서 fast-forward).
 - 완료: **SDK 포커스 강탈 픽스** — `App.tsx` title 자동 포커스 useEffect 의존성에서 `doc` 제거(`[selectedAnn]`만). doc이 있으면 편집 키스트로크마다 effect가 재실행되어 description 입력 포커스를 title이 강탈했음.
 - 완료: **viewer resize 리스너 누적 픽스** — `renderStage`가 장면 전환마다 `window.resize` 리스너를 새로 달던 것을, `renderViewer`의 단일 리스너 + 현재 장면 콜백(`markerRefresh.current`) 교체 방식으로 변경. 스냅샷 없는 장면 진입 시 stale 콜백도 무효화.
-- 완료: **viewer 목록→마커 스크롤** — `syncActive`가 어노테이션 목록 항목에 더해 마커도 `scrollIntoView`(양방향 상호 하이라이트·스크롤, detailed-spec §4.1 충족).
+- 완료: **viewer 목록→마커 스크롤** — `syncActive`가 어노테이션 목록 항목에 더해 마커도 `scrollIntoView`(양방향 상호 하이라이트·스크롤, detailed-spec 4.1절 충족).
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` 68 passed. **실 Chrome 검증(포커스)**: 기존 어노테이션 description에 긴 문장 타이핑 — 디바운스 저장 여러 번을 지나도 문장 전체가 description에 유지 + `shadow.activeElement === textarea` 확인(수정 전엔 첫 재렌더에 title로 유출). viewer 수정은 export 산출물 인라인 반영 확인(단일 리스너 코드·마커 scrollIntoView 포함), 라이브 resize/스크롤 동작은 T10 E2E에서 함께 커버 예정.
-- 다음 할 일: T10 — Playwright E2E(S1 DoD, technical-spec §9.1). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
+- 다음 할 일: T10 — Playwright E2E(S1 DoD, technical-spec 9.1절). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
 - 막힌 지점: 없음.
 
 ### 2026-07-09 — T9 콘솔 페이지 완료 + T7·T8 품질 검토
 - 브랜치: `feat/console-page-t9` → `main` 병합 완료(2026-07-09).
-- 완료: **콘솔 페이지**(detailed-spec §2) — `routes/console.ts`에 정적 HTML 1장(프레임워크 없음, 인라인 CSS/JS, export.ts의 VIEWER_CSS 선례를 따라 TS 문자열로 관리). 새 프로젝트 폼(이름·zip·안내 문구), 프로젝트 목록(장면·어노테이션 수, 수정일, 편집 열기/내보내기/삭제), 업로드 성공 시 제외 집계 표시 + 편집 링크. 편집 URL은 `location.host` 기준 서브도메인 조립(ID-01). export는 스냅샷 없는 장면 N개 확인 다이얼로그 후 진행, 50MB 경고 헤더 표시, `Content-Disposition filename*` 파싱으로 파일명 유지. 삭제는 확인 다이얼로그 1회.
-- 완료: **업로드 검증 보강**(§2.2·§6 — 스펙에 있었으나 T2에서 누락) — 해제 후 루트 index.html 없으면 400 거부("빌드 산출물 루트에 index.html이 필요합니다"), zip 아님/해제 실패는 400("zip 파일을 확인해주세요"), 모든 거부 경로에서 생성된 빈 프로젝트 정리(기존엔 zip-slip 거부 시 잔존).
-- 완료: **T7·T8 산출물 품질 검토** — T7 스펙 부합(ID-05·§3.8·§6.2 확인). T8 스펙 부합하나 경미 결함: (1) viewer 장면 전환마다 resize 리스너 누적(`viewer/main.ts:433`), (2) 목록→마커 방향 스크롤 미구현(§4.1). 미수정 — fix 브랜치 대상.
+- 완료: **콘솔 페이지**(detailed-spec 2절) — `routes/console.ts`에 정적 HTML 1장(프레임워크 없음, 인라인 CSS/JS, export.ts의 VIEWER_CSS 선례를 따라 TS 문자열로 관리). 새 프로젝트 폼(이름·zip·안내 문구), 프로젝트 목록(장면·어노테이션 수, 수정일, 편집 열기/내보내기/삭제), 업로드 성공 시 제외 집계 표시 + 편집 링크. 편집 URL은 `location.host` 기준 서브도메인 조립(ID-01). export는 스냅샷 없는 장면 N개 확인 다이얼로그 후 진행, 50MB 경고 헤더 표시, `Content-Disposition filename*` 파싱으로 파일명 유지. 삭제는 확인 다이얼로그 1회.
+- 완료: **업로드 검증 보강**(2.2절·6절 — 스펙에 있었으나 T2에서 누락) — 해제 후 루트 index.html 없으면 400 거부("빌드 산출물 루트에 index.html이 필요합니다"), zip 아님/해제 실패는 400("zip 파일을 확인해주세요"), 모든 거부 경로에서 생성된 빈 프로젝트 정리(기존엔 zip-slip 거부 시 잔존).
+- 완료: **T7·T8 산출물 품질 검토** — T7 스펙 부합(ID-05·3.8절·6.2절 확인). T8 스펙 부합하나 경미 결함: (1) viewer 장면 전환마다 resize 리스너 누적(`viewer/main.ts:433`), (2) 목록→마커 방향 스크롤 미구현(4.1절). 미수정 — fix 브랜치 대상.
 - 검증: `npm run typecheck`·`npm run build` exit 0, `npm test` **68 passed**(+6: 콘솔 서빙 3, 업로드 검증 3). **실 Chrome 검증**: 콘솔 접속→폼 submit 핸들러로 zip 업로드(제외 집계·편집 링크 표시)→목록 갱신(장면 0·어노테이션 0)→편집 열기 새 탭(SDK 주입)→장면 등록 즉시 동결→어노테이션 1개→콘솔 목록에 장면 1·어노테이션 1 반영→내보내기로 `order-mockup.html` 다운로드(23.5KB, script 3개=spec-data·snapshot·viewer, 외부 URL 참조 0). file:// 오픈은 T8에서 검증된 뷰어 그대로라 생략(자동화 환경이 http→file 이동 차단).
 - **실버그 발견(브라우저 검증이 잡음, 미수정)**: `App.tsx:281` — title 자동 포커스 useEffect 의존성에 `doc`이 포함되어, 설명(textarea) 입력의 매 키스트로크마다 title input으로 포커스 강탈(입력 내용이 title로 새어 들어감). T5 검증 때 title만 타이핑해 미노출. 수정은 의존성을 `[selectedAnn]`으로 축소 — **다음 fix 브랜치에서 처리**(`fix/ann-title-focus-steal` 제안).
-- 다음 할 일: (1) `fix/ann-title-focus-steal` — 위 포커스 버그 + T8 경미 결함 2건 처리 여부 결정. (2) T10 — Playwright E2E(S1 DoD 시나리오, technical-spec §9.1). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
+- 다음 할 일: (1) `fix/ann-title-focus-steal` — 위 포커스 버그 + T8 경미 결함 2건 처리 여부 결정. (2) T10 — Playwright E2E(S1 DoD 시나리오, technical-spec 9.1절). fixtures는 ID-12(의존성 0 Todo SPA, 라우트 2, 부착 대상 4+).
 - 막힌 지점: 없음. 참고: 검증 중 생성된 `~/Downloads/order-mockup.html`은 테스트 산출물.
 
 ### 2026-07-07 — T8 뷰어 + export 조립 완료
@@ -1333,7 +1333,7 @@
 - 완료: **vanilla viewer** — 장면 사이드바(order 순), 중앙 `iframe sandbox="allow-same-origin" srcdoc` 스냅샷, 앵커 재해석(selector→text/attrs refind→rect fallback) 마커, 우측 어노테이션 패널, 마커↔목록 상호 하이라이트, 스냅샷 없는 장면 placeholder, description HTML escape 후 제한적 markdown 렌더.
 - 완료: **회귀 테스트** — export API 3개 + HTML 이스케이프 1개, viewer helper/anchor 5개 추가.
 - 검증: `npm run typecheck` exit 0, `npm run build` exit 0(sdk.js 836.89KB/gzip 256.06KB, 기존 single-file-core `import.meta` IIFE 경고만 발생), `npm test` **62 passed**(권한 밖 실행 — 샌드박스 내부는 Supertest listen EPERM), 마지막 viewer selector escape 조정 후 `npx vitest run packages/viewer/src/main.test.ts` **5 passed**. Chrome DevTools로 `/private/tmp/mockspec-t8-export.html`을 `file://` 오픈해 title/scene/panel/마커 1개/iframe 스냅샷 확인, 콘솔 오류 0, 네트워크는 HTML 파일 자체 로드 1건뿐(외부 서브리소스 요청 0).
-- 다음 할 일: T9 — 콘솔 정적 페이지. 루트 `/`에서 프로젝트 목록·zip 업로드·편집 열기·export 버튼을 제공하고, 스냅샷 없는 장면 경고 후 다운로드를 트리거. detailed-spec §2 참조.
+- 다음 할 일: T9 — 콘솔 정적 페이지. 루트 `/`에서 프로젝트 목록·zip 업로드·편집 열기·export 버튼을 제공하고, 스냅샷 없는 장면 경고 후 다운로드를 트리거. detailed-spec 2절 참조.
 - 막힌 지점: 없음. 참고: DevTools 탭 닫기 시 도구 사용량 제한으로 close 요청이 거부되어 탭은 그대로 남아 있을 수 있음.
 
 ### 2026-07-07 — T7 SDK 저장 + 오프라인 큐 완료
@@ -1343,17 +1343,17 @@
 - 완료: **오프라인 큐** — `saveProjectWithQueue`가 PUT 실패(네트워크·HTTP)를 최신 `SpecProject` 1개로 localStorage에 저장. `online` 이벤트 재전송에 더해, 로컬 서버 재기동처럼 브라우저 online 상태가 변하지 않는 경우도 자동 반영되도록 오프라인 상태에서 2초 간격 pending 재전송을 추가.
 - 완료: **패널 저장 상태 표시** — 상단에 `저장됨 ✓` / `저장 중…` / `오프라인 — 로컬 보관 중` / 로딩·불러오기 실패 상태 표시. 프로젝트 로드 전에는 장면 등록 버튼 비활성.
 - 검증: `npm run typecheck` exit 0, `npm run build` exit 0(sdk.js 836.89KB/gzip 256.06KB, 기존 single-file-core `import.meta` IIFE 경고만 발생), `npm test` **53 passed**(권한 밖 실행 — 샌드박스 내부는 Supertest listen EPERM). 신규 테스트: API 큐 7개, 상태 변환 2개, App 저장/재전송 1개(요소 클릭→어노테이션 생성→첫 PUT 실패→localStorage pending 생성→2초 재시도 성공→큐 삭제).
-- 다음 할 일: T8 — viewer 패키지 구현 + server export 조립. 저장된 `SpecProject`와 `snapshotAsset`들을 읽어 단일 HTML에 spec JSON + 스냅샷 + vanilla viewer를 인라인하고, `file://` 네트워크 0건을 검증. technical-spec §8·output-standard.md 참조.
+- 다음 할 일: T8 — viewer 패키지 구현 + server export 조립. 저장된 `SpecProject`와 `snapshotAsset`들을 읽어 단일 HTML에 spec JSON + 스냅샷 + vanilla viewer를 인라인하고, `file://` 네트워크 0건을 검증. technical-spec 8절·output-standard.md 참조.
 - 막힌 지점: 없음. 참고: T7은 자동 테스트로 저장/큐/재전송을 검증했지만 실 Chrome 수동 스모크는 수행하지 않음.
 
 ### 2026-07-07 — T6 SDK 장면 등록 + 동결 완료
 - 브랜치: `feat/sdk-scene-freeze-t6` → `main` 병합 완료.
 - 완료: **동결 모듈** `freeze/freeze.ts`(single-file-core를 클라이언트에서 실행 — 서버 헤드리스 재현 금지 결정의 구현). 진입점 `getPageData(opts, {})`. `freeze/verify.ts`로 `<script>` 0개 검증기를 **분리**(single-file-core를 로드하지 않는 순수 모듈 → node/happy-dom 유닛 테스트 가능). 검증은 **모든 `<script>` 태그 0개 엄격**(ld+json 등 비실행 데이터도 실패 처리 — 뷰어 srcdoc 무해화 제1 방어선).
-- 완료: **동결 옵션**(§5) — `blockScripts:true`(모든 script 제거), `removedElementsSelector:"[data-mockspec-root]"`(SDK 자신 제외), `saveFilenameTemplateData:false`(동결 후 옵션 JSON `<script>` 재삽입 방지), CSS 인라인·이미지/폰트 data URI화·미사용 스타일 제거는 single-file 기본. `<html>`의 패널 margin-right는 동결 중 임시 제거(원본 레이아웃 보존).
-- 완료: **API 클라이언트** `api.ts` — `uploadSnapshot`(`POST /__mockspec/api/projects/:id/assets`, field `snapshot`, 상대 경로만). **상태** `state.ts::setSceneSnapshot`(snapshotAsset·frozenAt 기록). **App.tsx** — 장면 등록 **직후 자동 동결**(`void runFreeze`), 각 장면 **재동결 버튼(⟳)**, 스피너/`✓ 동결됨 {시각}`/**"동결 실패 — 재시도" 배지**(클릭 시 재동결) UX(§3.7).
+- 완료: **동결 옵션**(5절) — `blockScripts:true`(모든 script 제거), `removedElementsSelector:"[data-mockspec-root]"`(SDK 자신 제외), `saveFilenameTemplateData:false`(동결 후 옵션 JSON `<script>` 재삽입 방지), CSS 인라인·이미지/폰트 data URI화·미사용 스타일 제거는 single-file 기본. `<html>`의 패널 margin-right는 동결 중 임시 제거(원본 레이아웃 보존).
+- 완료: **API 클라이언트** `api.ts` — `uploadSnapshot`(`POST /__mockspec/api/projects/:id/assets`, field `snapshot`, 상대 경로만). **상태** `state.ts::setSceneSnapshot`(snapshotAsset·frozenAt 기록). **App.tsx** — 장면 등록 **직후 자동 동결**(`void runFreeze`), 각 장면 **재동결 버튼(⟳)**, 스피너/`✓ 동결됨 {시각}`/**"동결 실패 — 재시도" 배지**(클릭 시 재동결) UX(3.7절).
 - 검증: `npm run build` exit 0(sdk.js 833KB/gzip 255KB — single-file-core 정적 번들 포함, 사용자 승인), `npm test` **43 passed**(freeze verify 5개 신규). **실 Chrome 검증**: 예약관리 샘플(외부 CSS+SVG+인라인 script) 업로드→장면 등록 즉시 동결 성공→스냅샷 asset 업로드(1572B)→**`<script>` 0개**·`<link stylesheet>` 0개(→inline `<style>` 1개)·`data:image/svg` 인라인·`data-mockspec-root` 0개(제외됨)·본문 텍스트 보존 확인→**스냅샷 단독 오픈 시 원본과 시각적 동일**(스크린샷).
 - **실버그 발견·수정(브라우저 검증이 잡음)**: single-file의 프레임 캡처가 `chrome.runtime.sendMessage`(확장 전용 API)를 호출해, 페이지 주입 SDK에서 **무한 대기**(동결 스피너 고착). `removeFrames:true`로 프레임 처리 경로를 차단해 해결(S1 목업은 단일 페이지라 iframe 캡처 불필요).
-- 다음 할 일: T7 — 저장·오프라인 큐. `api.ts`에 전체 spec PUT(500ms 디바운스)·`localStorage["mockspec:pending:{id}"]` 최신본 1개 적재·online/재마운트 재전송(ID-05 로컬 우선). 편집 상태(현재 인메모리 EditorDoc)를 SpecProject로 승격해 서버와 왕복. **재동결/장면 삭제 시 이전 asset 정리(ID-11)는 서버 replaceSpec이 담당 — T7의 PUT이 트리거**(현재 T6 단독에선 재동결 시 이전 asset이 디스크에 남음). technical-spec §6.2 참조.
+- 다음 할 일: T7 — 저장·오프라인 큐. `api.ts`에 전체 spec PUT(500ms 디바운스)·`localStorage["mockspec:pending:{id}"]` 최신본 1개 적재·online/재마운트 재전송(ID-05 로컬 우선). 편집 상태(현재 인메모리 EditorDoc)를 SpecProject로 승격해 서버와 왕복. **재동결/장면 삭제 시 이전 asset 정리(ID-11)는 서버 replaceSpec이 담당 — T7의 PUT이 트리거**(현재 T6 단독에선 재동결 시 이전 asset이 디스크에 남음). technical-spec 6.2절 참조.
 - 막힌 지점: 없음. 참고 2건: (1) sdk.js가 18.6KB→833KB로 커짐(single-file-core의 css-tree·zip 포함) — 편집기 SDK라 산출물엔 무영향, 초기 로딩만 무거움. (2) 빌드 시 `import.meta.url`(zip.js 압축-워커 경로) 경고는 **dead code**(우리는 `compressContent` 미사용) — 무해. **동결 실패 배지 경로는 코드·유닛만 확인, 라이브 미유발**(정상 케이스만 실브라우저로 확인).
 
 ### 2026-07-07 — T5 SDK 어노테이션·앵커·마커 완료
@@ -1363,7 +1363,7 @@
 - 완료: 장면 등록 버튼([+ 현재 화면을 장면으로], 동결 없이 그릇만 — 동결은 T6), 장면 목록·선택(=현재 장면), 어노테이션 title/description 편집·삭제.
 - 검증: `npm run build` exit 0, `npm test` 38 passed(앵커 유닛 9개 신규 — happy-dom). **실 Chrome 검증**: 편집 모드 요소 클릭→어노테이션 생성+마커 정확 위치(요소 우상단)→목업 클릭 차단→**selector 깨뜨려도 text/attrs 재탐색으로 마커가 올바른 요소 추적(168→98)**→대상 제거 시 "위치 불확실" 마커 유지(사라지지 않음)→콘솔 에러 0.
 - **버그 발견·수정(브라우저 검증이 잡음)**: useMarkers가 `[sceneId,active]`만 의존해, 패널에서 추가한 어노테이션(목업 DOM 미변경 + shadow tree라 MutationObserver 미포착)이 마커로 안 떴음. 현재 장면 어노테이션 시그니처(id+selector)를 의존성에 추가해 해결.
-- 다음 할 일: T6 — 장면 등록 시 즉시 동결(`single-file-core` 번들, 클라이언트 실행), 스냅샷 `POST /assets` 업로드→`snapshotAsset` 기록, `<script>` 0개 검증, 동결 실패 시 배지+재시도(§3.7), 재동결 버튼. `data-mockspec-root`는 이미 동결 제외 마킹됨. technical-spec §5·킥오프 §7 참조.
+- 다음 할 일: T6 — 장면 등록 시 즉시 동결(`single-file-core` 번들, 클라이언트 실행), 스냅샷 `POST /assets` 업로드→`snapshotAsset` 기록, `<script>` 0개 검증, 동결 실패 시 배지+재시도(3.7절), 재동결 버튼. `data-mockspec-root`는 이미 동결 제외 마킹됨. technical-spec 5절·킥오프 7절 참조.
 - 막힌 지점: 없음. 참고: 물리적 마우스 클릭이 새로고침 직후 간헐적으로 shadow FAB에 안 먹는 도구측 이슈 있음 — 검증은 실제 이벤트 핸들러를 타는 DOM click 디스패치로 우회(핸들러·렌더 경로는 그대로 검증됨).
 
 ### 2026-07-07 — T4 SDK 셸(FAB·패널·모드 전환) 완료
@@ -1373,7 +1373,7 @@
 - 완료: 서버가 실제 번들 서빙 — `sdkBundle.ts`(env override→`@mockspec/sdk/dist/sdk.js`→플레이스홀더 폴백), `serve.ts`의 `/__mockspec/sdk.js`가 이를 사용. server가 `@mockspec/sdk` 워크스페이스 의존(경로 해석용).
 - 검증: `npm run build` exit 0, `npm test` 29 passed. **실 Chrome 검증**(서버 기동+샘플 업로드+브라우저 자동화): FAB 표시→클릭 시 패널 도킹(margin 360px)→Shadow DOM 격리(라이트 DOM 유출 0)→편집 모드에서 목업 "추가" 클릭 **차단**(로그 불변)→미리보기 전환 후 클릭 **정상 동작**(로그 갱신)→콘솔 에러 0.
 - **관찰 항목 해소**: 서브도메인 언더스코어 라벨(`prj_...localhost`)을 Chrome이 정상 해석함을 실제 확인. id 포맷 변경 불필요.
-- 다음 할 일: T5 — 어노테이션 부착 시퀀스(편집 모드 클릭→앵커 생성→번호 부여→마커 렌더), 앵커 생성/재해석 알고리즘(technical-spec §4, ID-06/07/08). App.tsx의 클릭 차단 지점(현재 no-op)에 어노테이션 생성을 얹고, `anchor/` 모듈 신설(viewer와 공유 예정). 마커 오버레이는 Shadow DOM에 렌더.
+- 다음 할 일: T5 — 어노테이션 부착 시퀀스(편집 모드 클릭→앵커 생성→번호 부여→마커 렌더), 앵커 생성/재해석 알고리즘(technical-spec 4절, ID-06/07/08). App.tsx의 클릭 차단 지점(현재 no-op)에 어노테이션 생성을 얹고, `anchor/` 모듈 신설(viewer와 공유 예정). 마커 오버레이는 Shadow DOM에 렌더.
 - 막힌 지점: 없음.
 
 ### 2026-07-07 — T3 Spec API + 파일 저장 완료
@@ -1382,7 +1382,7 @@
 - 완료: `store/projectStore.ts` 확장 — `replaceSpec`(전체 교체 + **미참조 asset 즉시 삭제로 ID-11 구현**, 별도 GC 없음), `deleteProject`, `saveAsset`/`readAsset`/`deleteAsset`(asset 키 형식 검증으로 경로 이탈 차단). asset 50MB 제한(multer).
 - 완료: export(POST /:id/export)는 **T8로 미룸** — 뷰어 번들 의존. 의도적 범위 제외.
 - 검증: `npm run build` exit 0, `npm test` 27 passed. PUT 왕복 무손실(updatedAt만 서버 갱신, anchor.rect까지 완전 일치), ID-11(장면이 참조 놓으면 asset 즉시 삭제), 경로 이탈 차단 모두 supertest 통합으로 실 HTTP 검증.
-- 다음 할 일: T4 — SDK(Preact + Shadow DOM). FAB·우측 패널·편집/미리보기 모드 전환. Vite lib mode로 `dist/sdk.js`(IIFE 1파일) 빌드, 서버 serve.ts의 SDK_PLACEHOLDER를 이 번들로 교체. **T4 브라우저 로딩 시 서브도메인 언더스코어 라벨(관찰 항목) 실동작 확인.** technical-spec §1.3·킥오프 §6 참조.
+- 다음 할 일: T4 — SDK(Preact + Shadow DOM). FAB·우측 패널·편집/미리보기 모드 전환. Vite lib mode로 `dist/sdk.js`(IIFE 1파일) 빌드, 서버 serve.ts의 SDK_PLACEHOLDER를 이 번들로 교체. **T4 브라우저 로딩 시 서브도메인 언더스코어 라벨(관찰 항목) 실동작 확인.** technical-spec 1.3절·킥오프 6절 참조.
 - 막힌 지점: 없음.
 
 ### 2026-07-07 — T2 서버(업로드·해제·서빙·주입) 완료
@@ -1392,8 +1392,8 @@
 - 완료: 정적 서빙 + SDK 주입 — `routes/serve.ts`(경로 정규화로 서빙 단계 traversal 방지, text/html에만 `</body>` 직전 주입, 디렉토리→index.html, 확장자 없는 404→SPA fallback) + `inject.ts`. 예약 경로 `/__mockspec/sdk.js`는 **T4 전까지 플레이스홀더 JS** 서빙.
 - 완료: same-origin API 배선 — 서브도메인의 `/__mockspec/api/*`와 루트의 `/api/*`가 동일 라우터(`app.ts`, CORS 없음). 저장소 `store/projectStore.ts`(spec.json 생성/읽기/목록) + `store/paths.ts`(env `MOCKSPEC_DATA_DIR` 지연평가) + `ids.ts`(소문자 영숫자 nanoid — 서브도메인 케이스 폴딩 회피) + `errors.ts`(ID-10 표준).
 - 검증: `npm run build` exit 0, `npm test` 20 passed(extract/host/inject/app/shared). 실기동: 서버 띄워 curl로 업로드→서브도메인 주입→SPA fallback→sdk.js→node_modules 디스크 제외까지 확인.
-- 다음 할 일: T3 — Spec API 나머지(GET/PUT/DELETE `/projects/:id`, assets POST/GET). PUT은 문서 전체 교체(version·id 불일치 400), 저장 왕복 무손실 vitest. `projectsRouter`에 라우트 추가하고 `projectStore`에 saveSpec/delete/asset I/O 확장. technical-spec §6 참조.
-- 막힌 지점: 없음. **관찰 항목**: 프로젝트 id의 `prj_` 접두 언더스코어가 서브도메인 라벨에 포함됨(`prj_x.localhost`). Node http/테스트는 무관하나 실제 Chrome/Edge에서 *.localhost 언더스코어 라벨 해석은 T4 브라우저 로딩 시 확인 필요 — 문제 시 결정 변경 절차(킥오프 §11)로 id 포맷 조정.
+- 다음 할 일: T3 — Spec API 나머지(GET/PUT/DELETE `/projects/:id`, assets POST/GET). PUT은 문서 전체 교체(version·id 불일치 400), 저장 왕복 무손실 vitest. `projectsRouter`에 라우트 추가하고 `projectStore`에 saveSpec/delete/asset I/O 확장. technical-spec 6절 참조.
+- 막힌 지점: 없음. **관찰 항목**: 프로젝트 id의 `prj_` 접두 언더스코어가 서브도메인 라벨에 포함됨(`prj_x.localhost`). Node http/테스트는 무관하나 실제 Chrome/Edge에서 *.localhost 언더스코어 라벨 해석은 T4 브라우저 로딩 시 확인 필요 — 문제 시 결정 변경 절차(킥오프 11절)로 id 포맷 조정.
 
 ### 2026-07-07 — T1 모노레포 셋업 완료
 - 브랜치: `chore/monorepo-setup-t1` (main 미병합, 동의 대기).
@@ -1401,12 +1401,12 @@
 - 완료: `packages/shared` — `src/types.ts`(SpecProject/Scene/Annotation/Anchor/Rect 계약), `src/constants.ts`(WORKING_NAME 등 워킹네임 단일 관리), `src/index.ts` 배럴. TS project reference로 3패키지가 `@mockspec/shared`를 import.
 - 완료: `packages/sdk`·`server`·`viewer` 스켈레톤 — 각각 shared 타입을 실제 import (sdk: SpecProject+PROJECT_DATA_ATTR, server: SpecProject+WORKING_NAME, viewer: Scene+Annotation). 본체 로직은 각 T에서.
 - 검증: `npm run build`(tsc -b) exit 0, `npm test`(vitest) 2 passed, `npm audit` 0 vulnerabilities(vitest 4로 상향). 테스트 파일은 tsconfig exclude로 dist에서 제외.
-- 다음 할 일: T2 — `server/routes/serve.ts`(서브도메인 라우팅+SDK 주입), 업로드·unzipper 해제(zip-slip 방지·제외 필터), 정적 서빙. technical-spec §3 참조.
+- 다음 할 일: T2 — `server/routes/serve.ts`(서브도메인 라우팅+SDK 주입), 업로드·unzipper 해제(zip-slip 방지·제외 필터), 정적 서빙. technical-spec 3절 참조.
 - 막힌 지점: 없음. (T1 브랜치 main 병합 여부만 사용자 확인 대기)
 
 ### 2026-07-07 — 문서 체계 확정, 핸드오프 구조 도입
 - 완료: `docs/PRD.md`, `docs/detailed-spec.md`, `docs/technical-spec.md`, `docs/output-standard.md`, `docs/implementation-decisions.md`(ID-01~15) 작성. 미정의 지점 15건을 "단순하고 범용적일 것" 기준으로 확정.
-- 완료: `guide/s1-kickoff-spec.md` §11에 2차 개정 기록 (rect 좌표 기준, same-origin API, 데이터 모델 카운터 필드).
+- 완료: `guide/s1-kickoff-spec.md` 11절에 2차 개정 기록 (rect 좌표 기준, same-origin API, 데이터 모델 카운터 필드).
 - 완료: `AGENTS.md`, `CLAUDE.md`, 본 `docs/PROGRESS.md` 신설 — 세션·에이전트가 바뀌어도 이어서 작업할 수 있도록 핸드오프 구조 확립.
 - 다음 할 일: T1(모노레포 셋업)부터 구현 착수.
 - 막힌 지점: 없음.

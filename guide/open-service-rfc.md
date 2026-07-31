@@ -1,27 +1,27 @@
 # RFC — 공개 서비스 개편 (Vercel + Supabase)
 
 > **상태: 킥오프 스펙으로 승격됨 (2026-07-22).** 착수 계약은 이제
-> **[open-service-kickoff-spec.md](./open-service-kickoff-spec.md)** 이고 PRD NFR-01·§7.1·§7.2,
-> technical-spec §9.2(WBS W1~W9)가 동기화됐다. **이 RFC는 논의·대안 비교·리뷰 반영 이력의 근거
+> **[open-service-kickoff-spec.md](./open-service-kickoff-spec.md)** 이고 PRD NFR-01·7.1절·7.2절,
+> technical-spec 9.2절(WBS W1~W9)가 동기화됐다. **이 RFC는 논의·대안 비교·리뷰 반영 이력의 근거
 > 문서로 보존**한다 — 세부 근거(옵션 비교·리뷰 4차 반영)가 필요하면 여기를 보고, 착수 판단은 킥오프를 따른다.
 >
 > 이 문서는 "사내망·무인증 로컬/사내 서버" 전제로 만들어진 현 제품을 **공개 URL로 기획자들이
 > 직접 접속해 쓰는 멀티테넌트 서비스**로 여는 개편의 설계 계약 초안이다. 논의·결정을 여기에
-> 누적하고, 확정된 항목과 열린 질문을 구분해 기록한다. 갱신 규약은 [AGENTS.md](../AGENTS.md) §3·§4.
+> 누적하고, 확정된 항목과 열린 질문을 구분해 기록한다. 갱신 규약은 [AGENTS.md](../AGENTS.md) 3절·4절.
 
 ---
 
 ## 1. 동기
 
 - 가능성 타진을 넘어, **공개 URL에 접속해 기획자들이 실제로 사용해보는 환경**을 만든다.
-- 이는 PRD §7.2 SSO/인증 도입 조건 중 "다수 사용자·소유권 정리 필요"에 해당하는 **실수요 발생**이다.
+- 이는 PRD 7.2절 SSO/인증 도입 조건 중 "다수 사용자·소유권 정리 필요"에 해당하는 **실수요 발생**이다.
   따라서 그간 YAGNI로 미뤄둔 DB·인증을 정당하게 앞당긴다.
 - 개편은 단계(stage) 레벨의 방향 전환이므로 개별 GitHub 이슈가 아니라 이 RFC(→ 킥오프 스펙)가
   진실의 원천이고, GitHub은 워크스트림별 추적판(엄브렐라 이슈 + 하위 이슈)으로만 쓴다.
 
 ## 2. 무엇이 불변이고 무엇이 열리나
 
-**불변 — PRD §1.3 제1원칙 4개는 그대로 유지된다. 개편 대상이 아니다:**
+**불변 — PRD 1.3절 제1원칙 4개는 그대로 유지된다. 개편 대상이 아니다:**
 1. 의도는 사람이 입력한다 (LLM 미사용 기본)
 2. 사용자는 목업을 수정하지 않는다 (서비스가 SDK 주입)
 3. 편집은 라이브, 산출물은 캡처
@@ -30,7 +30,7 @@
 
 **재협상 — 딱 하나의 전제가 무너지고, 그로부터 파생되는 것들만 바뀐다:**
 - `NFR-01` "사내망 전제 + 비추측 ID + 무인증" → **폐기.** 공개 인터넷 + 인증 + 소유자별 격리로 대체.
-- `PRD §7.2` "인증은 YAGNI" → **조건 충족으로 해제.**
+- `PRD 7.2절` "인증은 YAGNI" → **조건 충족으로 해제.**
 
 ## 3. 확정된 결정 (2026-07-21 논의)
 
@@ -42,7 +42,7 @@
 | D4 | **데이터·인증·저장은 Supabase.** Postgres(메타·spec) + Storage(목업·asset) + Auth | 서버리스에서 영속 상태를 얹는 표준 조합 |
 | D5 | **zip 해제를 브라우저로 이관.** 업로드 시 클라이언트가 unzip → 파일별 Storage 직업로드 → manifest를 API에 통보 | 서버리스엔 영속 디스크가 없다. 서버 스트리밍 해제 폐기 |
 | D6 | **SDK 주입은 인제스트(업로드) 시점 1회 — 클라이언트가 브라우저에서 수행.** unzip과 함께 HTML에 SDK 태그·`<base>`를 삽입한 주입본을 Storage에 올리고, 서버는 검증만(D5와 일관 — 서버는 파일 미조작). 이후 서빙은 정적. SDK 갱신은 버전 쿼리 | 서빙마다 변조하는 상주 서버 모델은 서버리스에 안 맞고, 서버 파일 조작 없이 D5와 일관 |
-| D7 | **목업 격리는 경로 접두 방식** `/(오리진)/m/{projectId}/...`. **v1은 콘솔과 같은 오리진**(옵션 2), 프로젝트별 서브도메인·와일드카드 인증서 불필요. 신뢰불가 목업의 오리진 격리(옵션 1·방법 B)는 §7 승격 경로로 유보 | 프록시 제거로 정적 목업만 남음. 단 공개 업로드=임의 JS라 오리진 경계는 사소하지 않음(§7). v1은 소유자-전용 서빙+사용 제약으로 수용 |
+| D7 | **목업 격리는 경로 접두 방식** `/(오리진)/m/{projectId}/...`. **v1은 콘솔과 같은 오리진**(옵션 2), 프로젝트별 서브도메인·와일드카드 인증서 불필요. 신뢰불가 목업의 오리진 격리(옵션 1·방법 B)는 7절 승격 경로로 유보 | 프록시 제거로 정적 목업만 남음. 단 공개 업로드=임의 JS라 오리진 경계는 사소하지 않음(7절). v1은 소유자-전용 서빙+사용 제약으로 수용 |
 | D8 | **프레임워크는 Next.js**(콘솔 UI + API 라우트 + 미들웨어 + Supabase Auth 연동) | Vercel 서버리스에서 가장 짧은 경로 |
 
 ## 4. 목표 아키텍처
@@ -52,7 +52,7 @@
 │  Vercel (Next.js)                                           │
 │  ├─ 콘솔 UI (기존 vanilla 콘솔 → Next 페이지로 이식)          │
 │  ├─ 미들웨어: /m/{id}/* 인증·리라이트 → Route Handler 스트림  │
-│  ├─ 예약 경로: /__mockspec/sdk.js · /__mockspec/api/* (§6)   │
+│  ├─ 예약 경로: /__mockspec/sdk.js · /__mockspec/api/* (6절)   │
 │  └─ API 라우트 (서버리스 함수)                                │
 │       업로드 인테이크 · spec GET/PUT · asset · export · 토큰   │
 └───────────────┬───────────────────────────┬────────────────┘
@@ -72,7 +72,7 @@
 | 인증 | 없음 | Supabase Auth (D1) |
 | 메타·spec 저장 | `data/projects/{id}/spec.json` | Postgres `projects.spec` (JSONB 통짜) — 현 "문서 전체 교체 PUT" 모델과 정합 |
 | 목업 파일 | 디스크 `mockup/` (zip 해제본) | 단일 Storage 버킷 `mockups`의 `projects/{id}/mockup/**` (D5 클라이언트 업로드) |
-| asset(스냅샷) | 디스크 `assets/` | 같은 버킷 `projects/{id}/assets/**` (단일 버킷·단일 RLS 정책, §5) |
+| asset(스냅샷) | 디스크 `assets/` | 같은 버킷 `projects/{id}/assets/**` (단일 버킷·단일 RLS 정책, 5절) |
 | 토큰(경로 D) | `tokens.json` 해시 | Postgres `project_tokens` (해시 저장 불변) |
 | 산출물 이력 | `exports.json` | Postgres `project_exports` |
 | 목업 서빙+주입 | 서빙 때 HTML 변조 | 인제스트 때 1회 주입(D6) → 정적 서빙 |
@@ -145,7 +145,7 @@ create policy "owner_export_rw" on project_exports
 프리픽스로 통일**한다(별도 버킷 두 개로 나누지 않음 — CodeRabbit: 정책 중복·누락 방지). D5에서 브라우저가
 `projects/{projectId}/...`에 직접 업로드하므로, 경로의 `{projectId}`가 `auth.uid()` 소유인지 검증하는 **버킷
 정책**이 없으면 인증된 사용자 A가 B의 목업/asset을 덮어쓰거나 읽을 수 있다. insert·select·update·delete
-전부에 적용한다. (경로 D 저장은 토큰 인증 경로라 별도 — §6.)
+전부에 적용한다. (경로 D 저장은 토큰 인증 경로라 별도 — 6절.)
 
 ```sql
 -- 단일 버킷 "mockups". 경로 첫 두 세그먼트가 "projects/{id}" 형태(하위는 mockup/ · assets/).
@@ -173,7 +173,7 @@ create policy "owner_storage_all" on storage.objects
   부모 `projects`를 JOIN해, Storage는 오브젝트 경로의 `{projectId}`를 JOIN해 소유권을 확인하므로
   애플리케이션 버그가 나도 남의 데이터에 닿지 않는다. **버킷은 비공개**(public read off).
 - **권한 모델 v1**: 프로젝트는 생성자 단독 소유(개인 소유 플랫). 팀 공유·역할(editor/viewer)·조직 계층은
-  다음 단계(§9 열린 질문).
+  다음 단계(9절 열린 질문).
 
 ## 6. 플로우별 서버리스 함수 설계
 
@@ -183,11 +183,11 @@ create policy "owner_storage_all" on storage.objects
 | **업로드(경로 A)** `POST /api/projects/{id}/mockup:complete` | 클라이언트가 Storage에 이미 올린 파일 manifest | **서버는 파일을 만지지 않는다(D5·D6 확정).** 클라이언트가 브라우저에서 **unzip + SDK 태그 주입 + `<base>` 삽입까지 완료한 주입본**을 Storage에 올리고, 서버는 manifest 검증(엔트리 존재·주입 태그 유무·경로 안전성)만 수행. `mockupSource=upload` 확정 |
 | **목업 서빙** `/m/{id}/*` (**Route Handler**, 미들웨어 아님 — Codex P1) | 경로 | **소유자 인증 경유(v1) — 익명 공개 접근 아님.** 미들웨어는 인증·리라이트만 담당하고(Edge 미들웨어는 응답 본문 스트리밍 불가), 실제 서빙은 Route Handler(서버리스)가 소유권 검증 후 비공개 Storage에서 스트림. HTML은 이미 주입본(D6)·`<base>` 삽입됨. **SPA history fallback**: 확장자 없는 미존재 경로(`/m/{id}/settings` 등 클라이언트 라우트·새로고침)는 프로젝트 `index.html`로 폴백(FR-ONB-04·현 `serve.ts` 동작 유지) |
 | **spec GET/PUT** `/api/projects/{id}/spec` | (PUT) SpecProject 전체 | 전체 교체 PUT 유지. asset GC(ID-11)는 Storage 삭제로 이식 |
-| **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | 비공개 Storage 버킷 read/write. 브라우저 직접 업로드는 **Storage 오브젝트 RLS**(§5)가 `projects/{id}/` 소유권 강제. 경로 D는 토큰 인증 |
+| **asset** `POST/GET /api/projects/{id}/assets` | 스냅샷 바이트 | 비공개 Storage 버킷 read/write. 브라우저 직접 업로드는 **Storage 오브젝트 RLS**(5절)가 `projects/{id}/` 소유권 강제. 경로 D는 토큰 인증 |
 | **export** `POST /api/projects/{id}/export` | — | 기존 `buildExportHtml`+뷰어 번들 재사용. asset을 Storage에서 fetch해 인라인. 큰 산출물은 Storage에 쓰고 signed URL 반환(함수 응답 크기 한계 회피) |
 | **토큰(경로 D)** `POST /api/projects/{id}/tokens` | — | 발급 시 평문 1회 노출, 해시만 저장. 재발급·폐기 |
 | **예약 경로(SDK)** `GET /__mockspec/sdk.js` | — | **루트 레벨 필수 (Codex P1).** 주입된 SDK 로더가 `src="/__mockspec/sdk.js"` 절대 경로라 `<base>`의 영향을 안 받는다 → 이 라우트가 없으면 모든 경로 A 목업이 SDK 404로 편집 불가. SDK 번들 서빙 |
-| **예약 경로(API 브리지)** `/__mockspec/api/*` | — | **루트 레벨 필수 (Codex P1).** SDK `transport.ts`가 same-origin `/__mockspec/api`로 저장한다 → `/api/projects/*`로 리라이트/프록시. v1은 same-origin이라 성립. (옵션 1 승격 시 이 경로가 교차 오리진이 되어 CORS+토큰으로 전환 — §7.3·§9-5) |
+| **예약 경로(API 브리지)** `/__mockspec/api/*` | — | **루트 레벨 필수 (Codex P1).** SDK `transport.ts`가 same-origin `/__mockspec/api`로 저장한다 → `/api/projects/*`로 리라이트/프록시. v1은 same-origin이라 성립. (옵션 1 승격 시 이 경로가 교차 오리진이 되어 CORS+토큰으로 전환 — 7.3절·9-5절) |
 | **auth** | Supabase Auth 콜백 | D1 |
 
 - **함수 시간·크기 한계 유의점**: zip 해제(브라우저로 이관, D5)·export 산출물(Storage+signed URL)로
@@ -220,16 +220,16 @@ create policy "owner_storage_all" on storage.objects
   요청을 보낼 수 있다(SDK `fetchTransport`도 same-origin — `packages/sdk/src/transport.ts`). 원래 제품이
   프로젝트별 서브도메인을 쓴 이유가 바로 이 오리진 격리였다. same-origin은 "localStorage 충돌" 수준의
   사소한 문제가 아니라 **인증 경계**다.
-- **v1 완화(채택 — 옵션 2)**: 목업 서빙을 **소유자 인증 경유**(§6, 익명 접근 없음)로 한정 → 남이 만든
+- **v1 완화(채택 — 옵션 2)**: 목업 서빙을 **소유자 인증 경유**(6절, 익명 접근 없음)로 한정 → 남이 만든
   악성 목업을 피해자가 열 수 없으므로 **교차 테넌트 공격은 차단**된다(피해자가 못 열고, RLS가 타 소유자
   접근을 막음). **남는 위험**은 자기 계정 범위: 기획자가 외부에서 받은 신뢰불가 ZIP을 올려 열면 그 JS가
   기획자 자신으로서 자기 프로젝트를 조작(self-XSS/CSRF급). → **사용 제약으로 문서화**("자기 팀이 빌드한
   믿을 수 있는 ZIP만 업로드").
-- **v1 전제**: 내부 기획자가 자기(팀) 목업만 올린다. 외부 공유(§9-8)는 v1에 없다.
+- **v1 전제**: 내부 기획자가 자기(팀) 목업만 올린다. 외부 공유(9-8절)는 v1에 없다.
 
 ### 7.3 승격 경로 — 옵션 1 (방법 B, 무료 오리진 격리)
 
-**§9-8 외부 공유를 열기 전에 반드시 선행**한다(→ **이슈 #48**로 등록됨). 신뢰불가 목업을 콘솔/API와
+**9-8절 외부 공유를 열기 전에 반드시 선행**한다(→ **이슈 #48**로 등록됨). 신뢰불가 목업을 콘솔/API와
 **다른 오리진**에서 서빙:
 
 - **오리진 1개만 추가**(목업 ↔ 목업 격리는 불필요 — usercontent 오리진엔 API·세션이 없어 훔칠 게 없다).
@@ -273,7 +273,7 @@ create policy "owner_storage_all" on storage.objects
 
 3. ~~기존 `data/` 런타임 데이터 이관~~ → **이관 없음, 빈 DB로 시작.** 기존 `data/projects/*`는 기존
    file-based 배포에서 **내부 시연·설명 용도로만** 유지되는 폐기 대상이므로 새 Supabase로 옮기지 않는다.
-   이관 스크립트 불필요. (코드/레포는 §8대로 이 레포에서 진화 — 데이터 폐기와 무관.)
+   이관 스크립트 불필요. (코드/레포는 8절 그대로 이 레포에서 진화 — 데이터 폐기와 무관.)
 
 **저강도 결정됨 (2026-07-21):**
 4. ~~절대경로 목업 대응~~ → **v1은 온보딩 제약 문서화**("빌드를 상대 경로로/base path 맞춰서"). 인제스트
@@ -283,39 +283,39 @@ create policy "owner_storage_all" on storage.objects
 5. ~~경로 D 공개 백엔드 저장~~ → **서버 CORS 거의 불필요.** 경로 D는 확장 **background service worker가
    `host_permissions` 기반 fetch + Bearer 토큰**으로 저장한다(`transport.ts`) — 권한 컨텍스트라 브라우저
    CORS 차단을 안 받는다. 공개 배포에서 필요한 건 **확장 manifest의 `host_permissions`에 공개 백엔드
-   도메인 추가 + 저장 URL 전환**(확장 코드 변경, 서버 수작업 아님). 진짜 CORS는 **§7.3 옵션 1 승격**(별도
+   도메인 추가 + 저장 URL 전환**(확장 코드 변경, 서버 수작업 아님). 진짜 CORS는 **7.3절 옵션 1 승격**(별도
    오리진 편집 저장) 때만 필요하며 그때도 코드-레벨 헤더 설정(`vercel.json`/라우트 핸들러).
 6. ~~저장 쿼터·레이트리밋·업로드 파일 검증~~ → **W8로 포함**(공개 필수 방어, v1 최소 셋).
 7. ~~마이그레이션 브랜치 전략~~ → **이 레포에 장기 개편 브랜치**(예: `open-service`) 하나 두고
-   워크스트림별 PR로 병합. (레포 파기·새 레포 아님 — §8.)
-8. **목업의 외부 공유 여부**: v1은 목업 서빙을 소유자 인증 경유로 확정(§6, 익명 접근 없음). 소유자가
+   워크스트림별 PR로 병합. (레포 파기·새 레포 아님 — 8절.)
+8. **목업의 외부 공유 여부**: v1은 목업 서빙을 소유자 인증 경유로 확정(6절, 익명 접근 없음). 소유자가
    아닌 사람에게 편집 화면을 보여줄 필요가 생기면 — 링크 공유(비추측 토큰)·읽기 전용 뷰어 등 —
-   별도 설계. **그리고 이때 §7.3 오리진 격리(옵션 1·방법 B)를 선행해야 한다** — 공유가 열리면 신뢰불가
+   별도 설계. **그리고 이때 7.3절 오리진 격리(옵션 1·방법 B)를 선행해야 한다** — 공유가 열리면 신뢰불가
    목업 JS의 교차 테넌트 공격 표면이 다시 열리기 때문. 그 선행 작업은 **이슈 #48**로 등록됐다.
-   현재 공유 수단은 여전히 **단독 산출물 HTML**(§2 불변).
+   현재 공유 수단은 여전히 **단독 산출물 HTML**(2절 불변).
 
-## 10. WBS 스케치 (승격 시 technical-spec §9.2로 이동)
+## 10. WBS 스케치 (승격 시 technical-spec 9.2절로 이동)
 
-- [ ] W1 Supabase 프로젝트·Auth(D1 — **Google OAuth + 이메일 매직링크 둘 다**)·스키마(§5)·RLS 세팅 — **테이블 3종 + 파생컬럼 동기화 트리거 + Storage 오브젝트 정책(단일 버킷) + 버킷 비공개 포함**
+- [ ] W1 Supabase 프로젝트·Auth(D1 — **Google OAuth + 이메일 매직링크 둘 다**)·스키마(5절)·RLS 세팅 — **테이블 3종 + 파생컬럼 동기화 트리거 + Storage 오브젝트 정책(단일 버킷) + 버킷 비공개 포함**
 - [ ] W2 스토어 4모듈 → Supabase(Postgres+Storage) 어댑터 교체
-- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + **`<base>` 삽입/교체(기존 base 처리, §7.1)**(D5·D6)
-- [ ] W4 목업 서빙 `/m/{id}/*` — **Route Handler**가 소유권 검증+스트림(미들웨어는 인증·리라이트만), **인제스트 결과(주입본·`<base>`) 검증** + **SPA history fallback(FR-ONB-04)** 보존. 서빙은 per-request 변조 안 함(D6·§7.1)
+- [ ] W3 업로드 인테이크: 브라우저 unzip + Storage 직업로드 + SDK 주입 + **`<base>` 삽입/교체(기존 base 처리, 7.1절)**(D5·D6)
+- [ ] W4 목업 서빙 `/m/{id}/*` — **Route Handler**가 소유권 검증+스트림(미들웨어는 인증·리라이트만), **인제스트 결과(주입본·`<base>`) 검증** + **SPA history fallback(FR-ONB-04)** 보존. 서빙은 per-request 변조 안 함(D6·7.1절)
 - [ ] W4b **예약 경로 루트 라우트**(Codex P1): `/__mockspec/sdk.js`(SDK 번들)·`/__mockspec/api/*`(→ `/api/projects/*` 리라이트) — 없으면 경로 A 목업이 SDK 404로 편집 불가
 - [ ] W5 spec GET/PUT·asset·export 함수 이식 (asset GC·export 조립 재사용)
-- [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가 — 서버 CORS 불필요, §9-5)
+- [ ] W6 경로 D 토큰 인증 이식 + 확장 저장 대상 URL 전환 (manifest `host_permissions`에 공개 백엔드 추가 — 서버 CORS 불필요, 9-5절)
 - [ ] W7 콘솔 UI Next 이식 + Auth 게이트
 - [ ] W8 남용 방어(쿼터·레이트리밋·업로드 검증) — 열린 질문 6 결정 후
 - [ ] W9 E2E: 가입→업로드→편집→export→뷰어 공개 시나리오
 
 ## 11. 결정 변경 이력
 
-- 2026-07-21 — RFC 개설. 확정 D1~D8 기록(§3). NFR-01·§7.2 재협상은 킥오프 승격 시 원본(PRD·킥오프 스펙)에 반영 예정.
-- 2026-07-21 — PR #35 Gemini 리뷰 4건 반영: ① §5 컬럼 vs JSONB 중복 — spec을 원천으로 명시, 최상위 name·updated_at은 쓰기 시 동기화되는 파생 투영으로 정리 ② §5 하위 테이블 RLS 누락 — project_tokens·project_exports에 RLS 활성화 + 부모 JOIN 소유자 정책 추가 ③ §6·D6 SDK 주입 주체 모호 — "클라이언트가 브라우저에서 unzip+주입 완료, 서버는 검증만"으로 D5와 일관되게 확정 ④ §6 목업 서빙 인가 경로 미명시 — "소유자 인증 경유(v1)·익명 접근 없음"으로 확정, 외부 공유는 §9-8 열린 질문으로 분리.
-- 2026-07-21 — PR #35 Codex P1-A 반영: **Storage 오브젝트 RLS 누락.** Postgres 테이블 RLS는 `storage.objects`를 제약하지 않으므로, D5 브라우저 직접 업로드에 대비해 `storage.objects`에 `projects/{id}/` 경로 소유권을 검증하는 버킷 정책(insert/select/update/delete) 추가 + 버킷 비공개 명시. §5·§6 asset 행·W1 반영.
-- 2026-07-21 — PR #35 Codex 3차 리뷰 3건 반영: ① P1 **SPA history fallback** — `/m/{id}/` 라우팅이 확장자 없는 미존재 경로를 프로젝트 index.html로 폴백하도록 §6·§7.1·W4에 명시(FR-ONB-04·현 serve.ts 회귀 방지) ② P1 **미들웨어 스트리밍 불가** — 목업 서빙을 미들웨어에서 Route Handler로 이동(Edge 미들웨어는 응답 본문 스트리밍 불가), 미들웨어는 인증·리라이트만. §6·§7.1·W4 반영 ③ P2 **격리 오리진 자산 인가** — §7.3 승격 경로에서 오브젝트 단위 서명 URL로는 상대 자산·청크가 인가 안 됨(base가 usercontent 오리진 지시), usercontent Route Handler + 프로젝트 단위 단기 capability로 전체 오브젝트 인가하도록 정교화.
-- 2026-07-21 — PR #35 Codex P1-B 결정·반영: **신뢰불가 목업의 오리진 경계.** 사용자 결정 — **v1은 옵션 2**(콘솔과 같은 오리진 + 소유자-전용 서빙으로 교차 테넌트 차단 + "믿을 수 있는 ZIP만 업로드" 사용 제약), **방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL 인증)를 승격 경로로 기록**하고 §9-8 외부 공유 개방 전 선행 필수로 못 박음. D7 문구 갱신, §7을 7.1~7.4로 재구성(메커니즘·보안 경계·승격 경로·부작용). 방법 A(본인 도메인 서브도메인)는 도메인 구매 필요로 배제. 오리진 격리는 목업 전체 대 콘솔 사이만 필요하므로 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
-- 2026-07-21 — 열린 질문 2건 결정: **인증(§9-1)** = Google OAuth + Supabase 이메일 매직링크 **둘 다 제공**(D1·W1 갱신). **권한 모델 확장(§9-2)** = **실수요까지 유보(YAGNI)**, v1 개인 소유 플랫·멤버십 스키마 선반영 안 함. §9를 "결정됨/남은 것"으로 재구성. **기존 `data/` 데이터 이관(§9-3)은 대기** — "완전 대체"가 레포 파기로 오해돼, 코드는 §8대로 이 레포에서 진화하고 데이터 이관 여부만 남은 질문임을 명확화.
-- 2026-07-21 — 기존 데이터 이관(§9-3) 결정: **이관 없음, 빈 DB로 시작.** 기존 `data/`는 기존 file-based 배포에서 내부 시연·설명 용도로만 유지되는 폐기 대상 — 새 Supabase로 옮기지 않음. 이관 스크립트 불필요.
-- 2026-07-21 — 저강도 4건 확정: **④ 절대경로 목업** = v1 온보딩 제약 문서화(인제스트 재작성은 후속), 현재 버전은 서브도메인이라 절대·상대 둘 다 동작하고 깨짐은 경로 격리 신규 제약임을 명시. 빌드 가이드의 `docs/user-guide.md` 추가는 현재 버전에도 유효하므로 **별도 이슈로 분리 등록**(#36). **⑤ 경로 D 저장** = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest host_permissions+저장 URL 전환만(진짜 CORS는 §7.3 옵션1 승격 시). **⑥ 남용 방어** = W8 포함. **⑦ 브랜치 전략** = 이 레포에 장기 개편 브랜치(`open-service`)+워크스트림별 PR. **상류·저강도 전부 확정 — 남은 열린 질문은 §9-8(외부 공유, v1 밖)뿐.** 킥오프 승격 준비 완료.
-- 2026-07-22 — **킥오프 스펙 승격.** RFC의 확정 항목(D1~D8·§5 스키마·§6 함수·§7 격리·§10 WBS)을 착수 계약 [open-service-kickoff-spec.md](./open-service-kickoff-spec.md)로 이관. PRD 동기화(NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증+RLS로 대체 / §7.1 = open-service 독립 트랙 행 추가 / §7.2 = SSO 조건 ① 충족으로 YAGNI 해제), technical-spec §9.2 = WBS W1~W9 편입. RFC 상태를 "승격됨"으로 전환, 근거 문서로 보존. 이 레포의 장기 브랜치 `open-service`에서 진행(레포 보존 — 기존 베이스 무손상, 추가/이식으로만 진화). 착수를 막는 열린 질문은 §9-8(외부 공유, v1 밖) 하나뿐.
-- 2026-07-21 — PR #35 CodeRabbit·Codex 4차 리뷰 반영: **① Codex P1 예약 경로** — 주입 SDK 로더가 절대 경로(`/__mockspec/sdk.js`)·transport가 `/__mockspec/api`라 `<base>`와 무관, 콘솔 루트에 이 라우트가 없으면 경로 A 목업 편집 불가 → §4·§6에 루트 예약 경로 2개 명시 + W4b 신설. **② Codex P2 기존 `<base>`** — Angular 등 기존 base가 있으면 브라우저는 첫 base만 인정, 인제스트는 삽입이 아니라 교체/재작성(§7.1·W3). **③ CodeRabbit Major 파생컬럼** — RLS로 name·updated_at 직접 갱신 못 막으니 DB 트리거로 spec에서 강제 동기화(§5). **④ CodeRabbit Major asset 버킷** — 단일 버킷 `mockups`의 mockup/·assets/ 프리픽스로 통일해 RLS 정책 1개가 둘 다 커버(§4·§5). **⑤ CodeRabbit Minor** — W4 `<base>` 책임을 D6과 일치(주입은 인제스트, 서빙은 검증)·다이어그램 코드펜스 언어 지정.
+- 2026-07-21 — RFC 개설. 확정 D1~D8 기록(3절). NFR-01·7.2절 재협상은 킥오프 승격 시 원본(PRD·킥오프 스펙)에 반영 예정.
+- 2026-07-21 — PR #35 Gemini 리뷰 4건 반영: ① 5절 컬럼 vs JSONB 중복 — spec을 원천으로 명시, 최상위 name·updated_at은 쓰기 시 동기화되는 파생 투영으로 정리 ② 5절 하위 테이블 RLS 누락 — project_tokens·project_exports에 RLS 활성화 + 부모 JOIN 소유자 정책 추가 ③ 6절·D6 SDK 주입 주체 모호 — "클라이언트가 브라우저에서 unzip+주입 완료, 서버는 검증만"으로 D5와 일관되게 확정 ④ 6절 목업 서빙 인가 경로 미명시 — "소유자 인증 경유(v1)·익명 접근 없음"으로 확정, 외부 공유는 9-8절 열린 질문으로 분리.
+- 2026-07-21 — PR #35 Codex P1-A 반영: **Storage 오브젝트 RLS 누락.** Postgres 테이블 RLS는 `storage.objects`를 제약하지 않으므로, D5 브라우저 직접 업로드에 대비해 `storage.objects`에 `projects/{id}/` 경로 소유권을 검증하는 버킷 정책(insert/select/update/delete) 추가 + 버킷 비공개 명시. 5절·6절 asset 행·W1 반영.
+- 2026-07-21 — PR #35 Codex 3차 리뷰 3건 반영: ① P1 **SPA history fallback** — `/m/{id}/` 라우팅이 확장자 없는 미존재 경로를 프로젝트 index.html로 폴백하도록 6절·7.1절·W4에 명시(FR-ONB-04·현 serve.ts 회귀 방지) ② P1 **미들웨어 스트리밍 불가** — 목업 서빙을 미들웨어에서 Route Handler로 이동(Edge 미들웨어는 응답 본문 스트리밍 불가), 미들웨어는 인증·리라이트만. 6절·7.1절·W4 반영 ③ P2 **격리 오리진 자산 인가** — 7.3절 승격 경로에서 오브젝트 단위 서명 URL로는 상대 자산·청크가 인가 안 됨(base가 usercontent 오리진 지시), usercontent Route Handler + 프로젝트 단위 단기 capability로 전체 오브젝트 인가하도록 정교화.
+- 2026-07-21 — PR #35 Codex P1-B 결정·반영: **신뢰불가 목업의 오리진 경계.** 사용자 결정 — **v1은 옵션 2**(콘솔과 같은 오리진 + 소유자-전용 서빙으로 교차 테넌트 차단 + "믿을 수 있는 ZIP만 업로드" 사용 제약), **방법 B(Vercel Hobby 프로젝트 2개로 무료 오리진 분리 + Storage 서명 URL 인증)를 승격 경로로 기록**하고 9-8절 외부 공유 개방 전 선행 필수로 못 박음. D7 문구 갱신, 7절을 7.1~7.4로 재구성(메커니즘·보안 경계·승격 경로·부작용). 방법 A(본인 도메인 서브도메인)는 도메인 구매 필요로 배제. 오리진 격리는 목업 전체 대 콘솔 사이만 필요하므로 오리진 1개 추가로 충분(업로드별 도메인 발급 불요).
+- 2026-07-21 — 열린 질문 2건 결정: **인증(9-1절)** = Google OAuth + Supabase 이메일 매직링크 **둘 다 제공**(D1·W1 갱신). **권한 모델 확장(9-2절)** = **실수요까지 유보(YAGNI)**, v1 개인 소유 플랫·멤버십 스키마 선반영 안 함. 9절을 "결정됨/남은 것"으로 재구성. **기존 `data/` 데이터 이관(9-3절)은 대기** — "완전 대체"가 레포 파기로 오해돼, 코드는 8절 그대로 이 레포에서 진화하고 데이터 이관 여부만 남은 질문임을 명확화.
+- 2026-07-21 — 기존 데이터 이관(9-3절) 결정: **이관 없음, 빈 DB로 시작.** 기존 `data/`는 기존 file-based 배포에서 내부 시연·설명 용도로만 유지되는 폐기 대상 — 새 Supabase로 옮기지 않음. 이관 스크립트 불필요.
+- 2026-07-21 — 저강도 4건 확정: **④ 절대경로 목업** = v1 온보딩 제약 문서화(인제스트 재작성은 후속), 현재 버전은 서브도메인이라 절대·상대 둘 다 동작하고 깨짐은 경로 격리 신규 제약임을 명시. 빌드 가이드의 `docs/user-guide.md` 추가는 현재 버전에도 유효하므로 **별도 이슈로 분리 등록**(#36). **⑤ 경로 D 저장** = 확장 background worker+host_permissions라 서버 CORS 불필요, manifest host_permissions+저장 URL 전환만(진짜 CORS는 7.3절 옵션1 승격 시). **⑥ 남용 방어** = W8 포함. **⑦ 브랜치 전략** = 이 레포에 장기 개편 브랜치(`open-service`)+워크스트림별 PR. **상류·저강도 전부 확정 — 남은 열린 질문은 9-8절(외부 공유, v1 밖)뿐.** 킥오프 승격 준비 완료.
+- 2026-07-22 — **킥오프 스펙 승격.** RFC의 확정 항목(D1~D8·5절 스키마·6절 함수·7절 격리·10절 WBS)을 착수 계약 [open-service-kickoff-spec.md](./open-service-kickoff-spec.md)로 이관. PRD 동기화(NFR-01 = 공개판에서 사내망·무인증 전제 폐기·Supabase 인증+RLS로 대체 / 7.1절 = open-service 독립 트랙 행 추가 / 7.2절 = SSO 조건 ① 충족으로 YAGNI 해제), technical-spec 9.2절 = WBS W1~W9 편입. RFC 상태를 "승격됨"으로 전환, 근거 문서로 보존. 이 레포의 장기 브랜치 `open-service`에서 진행(레포 보존 — 기존 베이스 무손상, 추가/이식으로만 진화). 착수를 막는 열린 질문은 9-8절(외부 공유, v1 밖) 하나뿐.
+- 2026-07-21 — PR #35 CodeRabbit·Codex 4차 리뷰 반영: **① Codex P1 예약 경로** — 주입 SDK 로더가 절대 경로(`/__mockspec/sdk.js`)·transport가 `/__mockspec/api`라 `<base>`와 무관, 콘솔 루트에 이 라우트가 없으면 경로 A 목업 편집 불가 → 4절·6절에 루트 예약 경로 2개 명시 + W4b 신설. **② Codex P2 기존 `<base>`** — Angular 등 기존 base가 있으면 브라우저는 첫 base만 인정, 인제스트는 삽입이 아니라 교체/재작성(7.1절·W3). **③ CodeRabbit Major 파생컬럼** — RLS로 name·updated_at 직접 갱신 못 막으니 DB 트리거로 spec에서 강제 동기화(5절). **④ CodeRabbit Major asset 버킷** — 단일 버킷 `mockups`의 mockup/·assets/ 프리픽스로 통일해 RLS 정책 1개가 둘 다 커버(4절·5절). **⑤ CodeRabbit Minor** — W4 `<base>` 책임을 D6과 일치(주입은 인제스트, 서빙은 검증)·다이어그램 코드펜스 언어 지정.
