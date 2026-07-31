@@ -695,6 +695,179 @@ form > .c-btn[type="submit"] {
   color: var(--c-text-2);
 }
 
+/* ---------------------------------------------------------------------------
+   터미널 블록 (이슈 #65) — 명령과 출력이 함께 있는 예시를 창 형태로 보여 준다.
+
+   **테마와 무관하게 항상 다크다** (사용자 결정, 2026-07-31). 터미널의 관습에 맞고,
+   성공 초록·주의 노랑 대비를 한 번만 잡으면 된다 — 두 테마에서 각각 잡으면 어느 한쪽은
+   반드시 흐려진다. 그래서 여기서는 `--c-*` 테마 변수를 쓰지 않고 자체 값을 박아 둔다.
+   라이트 모드 페이지 안에서는 어두운 블록이 "여기는 터미널"이라는 신호로도 읽힌다.
+
+   사내판(`packages/server/src/routes/shell.ts`)에 같은 규칙이 있다. 한쪽만 고치면
+   두 배포의 화면이 어긋난다(#51 전례) — 고칠 때는 반드시 양쪽을 함께.
+   --------------------------------------------------------------------------- */
+.g-term {
+  --t-bg: #16161a;
+  --t-bar: #1f1f24;
+  --t-border: #2c2c33;
+  --t-dot: #3d3c42;
+  --t-dim: #6b6963;
+  --t-text: #d6d3cd;
+  --t-ok: #4ade80;
+  --t-warn: #facc15;
+
+  margin: 12px 0 0;
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  overflow: hidden; /* 라운드 모서리 밖으로 상단 바 배경이 새지 않게 */
+  background: var(--t-bg);
+}
+
+.g-term-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--t-border);
+  background: var(--t-bar);
+}
+
+.g-term-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.g-term-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--t-dot);
+}
+
+.g-term-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--t-dim);
+  white-space: nowrap;
+}
+
+/* 좁은 화면에서 페이지가 아니라 이 블록만 가로 스크롤한다 (.g-code와 같은 규칙). */
+.g-term-body {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  background: none;
+  border: 0;
+}
+
+.g-section .g-term-body code {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: var(--t-text);
+}
+
+.g-term-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: pre;
+}
+
+.g-term-line.is-blank {
+  height: 0.9em;
+}
+
+.g-term-prompt {
+  color: var(--t-dim);
+}
+
+.g-term-out {
+  color: var(--t-dim);
+}
+
+.g-term-ok {
+  color: var(--t-ok);
+}
+
+.g-term-warn {
+  color: var(--t-warn);
+}
+
+/*
+  복사 버튼은 `<pre>` 안에 있다 — 명령 줄 오른쪽에 붙어야 어느 명령을 복사하는지가 분명하다.
+  `user-select: none`이라 블록을 드래그해 복사해도 버튼 글자가 딸려오지 않는다.
+
+  `position: sticky`인 이유: 좁은 화면에서는 명령이 블록보다 길어 가로 스크롤이 생기는데,
+  그때 버튼이 콘텐츠 오른쪽 끝(화면 밖)에 있으면 끝까지 스크롤해야 복사할 수 있다. 스크롤
+  컨테이너 오른쪽에 붙여 두면 어디를 보고 있든 바로 누를 수 있다. 배경을 깔아 아래 지나가는
+  명령 텍스트와 겹쳐 읽히지 않게 한다.
+*/
+.g-term-copy {
+  position: sticky;
+  right: 0;
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border: 1px solid var(--t-border);
+  border-radius: 5px;
+  background: var(--t-bg);
+  color: var(--t-dim);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.6;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+/* 평소에는 숨어 있다가 블록에 다가가면 나타난다. 키보드 포커스에서도 반드시 보여야 한다. */
+.g-term:hover .g-term-copy,
+.g-term-copy:focus-visible {
+  opacity: 1;
+}
+
+.g-term-copy:hover {
+  color: var(--t-text);
+  border-color: var(--t-dim);
+}
+
+.g-term-copy.is-copied {
+  opacity: 1;
+  color: var(--t-ok);
+  border-color: var(--t-ok);
+}
+
+.g-term-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--t-border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: var(--t-ok);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-term-copy {
+    transition: none;
+  }
+}
+
+/*
+  터치 기기에는 hover가 없다 — 버튼이 계속 숨어 있으면 복사를 아예 못 쓴다. `pointer: coarse`도
+  함께 보는 이유: hover를 흉내 내는(그래서 `hover: none`에 걸리지 않는) 터치 환경이 있다.
+*/
+@media (hover: none), (pointer: coarse) {
+  .g-term-copy {
+    opacity: 1;
+  }
+}
+
 /* 여러 줄 명령 블록. 좁은 화면에서 페이지가 아니라 이 블록만 가로 스크롤한다. */
 .g-code {
   margin: 10px 0 0;

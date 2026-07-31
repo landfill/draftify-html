@@ -418,6 +418,62 @@ test.describe("공개 서비스 DoD (W9)", () => {
   }
 
   /**
+   * 이슈 #65 — 가이드의 명령 예시를 터미널 창으로 바꾸면서 붙은 두 계약을 고정한다.
+   *
+   * ① 복사 버튼이 **그 줄의 명령만** 클립보드에 넣는다. 프롬프트(`$ `)나 출력이 섞이면
+   *    붙여넣기가 그대로 깨지고, 이 UI를 쓰는 이유가 사라진다.
+   * ② 좁은 화면에서 **페이지가 아니라 블록만** 가로 스크롤한다. 명령은 길어질 수밖에
+   *    없는데, 페이지가 통째로 밀리면 본문 읽기가 망가진다.
+   *
+   * 모바일 조건(`hasTouch`)으로 도는 이유: 복사 버튼은 평소 hover로만 드러나므로, 터치
+   * 기기에서 계속 숨어 있으면 복사를 아예 쓸 수 없다.
+   */
+  test("가이드 터미널 블록 — 명령만 복사, 페이지가 아닌 블록만 가로 스크롤 (#65)", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      permissions: ["clipboard-read", "clipboard-write"],
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await context.newPage();
+    // 가이드는 로그인 없이 보는 공개 페이지다.
+    await page.goto(`${baseURL}/guide`);
+
+    const block = page.locator(".g-term").first();
+    await expect(block).toBeVisible();
+
+    const commandLine = block.locator(".g-term-line").first();
+    const commandText = (await commandLine.locator("span").first().innerText()).replace(/^\$\s*/, "");
+    expect(commandText, "첫 줄은 실행할 명령이다").toBe("npm run build:public");
+
+    const copyButton = commandLine.getByRole("button", { name: /명령 복사/ });
+    await expect(copyButton, "터치 기기에서도 복사 버튼이 보여야 한다").toBeVisible();
+    await expect(copyButton).toHaveCSS("opacity", "1");
+
+    await copyButton.click();
+    expect(await page.evaluate(() => navigator.clipboard.readText()), "프롬프트·출력 없이 명령만").toBe(
+      commandText,
+    );
+    await expect(copyButton).toHaveText("복사됨");
+
+    const scroll = await page.evaluate(() => {
+      const el = document.documentElement;
+      const body = document.querySelector(".g-term-body")!;
+      return {
+        page: el.scrollWidth > el.clientWidth,
+        block: body.scrollWidth > body.clientWidth,
+      };
+    });
+    expect(scroll.page, "페이지는 가로로 밀리지 않는다").toBe(false);
+    expect(scroll.block, "긴 명령은 블록 안에서 스크롤된다").toBe(true);
+
+    await context.close();
+  });
+
+  /**
    * 헤더 로그인 상태가 페이지마다 어긋나던 회귀. `/guide`·`/faq`는 로그인 없이 보는 정적
    * 페이지라 서버가 `email` prop을 주지 않는데, 헤더가 그 prop만 보고 판단해서 **로그인한
    * 사용자에게도 [로그인]** 을 보여줬다(콘솔 홈은 [로그아웃]). 헤더가 자기 세션을 직접
