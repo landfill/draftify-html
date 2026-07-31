@@ -68,6 +68,19 @@ export function ConsoleHome() {
    * 그때는 [토큰 재발급]으로 새 코드를 받는다(기존 토큰은 즉시 무효).
    */
   const [sessionTokens, setSessionTokens] = useState<Record<string, string>>({});
+  /**
+   * 재발급이 진행 중인 프로젝트 id **집합** (이슈 #63). 겹친 재발급은 DB를 깨뜨리지는 않지만
+   * (`project_tokens.project_id` UNIQUE + upsert — 이슈 #47), 요청이 둘이면 **둘 다 201과
+   * 각자의 평문 토큰**을 돌려주면서 실제로 유효한 것은 마지막 DB writer의 하나뿐이다.
+   * 응답 도착 순서는 커밋 순서와 다를 수 있으므로, 콘솔이 이미 덮어써진 코드를 보여 주고
+   * 사용자는 그 코드로 연결에 실패한다. 두 번째 요청을 아예 내보내지 않는 것이 해법이다.
+   *
+   * 스칼라(`string | null`)가 아니라 집합인 이유: 경합은 **프로젝트 단위**로만 일어나므로
+   * (토큰 행이 project_id마다 하나) 잠금도 프로젝트별이어야 한다. 스칼라로 두면 A 재발급 중
+   * B의 버튼은 활성인데 클릭하면 가드에 걸려 confirm도 없이 아무 일도 일어나지 않는다
+   * (PR #72 Codex·CodeRabbit 지적). 잠금 범위와 가드 범위를 같게 맞춘다.
+   */
+  const [reissuingIds, setReissuingIds] = useState<ReadonlySet<string>>(new Set());
 
   const loadProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
@@ -240,6 +253,8 @@ export function ConsoleHome() {
   }
 
   async function handleReissueToken(p: ProjectListItem) {
+    // 버튼 disabled와 짝인 코드 레벨 가드 — 키보드 Enter 연타 등 렌더 전 재진입을 막는다.
+    if (reissuingIds.has(p.id)) return;
     if (
       !confirm(
         `'${p.name}'의 토큰을 재발급하면 기존 토큰이 즉시 무효화됩니다.\n확장도 새 연결 코드로 다시 연결해야 합니다. 계속할까요?`,
@@ -247,31 +262,46 @@ export function ConsoleHome() {
     ) {
       return;
     }
-    const res = await fetch(`/api/projects/${p.id}/token`, { method: "POST" });
-    const body = (await res.json().catch(() => ({}))) as {
-      token?: string;
-      error?: { message: string };
-    };
-    if (!res.ok || !body.token) {
+    setReissuingIds((prev) => new Set(prev).add(p.id));
+    try {
+      const res = await fetch(`/api/projects/${p.id}/token`, { method: "POST" });
+      const body = (await res.json().catch(() => ({}))) as {
+        token?: string;
+        error?: { message: string };
+      };
+      if (!res.ok || !body.token) {
+        setListStatus({
+          kind: "error",
+          text: body.error?.message ?? "토큰 재발급에 실패했습니다.",
+        });
+        return;
+      }
+      setSessionTokens((prev) => ({ ...prev, [p.id]: body.token! }));
+      const code = encodeConnection({
+        projectId: p.id,
+        token: body.token,
+        serverUrl: window.location.origin,
+      });
+      const copied = await copyOrPrompt(code, "새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
+      setListStatus({
+        kind: "ok",
+        text: copied
+          ? "토큰을 재발급하고 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결]."
+          : "토큰을 재발급했습니다. 표시된 연결 코드로 다시 연결하세요.",
+      });
+    } catch (err) {
+      // 네트워크 예외로도 잠금이 남으면 재발급이 영영 불가능해진다 — finally로 반드시 푼다.
       setListStatus({
         kind: "error",
-        text: body.error?.message ?? "토큰 재발급에 실패했습니다.",
+        text: err instanceof Error ? err.message : "토큰 재발급에 실패했습니다.",
       });
-      return;
+    } finally {
+      setReissuingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(p.id);
+        return next;
+      });
     }
-    setSessionTokens((prev) => ({ ...prev, [p.id]: body.token! }));
-    const code = encodeConnection({
-      projectId: p.id,
-      token: body.token,
-      serverUrl: window.location.origin,
-    });
-    const copied = await copyOrPrompt(code, "새 연결 코드 (복사해 확장 팝업에 붙여넣으세요):");
-    setListStatus({
-      kind: "ok",
-      text: copied
-        ? "토큰을 재발급하고 새 연결 코드를 복사했습니다 — 확장 팝업에 붙여넣고 [연결]."
-        : "토큰을 재발급했습니다. 표시된 연결 코드로 다시 연결하세요.",
-    });
   }
 
   async function handleDelete(p: ProjectListItem) {
@@ -507,6 +537,8 @@ export function ConsoleHome() {
                         type="button"
                         className="c-btn"
                         onClick={() => void handleCopyConnection(p)}
+                        // 재발급 중에는 곧 무효가 될 구 토큰의 코드를 건네게 된다 (#63).
+                        disabled={reissuingIds.has(p.id)}
                         title={
                           sessionTokens[p.id]
                             ? "확장 팝업에 붙여넣을 연결 코드를 복사합니다"
@@ -519,8 +551,10 @@ export function ConsoleHome() {
                         type="button"
                         className="c-btn"
                         onClick={() => void handleReissueToken(p)}
+                        // 겹친 재발급은 사용자에게 이미 무효인 코드를 건넨다 (#63).
+                        disabled={reissuingIds.has(p.id)}
                       >
-                        토큰 재발급
+                        {reissuingIds.has(p.id) ? "재발급 중…" : "토큰 재발급"}
                       </button>
                     </>
                   ) : (

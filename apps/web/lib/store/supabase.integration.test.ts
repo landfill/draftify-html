@@ -171,7 +171,7 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
   // 이슈 #47 — 재발급이 delete + insert 2단계였을 때는 동시 요청이 행을 2개 남겼고,
   // verifyToken()의 maybeSingle()이 에러를 내 발급된 토큰이 **전부** 무효가 됐다.
   // (콘솔의 [토큰 재발급] 더블클릭만으로 재현된다.)
-  it("tokenStore 동시 재발급 — 행 1개만 남고 마지막 토큰만 유효 (#47)", async () => {
+  it("tokenStore 동시 재발급 — 행 1개만 남고 나중 발급이 앞선 토큰을 무효화한다 (#47)", async () => {
     const project = await newProject("token 경합", { type: "snippet" });
     projectIds.push(project.id);
 
@@ -194,6 +194,16 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
     );
     expect(valid.filter(Boolean)).toHaveLength(1);
     expect(await hasToken(userDb, project.id)).toBe(true);
+
+    // 위 단정은 "셋 중 하나만 유효"까지만 말한다 — `Promise.all`이 돌려주는 배열 순서는
+    // upsert 완료 순서가 아니므로, 경합만으로는 *나중* 발급이 이겼는지 알 수 없다(첫 요청의
+    // 토큰이 남는 구현도 통과한다. #63). 순서가 확정된 재발급을 한 번 더 걸어, 그 토큰만
+    // 유효하고 앞선 것은 전부 무효임을 못 박는다.
+    const finalToken = await issueToken(userDb, project.id);
+    expect(await verifyToken(admin as unknown as Db, project.id, finalToken)).toBe(true);
+    expect(
+      await Promise.all(tokens.map((t) => verifyToken(admin as unknown as Db, project.id, t))),
+    ).toEqual([false, false, false]);
   });
 
   // 이슈 #45 — `owner_rw`가 for all 이던 시절에는 로그인 사용자가 공개 키 + 자기 세션으로
