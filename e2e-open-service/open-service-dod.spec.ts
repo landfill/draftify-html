@@ -10,6 +10,7 @@ import {
   type BrowserContext,
   type Page,
   type APIRequestContext,
+  type Dialog,
 } from "@playwright/test";
 
 /**
@@ -557,6 +558,44 @@ test.describe("공개 서비스 DoD (W9)", () => {
       headers: { Authorization: `Bearer ${newToken}` },
     });
     expect(newTokenRes.status(), "새 토큰 통과").toBe(200);
+
+    // 이슈 #63 — 겹친 재발급은 DB를 깨뜨리지 않지만(행 1개, #47) 두 요청 모두 각자의 평문
+    // 토큰을 돌려주고 유효한 것은 마지막 DB writer의 하나뿐이다. 응답 도착 순서는 커밋 순서와
+    // 다를 수 있으므로 콘솔이 이미 무효인 코드를 건넨다. 응답을 붙잡아 "진행 중" 상태를
+    // 관찰 가능하게 만든 뒤, 그 사이 버튼이 잠기고 두 번째 요청이 나가지 않음을 고정한다.
+    let tokenPosts = 0;
+    let releaseReissue: () => void = () => {};
+    const heldReissue = new Promise<void>((resolve) => {
+      releaseReissue = resolve;
+    });
+    await page.route(`**/api/projects/${projectId}/token`, async (route) => {
+      if (route.request().method() === "POST") {
+        tokenPosts += 1;
+        await heldReissue;
+      }
+      await route.continue();
+    });
+
+    // 진행 중에는 라벨이 "재발급 중…"으로 바뀌므로 두 상태를 모두 받는 이름으로 잡는다.
+    const reissueBtn = row.getByRole("button", { name: /토큰 재발급|재발급 중/ });
+    // `once`가 아니라 `on` — 두 번째 클릭의 confirm도 수락해야 한다. 그러지 않으면 Playwright가
+    // 대화상자를 자동 dismiss해 confirm이 가드 노릇을 하고, 잠금을 지워도 테스트가 통과한다.
+    const acceptDialog = (d: Dialog) => void d.accept();
+    page.on("dialog", acceptDialog);
+    await reissueBtn.click();
+    await expect(reissueBtn).toBeDisabled();
+    // 구 토큰의 코드를 건네지 않도록 같은 행의 복사 버튼도 함께 잠긴다.
+    await expect(row.getByRole("button", { name: "연결 코드 복사" })).toBeDisabled();
+
+    // 잠긴 버튼을 실제로 한 번 더 누른다 — disabled면 브라우저가 click을 발화하지 않으므로
+    // 두 번째 요청 자체가 만들어지지 않는다(단정이 "클릭이 1회였다"로 퇴화하지 않게).
+    await reissueBtn.click({ force: true });
+
+    releaseReissue();
+    await expect(reissueBtn).toBeEnabled();
+    expect(tokenPosts, "잠금 중에는 재발급 요청이 한 번만 나간다").toBe(1);
+    page.off("dialog", acceptDialog);
+    await page.unroute(`**/api/projects/${projectId}/token`);
 
     await api.dispose();
     await context.close();
