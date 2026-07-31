@@ -528,6 +528,15 @@ test.describe("공개 서비스 DoD (W9)", () => {
         page.getByRole("link", { name: "로그인" }),
         `${path} 헤더에 로그인 링크 없음`,
       ).toHaveCount(0);
+
+      // 이슈 #77 — 작업 기점으로 돌아올 길이 로고뿐이면 처음 쓰는 사람이 찾지 못한다.
+      const consoleLink = page.locator(".c-header").getByRole("link", { name: "내 프로젝트" });
+      await expect(consoleLink, `${path} 헤더에 프로젝트 목록 링크`).toBeVisible();
+      await expect(consoleLink).toHaveAttribute("href", "/");
+      // 콘솔에 있을 때만 활성 표시 — 다른 내비 항목과 같은 규칙이다.
+      await expect(consoleLink, `${path} 활성 표시`).toHaveClass(
+        path === "/" ? /is-active/ : /^(?!.*is-active).*$/,
+      );
     }
 
     // 로그아웃 상태에서는 반대로 나와야 한다 — 정적 페이지도 포함.
@@ -543,7 +552,30 @@ test.describe("공개 서비스 DoD (W9)", () => {
         anonPage.getByRole("button", { name: "로그아웃" }),
         `${path} 비로그인 헤더에 로그아웃 없음`,
       ).toHaveCount(0);
+
+      // #77 — 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이 보여야 한다(사용자 결정).
+      // 누르면 로그인 화면으로 가는데, 프로젝트를 보려면 어차피 로그인이 필요하다.
+      await expect(
+        anonPage.locator(".c-header").getByRole("link", { name: "내 프로젝트" }),
+        `${path} 비로그인 헤더에도 프로젝트 목록 링크`,
+      ).toBeVisible();
     }
+
+    // #77 — 좁은 화면에서 낱말이 통째로 쪼개지던 문제("MockSpec / Cloud", "사용 가 / 이드").
+    // 항목은 줄을 넘기지 않고, 넘칠 때는 항목 단위로 다음 줄로 내려간다.
+    const narrow = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const narrowPage = await narrow.newPage();
+    await narrowPage.goto(`${baseURL}/guide`);
+    const splitItems = await narrowPage.evaluate(() =>
+      [...document.querySelectorAll(".c-header .c-nav-link, .c-header .c-logo")]
+        .filter((el) => {
+          const oneLine = parseFloat(getComputedStyle(el).fontSize) * 1.8;
+          return el.getBoundingClientRect().height > oneLine;
+        })
+        .map((el) => el.textContent?.trim()),
+    );
+    expect(splitItems, "헤더 항목이 낱말 안에서 줄바꿈되지 않는다").toEqual([]);
+    await narrow.close();
 
     await anon.close();
     await context.close();

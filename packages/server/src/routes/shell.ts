@@ -85,9 +85,10 @@ button, input { font: inherit; }
   /* 목록·가이드가 길어져도 메뉴 전환이 가능하게 상단 고정. z-index는 모달 오버레이(100) 아래. */
   position: sticky; top: 0; z-index: 50;
 }
-.c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; }
+/* white-space: nowrap — 좁은 화면에서 "MockSpec / Local"처럼 낱말이 쪼개지지 않게 (이슈 #77) */
+.c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; white-space: nowrap; }
 .c-header-right { display: flex; gap: 24px; align-items: center; }
-.c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; }
+.c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; white-space: nowrap; }
 .c-nav-link:hover { color: var(--c-text); }
 .c-nav-link.is-active { color: var(--c-accent); font-weight: 600; }
 .c-theme-toggle {
@@ -109,6 +110,16 @@ button, input { font: inherit; }
   padding: 28px 32px;
   margin-bottom: 32px;
 }
+/*
+  좁은 화면 헤더 (이슈 #77) — 공개판 globals.css와 같은 규칙. 고정 높이에 항목을 욱여넣으면
+  폭이 모자랄 때 낱말이 통째로 쪼개진다. 항목 안에서는 줄을 넘기지 않고(위 nowrap), 넘칠
+  때는 항목 단위로 다음 줄로 내려가게 한다.
+*/
+@media (max-width: 720px) {
+  .c-header { height: auto; min-height: 56px; padding: 10px 16px; flex-wrap: wrap; gap: 8px 12px; }
+  .c-header-right { flex-wrap: wrap; gap: 8px 12px; }
+}
+
 .c-section { margin-bottom: 36px; }
 .c-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px 4px; font-size: 13px; font-weight: 700; color: var(--c-text); letter-spacing: -0.2px; }
 `.trim();
@@ -150,8 +161,8 @@ export const THEME_TOGGLE_JS = `
 `.trim();
 
 /** 공통 헤더. active는 현재 페이지의 내비 링크 하이라이트. */
-export function pageHeader(active?: "guide" | "faq"): string {
-  const cls = (name: "guide" | "faq"): string =>
+export function pageHeader(active?: "home" | "guide" | "faq"): string {
+  const cls = (name: "home" | "guide" | "faq"): string =>
     active === name ? "c-nav-link is-active" : "c-nav-link";
   return `
   <header class="c-header">
@@ -159,6 +170,9 @@ export function pageHeader(active?: "guide" | "faq"): string {
       <a href="/" class="c-logo">${EDITION_NAME.local}</a>
     </div>
     <div class="c-header-right">
+      <!-- 작업 기점(프로젝트 목록)으로 돌아오는 링크 (이슈 #77). 로고 클릭이 유일한 길이면
+           처음 쓰는 사람이 찾지 못한다. 공개판 shell-header.tsx와 같은 처리다. -->
+      <a href="/" class="${cls("home")}">내 프로젝트</a>
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
       <a href="/sample" class="c-nav-link" target="_blank" rel="noopener">샘플 보기</a>
       <a href="/faq" class="${cls("faq")}">FAQ</a>

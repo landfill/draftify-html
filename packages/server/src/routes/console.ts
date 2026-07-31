@@ -801,7 +801,7 @@ export const CONSOLE_HTML = `<!doctype html>
   <style>${SHELL_CSS}\n${CONSOLE_CSS}</style>
 </head>
 <body>
-  ${pageHeader()}
+  ${pageHeader("home")}
   <div class="c-shell">
     <section class="c-section">
       <h2 class="c-section-title">새 프로젝트 시작</h2>

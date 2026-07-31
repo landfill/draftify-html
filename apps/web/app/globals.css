@@ -116,6 +116,8 @@ input {
   color: var(--c-text);
   letter-spacing: -0.4px;
   text-decoration: none;
+  /* 좁은 화면에서 "MockSpec / Cloud"로 쪼개지지 않게 (이슈 #77). */
+  white-space: nowrap;
 }
 
 .c-header-right {
@@ -129,6 +131,8 @@ input {
   color: var(--c-text-3);
   text-decoration: none;
   font-weight: 500;
+  /* "사용 가 / 이드"처럼 항목 안에서 줄이 갈리지 않게 (이슈 #77). */
+  white-space: nowrap;
 }
 
 .c-nav-link:hover {
@@ -1114,6 +1118,32 @@ ul.g-list li {
 .c-nav-link.is-active {
   color: var(--c-accent);
   font-weight: 600;
+}
+
+/*
+  좁은 화면 헤더 (이슈 #77). 고정 높이 56px에 항목을 욱여넣던 탓에 폭이 모자라면 낱말이
+  통째로 쪼개졌다("MockSpec / Cloud", "사용 가 / 이드"). 항목 안에서는 줄을 넘기지 않고
+  (`white-space: nowrap`), 넘칠 때는 **항목 단위로** 다음 줄로 내려가게 한다.
+  높이는 내용에 맞춰 늘어나되 원래 높이를 최소값으로 유지한다.
+*/
+@media (max-width: 720px) {
+  .c-header {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .c-header-right {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  /* 로그인 상태는 [로그아웃] 버튼이 이미 알려 준다 — 폭이 급할 때 가장 먼저 접는다. */
+  .c-user-email {
+    display: none;
+  }
 }
 
 @media (max-width: 720px) {
