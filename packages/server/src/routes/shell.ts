@@ -91,10 +91,15 @@ button, input { font: inherit; }
   /* 목록·가이드가 길어져도 메뉴 전환이 가능하게 상단 고정. z-index는 모달 오버레이(100) 아래. */
   position: sticky; top: 0; z-index: 50;
 }
-/* white-space: nowrap — 좁은 화면에서 "MockSpec / Local"처럼 낱말이 쪼개지지 않게 (이슈 #77) */
-.c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; white-space: nowrap; }
+/*
+  헤더 항목은 낱말 안에서 갈리지 않는다 (이슈 #77) — "MockSpec / Local", "사용 가 / 이드".
+  항목 사이의 줄바꿈은 위 flex-wrap이 맡는다. 클래스가 아니라 태그로 잡는 이유: 버튼은
+  .c-nav-link가 아니라 .c-btn이라 클래스로 걸면 빠진다 (PR #78 CodeRabbit 지적).
+*/
+.c-header a, .c-header button { white-space: nowrap; }
+.c-logo { font-size: 16px; font-weight: 800; color: var(--c-text); letter-spacing: -0.4px; text-decoration: none; }
 .c-header-right { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
-.c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; }
 .c-nav-link:hover { color: var(--c-text); }
 .c-nav-link.is-active { color: var(--c-accent); font-weight: 600; }
 .c-theme-toggle {

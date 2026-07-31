@@ -119,14 +119,28 @@ input {
   z-index: 50;
 }
 
+/*
+  헤더 항목은 **낱말 안에서** 갈리지 않는다 (이슈 #77). 좁은 화면에서 "MockSpec / Cloud",
+  "사용 가 / 이드", "로그 / 아웃"처럼 쪼개지던 문제다. 항목 *사이의* 줄바꿈은 위 `flex-wrap`이
+  맡는다 — 역할이 다르다.
+
+  선택자를 `.c-nav-link`가 아니라 태그로 잡는 이유: [로그아웃]은 링크가 아니라 `.c-btn`이라
+  클래스로 걸면 빠진다 (PR #78 CodeRabbit 지적). 현재 레이아웃에서는 버튼이 제 줄에서 폭을
+  확보해 실제로 갈리지는 않지만(역검증으로 확인), 규칙을 항목 종류마다 다르게 두면 다음에
+  버튼을 하나 더 넣을 때 그 항목만 조용히 빠진다.
+*/
+.c-header a,
+.c-header button,
+.c-header .c-user-email {
+  white-space: nowrap;
+}
+
 .c-logo {
   font-size: 16px;
   font-weight: 800;
   color: var(--c-text);
   letter-spacing: -0.4px;
   text-decoration: none;
-  /* 좁은 화면에서 "MockSpec / Cloud"로 쪼개지지 않게 (이슈 #77). */
-  white-space: nowrap;
 }
 
 .c-header-right {
@@ -141,8 +155,6 @@ input {
   color: var(--c-text-3);
   text-decoration: none;
   font-weight: 500;
-  /* "사용 가 / 이드"처럼 항목 안에서 줄이 갈리지 않게 (이슈 #77). */
-  white-space: nowrap;
 }
 
 .c-nav-link:hover {

@@ -573,12 +573,27 @@ test.describe("공개 서비스 DoD (W9)", () => {
       await page.goto(`${baseURL}/`);
       const header = await page.evaluate(() => {
         const el = document.documentElement;
-        const items = [...document.querySelectorAll(".c-header .c-nav-link, .c-header .c-logo")];
+        // 링크만 보면 안 된다 — [로그아웃]은 `.c-nav-link`가 아니라 `.c-btn`이라 규칙이
+        // 따로 걸리고, 실제로 그 버튼만 "로그 / 아웃"으로 갈렸다 (PR #78 CodeRabbit 지적).
+        // 텍스트가 있는 항목 전부를 본다(아이콘뿐인 테마 토글은 textContent가 비어 제외된다).
+        const items = [...document.querySelectorAll<HTMLElement>(".c-header a, .c-header button, .c-header span")]
+          .filter((n) => (n.textContent ?? "").trim().length > 0);
         return {
+          /*
+            "낱말이 갈렸는가"는 **텍스트가 몇 줄에 걸쳤는가**로 판정한다. 두 가지 오탐을
+            피해야 한다: 요소 높이로 재면 버튼의 padding을 줄바꿈으로 오인하고, Range의
+            사각형 **개수**로 재면 `text-overflow: ellipsis`가 텍스트를 여러 조각으로
+            나눈 것까지 잡는다(같은 줄인데도 2개가 나온다). 조각들의 top이 서로 다를 때만
+            실제로 줄이 갈린 것이다.
+          */
           split: items
             .filter((n) => {
-              const oneLine = parseFloat(getComputedStyle(n).fontSize) * 1.8;
-              return n.getBoundingClientRect().height > oneLine;
+              const range = document.createRange();
+              range.selectNodeContents(n);
+              const tops = new Set(
+                [...range.getClientRects()].map((r) => Math.round(r.top)),
+              );
+              return tops.size > 1;
             })
             .map((n) => n.textContent?.trim()),
           overflowsRight: items.some(
