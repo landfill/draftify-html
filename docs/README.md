@@ -30,6 +30,7 @@
 | [detailed-spec.md](./detailed-spec.md) | 상세 기획서 | 콘솔/편집기/뷰어 화면별 상세, 인터랙션 시퀀스, 제품 정책(POL-M\*), 엣지 케이스, 수용 기준 |
 | [technical-spec.md](./technical-spec.md) | 기술 스펙 | 아키텍처·스택·데이터 모델·API·앵커/캡처 알고리즘·보안·테스트·WBS |
 | [output-standard.md](./output-standard.md) | 산출물 규범 | 기획서 HTML의 ID 체계(SCR-###, POL-###, 어노테이션 번호)·섹션 구조·표기 규칙 — 기존 auto-draft-guideline을 대체하는 신규 설계 |
+| [ui-standard.md](./ui-standard.md) | UI 규범 | 네 표면(공개판·사내판·SDK 편집 패널·산출물)의 시각 스타일 인벤토리와 공통 기준 — 색·타이포·간격·반경·그림자·상태·포커스. 정보 구조는 detailed-spec, 산출물 ID 체계는 output-standard가 정본 |
 | [implementation-decisions.md](./implementation-decisions.md) | 구현 결정 보충 | 미정의 지점 확정 ID-01~15 (실행 모델, 브라우저, 앵커 알고리즘 상세, API 에러 형식, asset 수명 등) — "단순하고 범용적"이 판단 기준 |
 | [PROGRESS.md](./PROGRESS.md) | 진행 로그 | 현재 단계·WBS 체크리스트·세션 로그. **작업 시작 시 먼저 읽고 끝날 때 갱신** — 세션·에이전트 간 인수인계의 단일 소스 |
 

@@ -44,27 +44,37 @@ export function LoginForm({ errorCode }: { errorCode?: string }) {
     else setStatus("로그인 링크를 이메일로 보냈습니다. 메일함을 확인하세요.");
   }
 
+  /*
+    레이아웃은 전부 `.c-login-*` CSS가 잡는다 (이슈 #87). 이전에는 인라인 `style`로 콘솔의
+    2단 폼 그리드(`.c-row`의 120px 우측 정렬 라벨)를 이 화면에서만 되돌리고 있었다 — 같은
+    땜질이 화면마다 반복되므로 규칙을 CSS 한 곳으로 옮겼다.
+  */
   return (
     <div className="c-login-card c-card">
-      <h1 className="c-section-title">{EDITION_NAME.cloud} — 로그인</h1>
+      <h1 className="c-login-title">로그인</h1>
+      <p className="c-login-sub">
+        {EDITION_NAME.cloud} — 목업에 설명을 달아 단독 HTML 기획서로 내보냅니다. 계정이 없어도
+        첫 로그인에 자동으로 만들어집니다.
+      </p>
       {errorCode === "auth_callback_failed" ? (
         <p className="c-status is-error">로그인 처리에 실패했습니다. 다시 시도해 주세요.</p>
       ) : null}
+      {/*
+        소셜 로그인은 보조 형태(테두리)로 둔다. 이전에는 이 버튼과 [매직링크 보내기]가 둘 다
+        채움 강조색이라 무엇이 주 동작인지 읽히지 않았다.
+      */}
       <button
         type="button"
-        className="c-btn"
-        style={{ width: "100%" }}
+        className="c-btn c-btn-social"
         disabled={busy || !redirectTo}
         onClick={() => void signInWithGoogle()}
       >
         Google로 계속
       </button>
-      <p className="c-login-divider">또는 이메일 매직링크</p>
+      <p className="c-login-divider">또는</p>
       <form onSubmit={(e) => void signInWithEmail(e)}>
-        <div className="c-row" style={{ flexDirection: "column", alignItems: "stretch" }}>
-          <label htmlFor="login-email" style={{ textAlign: "left", flex: "none" }}>
-            이메일
-          </label>
+        <div className="c-row">
+          <label htmlFor="login-email">이메일</label>
           <input
             id="login-email"
             type="email"
@@ -72,15 +82,9 @@ export function LoginForm({ errorCode }: { errorCode?: string }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            style={{ maxWidth: "none" }}
           />
         </div>
-        <button
-          type="submit"
-          className="c-btn"
-          style={{ width: "100%", marginLeft: 0 }}
-          disabled={busy || !redirectTo}
-        >
+        <button type="submit" className="c-btn" disabled={busy || !redirectTo}>
           매직링크 보내기
         </button>
       </form>
