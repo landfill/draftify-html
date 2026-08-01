@@ -208,16 +208,22 @@ input {
   콘솔 홈 우선순위 (이슈 #85).
 
   처음 온 사용자는 만들기가 필요하고, 프로젝트가 있는 재방문자는 목록이 주 작업 대상이다.
-  DOM을 복제하지 않고 상태에 따라 두 섹션의 순서만 바꾼다. 생성 패널은 첫 방문(목록 0개)만
-  열린 상태로 시작하며, 재방문자는 요약 한 줄만 지나가면 된다.
+  키보드·스크린리더 순서도 화면과 같아야 하므로 컴포넌트가 상태에 따라 실제 DOM 순서를
+  바꾼다. 생성 패널은 첫 방문(목록 0개)만 열린 상태로 시작하며, 재방문자는 요약 한 줄만
+  지나가면 된다.
 */
-.c-console-home {
-  display: flex;
-  flex-direction: column;
+.c-creation-feedback {
+  margin-bottom: 16px;
+  outline: none;
 }
 
-.c-console-home.has-projects .c-project-section {
-  order: -1;
+.c-creation-feedback .c-status {
+  margin-top: 0;
+}
+
+.c-creation-feedback:focus-visible .c-status {
+  outline: 2px solid var(--c-accent-focus);
+  outline-offset: 2px;
 }
 
 .c-new-project {

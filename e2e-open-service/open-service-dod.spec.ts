@@ -710,6 +710,9 @@ test.describe("공개 서비스 DoD (W9)", () => {
     const firstCreateBox = await firstCreate.boundingBox();
     const firstListBox = await firstList.boundingBox();
     expect(firstCreateBox!.y, "빈 목록에서는 새 프로젝트가 먼저").toBeLessThan(firstListBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-new-project-section/,
+    );
 
     // 목록에 내용이 있어야 "서버가 실어 보냈다"를 확인할 수 있다.
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
@@ -721,9 +724,15 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     // PR #88 Codex P2 — 새로고침하지 않아도 첫 프로젝트 생성 즉시 재방문 레이아웃이 된다.
     await expect(page.locator(".c-new-project")).not.toHaveAttribute("open", "");
+    const creationFeedback = page.locator(".c-creation-feedback");
+    await expect(creationFeedback).toContainText(/연결 코드를 복사했습니다/);
+    await expect(creationFeedback).toBeFocused();
     const liveListBox = await page.locator(".c-project-section").boundingBox();
     const liveCreateBox = await page.locator(".c-new-project-section").boundingBox();
     expect(liveListBox!.y, "첫 생성 직후 프로젝트 목록이 먼저").toBeLessThan(liveCreateBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-project-section/,
+    );
 
     /*
       ① 서버가 실어 보냈는가 — HTML **문서 자체**에 이름이 들어 있어야 한다.
@@ -755,9 +764,12 @@ test.describe("공개 서비스 DoD (W9)", () => {
       hydration 전에도 보이므로, 요소가 나타나자마자 검사하면 누군가 초기 `useEffect` 조회를
       되살렸을 때 그 요청이 아직 나가지 않아 **회귀를 놓친다.**
 
-      탭 클릭이 반응한다는 것이 hydration 완료의 증거다(이벤트 핸들러가 붙었다). 그 뒤
-      `networkidle`까지 기다려 지연된 요청도 걸리게 한다.
+      탭 클릭이 반응한다는 것이 hydration 완료의 증거다(이벤트 핸들러가 붙었다). 단,
+      재방문 생성 패널은 접혀 있으므로 summary를 먼저 열어야 내부 탭이 actionable하다
+      (PR #88 Codex P2). 그 뒤 `networkidle`까지 기다려 지연된 요청도 걸리게 한다.
     */
+    await page.locator(".c-new-project-summary").click();
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
     await expect(page.getByText("1 · 확장 설치")).toBeVisible();
     await page.waitForLoadState("networkidle");
@@ -779,6 +791,9 @@ test.describe("공개 서비스 DoD (W9)", () => {
     const emptyCreateBox = await page.locator(".c-new-project-section").boundingBox();
     const emptyListBox = await page.locator(".c-project-section").boundingBox();
     expect(emptyCreateBox!.y, "마지막 삭제 직후 새 프로젝트가 먼저").toBeLessThan(emptyListBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-new-project-section/,
+    );
     expect(listCalls.length, "삭제 뒤에는 목록을 다시 부른다").toBeGreaterThan(0);
   });
 
