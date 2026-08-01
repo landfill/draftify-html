@@ -7,8 +7,8 @@ import { userSubject } from "@/lib/abuse/rate-limit.js";
 import { getAuthedContext } from "@/lib/auth/require-user.js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.js";
 import type { Db } from "@/lib/store/ids.js";
-import { createProject, listProjects } from "@/lib/store/projectStore.js";
-import { exportSummary } from "@/lib/store/exportStore.js";
+import { createProject } from "@/lib/store/projectStore.js";
+import { listProjectsForConsole } from "@/lib/store/projectList.js";
 import { issueToken } from "@/lib/store/tokenStore.js";
 
 function parseOwnerLabel(raw: unknown): string | undefined {
@@ -17,15 +17,17 @@ function parseOwnerLabel(raw: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-/** GET /api/projects — 소유자 프로젝트 목록 + export 요약(T29). */
+/**
+ * GET /api/projects — 소유자 프로젝트 목록 + export 요약(T29).
+ *
+ * 첫 화면은 이 라우트를 부르지 않는다 — `app/page.tsx`가 서버에서 미리 실어 보낸다(#81).
+ * 여기는 **갱신 경로**다: 업로드·삭제·토큰 발급 뒤 `loadProjects()`가 부른다.
+ */
 export async function GET() {
   const ctx = await getAuthedContext();
   if (!ctx) return jsonError("UNAUTHORIZED", "로그인이 필요합니다.");
 
-  const projects = await listProjects(ctx.db);
-  const items: ProjectListItem[] = await Promise.all(
-    projects.map(async (p) => ({ ...p, ...(await exportSummary(ctx.db, p.id)) })),
-  );
+  const items: ProjectListItem[] = await listProjectsForConsole(ctx.db);
   return NextResponse.json(items);
 }
 

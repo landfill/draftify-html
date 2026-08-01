@@ -655,6 +655,57 @@ test.describe("공개 서비스 DoD (W9)", () => {
    * W7 콘솔 이식에서 UI가 빠져 **공개판에서 경로 D 프로젝트를 만들 수단이 없었다.**
    * 위 DoD가 경로 A 시나리오만 봐서 놓친 갭이라, 진입점 자체를 여기서 회귀 고정한다.
    */
+  test("콘솔 홈 목록은 서버 렌더에 실려 온다 — 첫 화면이 /api/projects를 부르지 않는다 (#81)", async ({
+    browser,
+    baseURL,
+  }) => {
+    const user = await createUser(admin, "pf");
+    created.userIds.push(user.id);
+    const context = await browser.newContext({
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const page = await signIn(admin, context, user.email, baseURL!);
+
+    // 목록에 내용이 있어야 "서버가 실어 보냈다"를 확인할 수 있다.
+    await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
+    await page.locator("#snippet-name").fill("프리페치 회귀");
+    await page.getByRole("button", { name: "만들고 연결 코드 복사" }).click();
+    await expect(page.getByText(/연결 코드를 복사했습니다/)).toBeVisible();
+    const created0 = decodeConnection(await page.evaluate(() => navigator.clipboard.readText()));
+    created.projectIds.push(created0!.projectId);
+
+    /*
+      ① 서버가 실어 보냈는가 — HTML **문서 자체**에 이름이 들어 있어야 한다.
+      화면에 보이는지만 보면 클라이언트가 나중에 채운 경우와 구별되지 않는다.
+    */
+    const html = await (await context.request.get(`${baseURL}/`)).text();
+    expect(html, "목록이 서버 렌더 HTML에 포함된다").toContain("프리페치 회귀");
+
+    // ② 첫 화면이 목록을 **다시** 부르지 않는가.
+    const listCalls: string[] = [];
+    page.on("request", (r) => {
+      const url = new URL(r.url());
+      if (r.method() === "GET" && url.pathname === "/api/projects") listCalls.push(url.pathname);
+    });
+
+    await page.goto(`${baseURL}/`);
+    await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toBeVisible();
+    expect(listCalls, "첫 화면은 목록을 다시 부르지 않는다 — 서버가 이미 보냈다").toEqual([]);
+
+    /*
+      ③ **갱신 경로는 살아 있어야 한다.** 프리페치를 넣으면서 `loadProjects()`까지 걷어내면
+      업로드·삭제 후 화면이 낡은 채로 남는다 — 그래서 라우트와 호출부를 둘 다 남겼고,
+      여기서 그 계약을 고정한다.
+    */
+    page.once("dialog", (d) => void d.accept());
+    await page
+      .locator(".c-project", { hasText: "프리페치 회귀" })
+      .getByRole("button", { name: "삭제" })
+      .click();
+    await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toHaveCount(0);
+    expect(listCalls.length, "삭제 뒤에는 목록을 다시 부른다").toBeGreaterThan(0);
+  });
+
   test("경로 D 콘솔 — 생성·연결 코드·토큰 재발급 (#42)", async ({ browser, baseURL }) => {
     const user = await createUser(admin, "d");
     created.userIds.push(user.id);
