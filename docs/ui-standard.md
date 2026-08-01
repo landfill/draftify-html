@@ -17,15 +17,24 @@
 | 네 표면의 **색·타이포·간격·상태·포커스** | ✓ | — |
 
 **산출물(`packages/server/src/routes/export.ts`)의 시각 스타일은 이번 범위에서 인벤토리만
-기록하고 코드는 바꾸지 않는다** (2026-08-02 사용자 결정). 이유는 두 가지다:
+기록하고 코드는 바꾸지 않는다** (2026-08-02 사용자 결정). 이유는 **일정과 절차**다:
 
-1. 산출물은 **단독 HTML·네트워크 요청 0건**(PRD 1.3-4절)이라 어떤 토큰도 외부에서 가져올 수
-   없다. "공통 토큰 공유"의 유일한 구현은 팔레트를 export 빌더에 **문자열로 재복제**하는
-   것인데, 그건 이 문서가 없애려는 드리프트를 한 곳 더 만드는 일이다
-2. #86이 같은 파일의 레이아웃을 갈아엎을 예정이라, 지금 색을 건드리면 확정적으로 충돌한다
+1. **#86이 같은 파일의 레이아웃을 갈아엎을 예정**이라, 지금 색을 건드리면 확정적으로 충돌한다
+2. 산출물의 섹션 구조·ID 체계는 `output-standard.md`·`s1-kickoff-spec.md`의 계약이라
+   레이아웃을 넘어서면 AGENTS.md 4절 절차(킥오프 문서 → 결정 변경 이력 → docs 동기화)가 선행한다
 
-따라서 산출물은 **#86에서 구조가 확정된 뒤 그 위에 시각 언어를 입힌다.** 그때
-`s1-kickoff-spec.md` 결정 변경 이력을 포함한 AGENTS.md 4절 절차가 선행한다.
+> **"네트워크 0건이라 토큰을 공유할 수 없다"는 이유는 틀렸다** (PR #89 리뷰에서 정정).
+> 초안에 그렇게 적었으나 **런타임 요청과 빌드타임 import를 혼동한 것**이다.
+> `export.ts`는 `packages/server` 안에서 돌고 이미 `@mockspec/shared`를 import하며
+> (`export.ts:3`), CSS를 `<style>${VIEWER_CSS}</style>`로 문자열 보간해 내보낸다.
+> 따라서 **4.7절의 `THEME_TOKENS`를 import해 값을 그 문자열에 구워 넣을 수 있고,
+> 결과 HTML은 그대로 네트워크 요청 0건이다.**
+>
+> 이 정정이 중요한 이유: 틀린 이유를 남겨 두면 #86이 팔레트를 손으로 재복제하게 되고,
+> 그것은 이 문서가 F-02로 지적한 드리프트를 한 곳 더 만드는 일이다.
+> **산출물에 시각 언어를 입힐 때는 빌드타임 재사용을 기본으로 삼는다.**
+
+따라서 산출물은 **#86에서 구조가 확정된 뒤 그 위에 시각 언어를 입힌다.**
 
 ---
 
@@ -305,7 +314,8 @@ SDK `styles.ts`에는 0건이다. SDK 패널은 `width: 360px` 고정이라 390p
 뺀 전 토큰이 AA를 통과함을 2절에서 확인했다. SDK·산출물을 여기에 맞춘다.
 
 - 강조색은 **하나** — `--c-accent` / `--c-btn-bg`
-- 상태색은 **세 가지** — danger · ok · (필요 시) warn. 지금 warn 계열은 SDK의
+- 상태색은 danger · ok · (필요 시) warn. **개수를 세지 않는다**(AGENTS.md 7절) — 4.6절 표가
+  정본이다. 지금 warn 계열은 SDK의
   `#fff4e5`/`#b5560a` 한 곳에만 있고 토큰이 없다
 - `--c-faint`는 **F-01에 따라 값을 올린다.** 라이트는 최소 `#64748b`(4.76:1), 다크는 최소
   `#94a3b8`(5.71:1) — 즉 `--c-muted`와 합치는 것이 가장 단순하다. 두 토큰의 존재 이유가
@@ -388,7 +398,8 @@ F-02를 없애는 방법이다. 제약을 먼저 적는다:
 - `apps/web`은 실제 `.css` 파일을 쓰고 Next가 번들한다
 - `packages/server`는 CSS를 **TS 템플릿 문자열**로 내보낸다
 - SDK는 **Shadow DOM 안**이라 `:root`가 닿지 않는다 — `:host`에 선언해야 한다
-- 산출물은 **네트워크 0건**이라 어떤 공유도 불가 (0절)
+- 산출물은 `export.ts`에서 `@mockspec/shared`를 import할 수 있으므로 **빌드타임 재사용이 가능**하다.
+  결과 HTML에 값이 문자열로 구워질 뿐 네트워크 요청은 0건이다 (0절의 정정 참조)
 - 빌드 도구 추가 금지 (AGENTS.md 5절 — turbo/nx 금지)
 
 이 제약 아래 가장 단순한 안:
@@ -471,14 +482,20 @@ F-01을 앞에 두는 이유: 검증된 접근성 결함이고, 다른 무엇에
 # 1) 기준 리비전을 임시 워크트리에 펼쳐 빌드한다 (base는 보통 origin/main)
 git worktree add ../ui-base origin/main
 cd ../ui-base && npm ci && npm run build && npm run build -w @mockspec/web
-npx next start apps/web -p 4401 &
+npx next start apps/web -p 4401 & BASE_PID=$!
 
 # 2) 현재 브랜치도 같은 방식으로 띄운다
 cd - && npm run build && npm run build -w @mockspec/web
-npx next start apps/web -p 4402 &
+npx next start apps/web -p 4402 & HEAD_PID=$!
+
+# 서버를 반드시 거둔다 — 안 그러면 다음 비교가 4401/4402에서 EADDRINUSE로 죽고,
+# 지워진 워크트리를 붙든 프로세스가 남는다
+trap 'kill $BASE_PID $HEAD_PID 2>/dev/null; wait $BASE_PID $HEAD_PID 2>/dev/null' EXIT
 
 # 3) 두 포트를 같은 스크립트로 찍어 비교한다 (아래)
-# 4) 끝나면 워크트리를 지운다 — AGENTS.md 6절 "병합 후 정리"
+
+# 4) 끝나면 서버를 내리고 워크트리를 지운다 — AGENTS.md 6절 "병합 후 정리"
+kill $BASE_PID $HEAD_PID; wait $BASE_PID $HEAD_PID 2>/dev/null
 git worktree remove ../ui-base
 ```
 
