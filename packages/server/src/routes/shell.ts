@@ -116,8 +116,8 @@ button, input { font: inherit; }
 }
 .c-nav-home:hover { border-color: var(--c-border-hover); background: var(--c-surface-2); color: var(--c-text); }
 .c-nav-home.is-active { color: var(--c-accent); border-color: var(--c-accent); }
-/* currentColor라 위 상태 변화를 아이콘이 따라온다. */
-.c-nav-home-icon { width: 11px; height: 11px; fill: currentColor; flex: none; }
+/* currentcolor라 위 상태 변화를 아이콘이 따라온다. */
+.c-nav-home-icon { width: 11px; height: 11px; fill: currentcolor; flex: none; }
 .c-nav-divider { width: 1px; height: 16px; background: var(--c-border-2); flex: none; }
 .c-theme-toggle {
   border: 1px solid var(--c-border-2); background: var(--c-surface); border-radius: 999px;

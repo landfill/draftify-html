@@ -1189,11 +1189,11 @@ ul.g-list li {
   border-color: var(--c-accent);
 }
 
-/* `currentColor`라 위 상태 변화(hover·active)를 아이콘이 따라온다. */
+/* `currentcolor`라 위 상태 변화(hover·active)를 아이콘이 따라온다. */
 .c-nav-home-icon {
   width: 11px;
   height: 11px;
-  fill: currentColor;
+  fill: currentcolor;
   flex: none;
 }
 
