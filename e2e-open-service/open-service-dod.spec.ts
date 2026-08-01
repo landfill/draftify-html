@@ -542,7 +542,7 @@ test.describe("공개 서비스 DoD (W9)", () => {
     // 로그아웃 상태에서는 반대로 나와야 한다 — 정적 페이지도 포함.
     const anon = await browser.newContext();
     const anonPage = await anon.newPage();
-    for (const path of ["/guide", "/faq"]) {
+    for (const path of ["/", "/guide", "/faq"]) {
       await anonPage.goto(`${baseURL}${path}`);
       await expect(
         anonPage.getByRole("link", { name: "로그인" }),
@@ -555,10 +555,35 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
       // #77 — 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이 보여야 한다(사용자 결정).
       // 누르면 로그인 화면으로 가는데, 프로젝트를 보려면 어차피 로그인이 필요하다.
+      const anonConsoleLink = anonPage
+        .locator(".c-header")
+        .getByRole("link", { name: "내 프로젝트" });
       await expect(
-        anonPage.locator(".c-header").getByRole("link", { name: "내 프로젝트" }),
+        anonConsoleLink,
         `${path} 비로그인 헤더에도 프로젝트 목록 링크`,
       ).toBeVisible();
+      await expect(
+        anonConsoleLink,
+        `${path} 비로그인 작업 링크는 랜딩이 아니라 로그인으로 이동`,
+      ).toHaveAttribute("href", "/login");
+
+      if (path === "/") {
+        // 이슈 #85 — 공개 서비스 첫 화면이 로그인 폼이 아니라 서비스 설명이어야 한다.
+        await expect(
+          anonPage.getByRole("heading", { name: "보이는 화면에 설명을 달면, 기획서가 됩니다." }),
+        ).toBeVisible();
+        await expect(anonPage.getByRole("link", { name: "내 프로젝트 시작" })).toHaveAttribute(
+          "href",
+          "/login",
+        );
+        await expect(anonPage.getByRole("link", { name: "샘플 산출물 보기" })).toHaveAttribute(
+          "href",
+          "/sample",
+        );
+        await expect(
+          anonPage.getByRole("link", { name: /사용 가이드에서 확인하기/ }),
+        ).toHaveAttribute("href", "/guide");
+      }
     }
 
     // #77 — 좁은 화면에서 낱말이 통째로 쪼개지던 문제("MockSpec / Cloud", "사용 가 / 이드").
@@ -666,6 +691,14 @@ test.describe("공개 서비스 DoD (W9)", () => {
     });
     const page = await signIn(admin, context, user.email, baseURL!);
 
+    // 이슈 #85 — 첫 사용자는 프로젝트가 없으므로 생성 패널이 먼저, 열린 상태로 보인다.
+    const firstCreate = page.locator(".c-new-project-section");
+    const firstList = page.locator(".c-project-section");
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
+    const firstCreateBox = await firstCreate.boundingBox();
+    const firstListBox = await firstList.boundingBox();
+    expect(firstCreateBox!.y, "빈 목록에서는 새 프로젝트가 먼저").toBeLessThan(firstListBox!.y);
+
     // 목록에 내용이 있어야 "서버가 실어 보냈다"를 확인할 수 있다.
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
     await page.locator("#snippet-name").fill("프리페치 회귀");
@@ -690,6 +723,14 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     await page.goto(`${baseURL}/`);
     await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toBeVisible();
+
+    // 재방문자는 목록이 먼저이고 생성 폼은 접혀 있어, 프로젝트가 많아도 폼을 지나치지 않는다.
+    await expect(page.locator(".c-new-project")).not.toHaveAttribute("open", "");
+    const returningListBox = await page.locator(".c-project-section").boundingBox();
+    const returningCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    expect(returningListBox!.y, "재방문에서는 프로젝트 목록이 먼저").toBeLessThan(
+      returningCreateBox!.y,
+    );
 
     /*
       **hydration이 끝난 뒤에 단언한다** (PR #84 CodeRabbit 지적). 서버 렌더된 `.c-project`는

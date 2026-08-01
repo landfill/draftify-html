@@ -44,6 +44,7 @@ async function copyOrPrompt(text: string, promptLabel: string): Promise<boolean>
  */
 export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListItem[] }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [newProjectOpen, setNewProjectOpen] = useState(initialProjects.length === 0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [projects, setProjects] = useState<ProjectListItem[]>(initialProjects);
   const [uploadStatus, setUploadStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -326,10 +327,27 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
   }
 
   return (
-    <main className="c-shell">
-      <section className="c-section">
-        <h2 className="c-section-title">새 프로젝트 시작</h2>
-        <div className="c-card">
+    <main
+      className={`c-shell c-console-home ${projects.length === 0 ? "is-empty" : "has-projects"}`}
+    >
+      <section className="c-section c-new-project-section">
+        <details
+          className="c-new-project"
+          open={newProjectOpen}
+          onToggle={(event) => setNewProjectOpen(event.currentTarget.open)}
+        >
+          <summary className="c-new-project-summary">
+            <h2 className="c-section-title">
+              <span>새 프로젝트 시작</span>
+              <span className="c-new-project-description">
+                ZIP을 업로드하거나 브라우저 확장으로 내 화면을 연결합니다.
+              </span>
+              <span className="c-new-project-toggle" aria-hidden="true">
+                열기
+              </span>
+            </h2>
+          </summary>
+          <div className="c-card c-new-project-card">
           <div className="c-tabs" role="tablist" aria-label="새 프로젝트 시작 방식">
             {NEW_PROJECT_TABS.map((label, i) => (
               <button
@@ -475,10 +493,11 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
               <p className={`c-status is-${snippetStatus.kind}`}>{snippetStatus.text}</p>
             ) : null}
           </div>
-        </div>
+          </div>
+        </details>
       </section>
 
-      <section className="c-card">
+      <section className="c-card c-project-section">
         <h2 className="c-section-title">
           프로젝트 목록 <span className="c-count">{projects.length || ""}</span>
         </h2>

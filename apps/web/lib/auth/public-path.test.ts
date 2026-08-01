@@ -3,6 +3,7 @@ import { isPublicPath } from "./public-path.js";
 
 describe("isPublicPath", () => {
   it("정확 경로는 공개", () => {
+    expect(isPublicPath("/")).toBe(true);
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/guide")).toBe(true);
     expect(isPublicPath("/faq")).toBe(true);
@@ -20,8 +21,8 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/download-fake")).toBe(false);
   });
 
-  it("목업·콘솔은 비공개", () => {
-    expect(isPublicPath("/")).toBe(false);
+  it("목업·API는 비공개", () => {
     expect(isPublicPath("/m/prj_abc1234567")).toBe(false);
+    expect(isPublicPath("/api/projects")).toBe(false);
   });
 });
