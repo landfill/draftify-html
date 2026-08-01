@@ -39,20 +39,20 @@ describe("updateSession — 미인증 게이트", () => {
     expect(withToken.status).toBe(200);
   });
 
-  it("미인증 페이지는 /login으로 리다이렉트", async () => {
-    const res = await updateSession(req("/"));
+  it("미인증 보호 페이지는 /login으로 리다이렉트", async () => {
+    const res = await updateSession(req("/m/prj_x/"));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login");
   });
 
   it("공개 페이지는 통과", async () => {
-    for (const path of ["/login", "/guide", "/faq", "/sample"]) {
+    for (const path of ["/", "/login", "/guide", "/faq", "/sample"]) {
       expect((await updateSession(req(path))).status).toBe(200);
     }
   });
 
   it("Bearer가 있어도 페이지 경로는 로그인으로 보낸다 (API 전용 우회)", async () => {
-    const res = await updateSession(req("/", { authorization: "Bearer tok_abc" }));
+    const res = await updateSession(req("/m/prj_x/", { authorization: "Bearer tok_abc" }));
     expect(res.status).toBe(307);
   });
 });

@@ -542,7 +542,7 @@ test.describe("공개 서비스 DoD (W9)", () => {
     // 로그아웃 상태에서는 반대로 나와야 한다 — 정적 페이지도 포함.
     const anon = await browser.newContext();
     const anonPage = await anon.newPage();
-    for (const path of ["/guide", "/faq"]) {
+    for (const path of ["/", "/guide", "/faq"]) {
       await anonPage.goto(`${baseURL}${path}`);
       await expect(
         anonPage.getByRole("link", { name: "로그인" }),
@@ -555,10 +555,47 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
       // #77 — 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이 보여야 한다(사용자 결정).
       // 누르면 로그인 화면으로 가는데, 프로젝트를 보려면 어차피 로그인이 필요하다.
+      const anonConsoleLink = anonPage
+        .locator(".c-header")
+        .getByRole("link", { name: "내 프로젝트" });
       await expect(
-        anonPage.locator(".c-header").getByRole("link", { name: "내 프로젝트" }),
+        anonConsoleLink,
         `${path} 비로그인 헤더에도 프로젝트 목록 링크`,
       ).toBeVisible();
+      await expect(
+        anonConsoleLink,
+        `${path} 비로그인 작업 링크는 랜딩이 아니라 로그인으로 이동`,
+      ).toHaveAttribute("href", "/login");
+
+      if (path === "/") {
+        // 이슈 #85 — 공개 서비스 첫 화면이 로그인 폼이 아니라 서비스 설명이어야 한다.
+        await expect(
+          anonPage.getByRole("heading", { name: "보이는 화면에 설명을 달면, 기획서가 됩니다." }),
+        ).toBeVisible();
+        await expect(anonPage.getByRole("link", { name: "내 프로젝트 시작" })).toHaveAttribute(
+          "href",
+          "/login",
+        );
+        await expect(anonPage.getByRole("link", { name: "샘플 산출물 보기" })).toHaveAttribute(
+          "href",
+          "/sample",
+        );
+        await expect(
+          anonPage.getByRole("link", { name: /사용 가이드에서 확인하기/ }),
+        ).toHaveAttribute("href", "/guide");
+
+        // PR #88 Codex P2 — max-width 컨테이너에 viewport 기반 패딩을 넣으면 초광폭에서
+        // 오히려 콘텐츠가 찌그러진다. 2400px에서도 두 시작 경로가 충분한 폭을 유지해야 한다.
+        await anonPage.setViewportSize({ width: 2400, height: 1000 });
+        const pathCards = anonPage.locator(".l-path-grid article");
+        await expect(pathCards).toHaveCount(2);
+        const firstPathBox = await pathCards.nth(0).boundingBox();
+        const secondPathBox = await pathCards.nth(1).boundingBox();
+        expect(firstPathBox!.width, "초광폭에서도 시작 경로 카드 폭 유지").toBeGreaterThan(400);
+        expect(secondPathBox!.x + secondPathBox!.width, "시작 경로가 화면 밖으로 나가지 않음")
+          .toBeLessThanOrEqual(2400);
+        await anonPage.setViewportSize({ width: 1280, height: 720 });
+      }
     }
 
     // #77 — 좁은 화면에서 낱말이 통째로 쪼개지던 문제("MockSpec / Cloud", "사용 가 / 이드").
@@ -666,6 +703,17 @@ test.describe("공개 서비스 DoD (W9)", () => {
     });
     const page = await signIn(admin, context, user.email, baseURL!);
 
+    // 이슈 #85 — 첫 사용자는 프로젝트가 없으므로 생성 패널이 먼저, 열린 상태로 보인다.
+    const firstCreate = page.locator(".c-new-project-section");
+    const firstList = page.locator(".c-project-section");
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
+    const firstCreateBox = await firstCreate.boundingBox();
+    const firstListBox = await firstList.boundingBox();
+    expect(firstCreateBox!.y, "빈 목록에서는 새 프로젝트가 먼저").toBeLessThan(firstListBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-new-project-section/,
+    );
+
     // 목록에 내용이 있어야 "서버가 실어 보냈다"를 확인할 수 있다.
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
     await page.locator("#snippet-name").fill("프리페치 회귀");
@@ -673,6 +721,18 @@ test.describe("공개 서비스 DoD (W9)", () => {
     await expect(page.getByText(/연결 코드를 복사했습니다/)).toBeVisible();
     const created0 = decodeConnection(await page.evaluate(() => navigator.clipboard.readText()));
     created.projectIds.push(created0!.projectId);
+
+    // PR #88 Codex P2 — 새로고침하지 않아도 첫 프로젝트 생성 즉시 재방문 레이아웃이 된다.
+    await expect(page.locator(".c-new-project")).not.toHaveAttribute("open", "");
+    const creationFeedback = page.locator(".c-creation-feedback");
+    await expect(creationFeedback).toContainText(/연결 코드를 복사했습니다/);
+    await expect(creationFeedback).toBeFocused();
+    const liveListBox = await page.locator(".c-project-section").boundingBox();
+    const liveCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    expect(liveListBox!.y, "첫 생성 직후 프로젝트 목록이 먼저").toBeLessThan(liveCreateBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-project-section/,
+    );
 
     /*
       ① 서버가 실어 보냈는가 — HTML **문서 자체**에 이름이 들어 있어야 한다.
@@ -691,14 +751,25 @@ test.describe("공개 서비스 DoD (W9)", () => {
     await page.goto(`${baseURL}/`);
     await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toBeVisible();
 
+    // 재방문자는 목록이 먼저이고 생성 폼은 접혀 있어, 프로젝트가 많아도 폼을 지나치지 않는다.
+    await expect(page.locator(".c-new-project")).not.toHaveAttribute("open", "");
+    const returningListBox = await page.locator(".c-project-section").boundingBox();
+    const returningCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    expect(returningListBox!.y, "재방문에서는 프로젝트 목록이 먼저").toBeLessThan(
+      returningCreateBox!.y,
+    );
+
     /*
       **hydration이 끝난 뒤에 단언한다** (PR #84 CodeRabbit 지적). 서버 렌더된 `.c-project`는
       hydration 전에도 보이므로, 요소가 나타나자마자 검사하면 누군가 초기 `useEffect` 조회를
       되살렸을 때 그 요청이 아직 나가지 않아 **회귀를 놓친다.**
 
-      탭 클릭이 반응한다는 것이 hydration 완료의 증거다(이벤트 핸들러가 붙었다). 그 뒤
-      `networkidle`까지 기다려 지연된 요청도 걸리게 한다.
+      탭 클릭이 반응한다는 것이 hydration 완료의 증거다(이벤트 핸들러가 붙었다). 단,
+      재방문 생성 패널은 접혀 있으므로 summary를 먼저 열어야 내부 탭이 actionable하다
+      (PR #88 Codex P2). 그 뒤 `networkidle`까지 기다려 지연된 요청도 걸리게 한다.
     */
+    await page.locator(".c-new-project-summary").click();
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
     await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
     await expect(page.getByText("1 · 확장 설치")).toBeVisible();
     await page.waitForLoadState("networkidle");
@@ -716,6 +787,13 @@ test.describe("공개 서비스 DoD (W9)", () => {
       .getByRole("button", { name: "삭제" })
       .click();
     await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toHaveCount(0);
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
+    const emptyCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    const emptyListBox = await page.locator(".c-project-section").boundingBox();
+    expect(emptyCreateBox!.y, "마지막 삭제 직후 새 프로젝트가 먼저").toBeLessThan(emptyListBox!.y);
+    await expect(page.locator("main.c-console-home > section").first()).toHaveClass(
+      /c-new-project-section/,
+    );
     expect(listCalls.length, "삭제 뒤에는 목록을 다시 부른다").toBeGreaterThan(0);
   });
 

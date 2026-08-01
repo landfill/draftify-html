@@ -9,7 +9,8 @@ export const PUBLIC_PATH_BASES = [
 ] as const;
 
 export function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATH_BASES.some(
+  // `/`는 비로그인 랜딩이지만 `/m/*`·콘솔 API까지 함께 열리면 안 된다 (이슈 #85).
+  return pathname === "/" || PUBLIC_PATH_BASES.some(
     (base) => pathname === base || pathname.startsWith(`${base}/`),
   );
 }

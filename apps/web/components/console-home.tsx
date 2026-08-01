@@ -44,11 +44,17 @@ async function copyOrPrompt(text: string, promptLabel: string): Promise<boolean>
  */
 export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListItem[] }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [newProjectOpen, setNewProjectOpen] = useState(initialProjects.length === 0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const newProjectSummaryRef = useRef<HTMLElement | null>(null);
+  const creationFeedbackRef = useRef<HTMLDivElement | null>(null);
+  const projectCountRef = useRef(initialProjects.length);
   const [projects, setProjects] = useState<ProjectListItem[]>(initialProjects);
-  const [uploadStatus, setUploadStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
-    null,
-  );
+  const [uploadStatus, setUploadStatus] = useState<{
+    kind: "ok" | "error";
+    text: string;
+    href?: string;
+  } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [snippetStatus, setSnippetStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
     null,
@@ -86,7 +92,20 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
   const loadProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
     if (!res.ok) throw new Error("목록을 불러오지 못했습니다.");
-    setProjects((await res.json()) as ProjectListItem[]);
+    const nextProjects = (await res.json()) as ProjectListItem[];
+    const crossedEmptyBoundary =
+      (projectCountRef.current === 0) !== (nextProjects.length === 0);
+    projectCountRef.current = nextProjects.length;
+    setProjects(nextProjects);
+    // 첫 생성 뒤에는 접고, 마지막 삭제 뒤에는 연다. 같은 상태의 단순 갱신은 사용자 선택 유지.
+    if (crossedEmptyBoundary) {
+      const nextIsEmpty = nextProjects.length === 0;
+      setNewProjectOpen(nextIsEmpty);
+      requestAnimationFrame(() => {
+        if (nextIsEmpty) newProjectSummaryRef.current?.focus();
+        else creationFeedbackRef.current?.focus();
+      });
+    }
   }, []);
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
@@ -141,20 +160,12 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
 
       setUploadStatus({
         kind: "ok",
-        text: `업로드 완료 (${extract.fileCount}개 파일).${stripped}${excluded} `,
+        text: `업로드 완료 (${extract.fileCount}개 파일).${stripped}${excluded}`,
+        href: mockupUrl,
       });
       createdProjectId = null; // 여기까지 오면 목업이 활성화됐다 — 정리 대상이 아니다.
       form.reset();
       await loadProjects();
-
-      const link = document.createElement("a");
-      link.href = mockupUrl;
-      link.textContent = "편집 열기 →";
-      const statusEl = document.getElementById("upload-status");
-      if (statusEl) {
-        statusEl.appendChild(document.createTextNode(" "));
-        statusEl.appendChild(link);
-      }
     } catch (err) {
       // 목업이 활성화되지 못한 프로젝트는 남겨 두면 프로젝트 수 쿼터와 Storage만 잡아먹는다(W8).
       // 편집이 불가능한 껍데기라 삭제해도 잃을 것이 없다.
@@ -325,11 +336,51 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
     tabRefs.current[next]?.focus();
   }
 
-  return (
-    <main className="c-shell">
-      <section className="c-section">
-        <h2 className="c-section-title">새 프로젝트 시작</h2>
-        <div className="c-card">
+  const uploadFeedback = uploadStatus ? (
+    <p id="upload-status" className={`c-status is-${uploadStatus.kind}`}>
+      {uploadStatus.text}
+      {uploadStatus.href ? (
+        <>
+          {" "}
+          <a href={uploadStatus.href}>편집 열기 →</a>
+        </>
+      ) : null}
+    </p>
+  ) : null;
+  const snippetFeedback = snippetStatus ? (
+    <p className={`c-status is-${snippetStatus.kind}`}>{snippetStatus.text}</p>
+  ) : null;
+  const creationFeedback = activeTab === 0 ? uploadFeedback : snippetFeedback;
+
+  const newProjectSection = (
+    <section key="new-project" className="c-section c-new-project-section">
+        {!newProjectOpen && creationFeedback ? (
+          <div
+            ref={creationFeedbackRef}
+            className="c-creation-feedback"
+            role="status"
+            tabIndex={-1}
+          >
+            {creationFeedback}
+          </div>
+        ) : null}
+        <details
+          className="c-new-project"
+          open={newProjectOpen}
+          onToggle={(event) => setNewProjectOpen(event.currentTarget.open)}
+        >
+          <summary ref={newProjectSummaryRef} className="c-new-project-summary">
+            <h2 className="c-section-title">
+              <span>새 프로젝트 시작</span>
+              <span className="c-new-project-description">
+                ZIP을 업로드하거나 브라우저 확장으로 내 화면을 연결합니다.
+              </span>
+              <span className="c-new-project-toggle" aria-hidden="true">
+                열기
+              </span>
+            </h2>
+          </summary>
+          <div className="c-card c-new-project-card">
           <div className="c-tabs" role="tablist" aria-label="새 프로젝트 시작 방식">
             {NEW_PROJECT_TABS.map((label, i) => (
               <button
@@ -382,11 +433,7 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
                 {uploading ? "업로드 중…" : "업로드"}
               </button>
             </form>
-            {uploadStatus ? (
-              <p id="upload-status" className={`c-status is-${uploadStatus.kind}`}>
-                {uploadStatus.text}
-              </p>
-            ) : null}
+            {newProjectOpen ? uploadFeedback : null}
           </div>
 
           <div
@@ -471,14 +518,15 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
                 {creatingSnippet ? "만드는 중…" : "만들고 연결 코드 복사"}
               </button>
             </form>
-            {snippetStatus ? (
-              <p className={`c-status is-${snippetStatus.kind}`}>{snippetStatus.text}</p>
-            ) : null}
+            {newProjectOpen ? snippetFeedback : null}
           </div>
-        </div>
-      </section>
+          </div>
+        </details>
+    </section>
+  );
 
-      <section className="c-card">
+  const projectSection = (
+    <section key="project-list" className="c-card c-project-section">
         <h2 className="c-section-title">
           프로젝트 목록 <span className="c-count">{projects.length || ""}</span>
         </h2>
@@ -567,7 +615,24 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
             ))}
           </div>
         )}
-      </section>
+    </section>
+  );
+
+  return (
+    <main
+      className={`c-shell c-console-home ${projects.length === 0 ? "is-empty" : "has-projects"}`}
+    >
+      {projects.length === 0 ? (
+        <>
+          {newProjectSection}
+          {projectSection}
+        </>
+      ) : (
+        <>
+          {projectSection}
+          {newProjectSection}
+        </>
+      )}
     </main>
   );
 }
