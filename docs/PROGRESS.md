@@ -77,7 +77,7 @@
 - [x] T85-3 콘솔 우선순위 — 빈 상태는 생성 폼 우선·펼침, 프로젝트가 있으면 목록 우선·생성 폼 접힘
 - [x] T85-4 인증·헤더 회귀 — `/`만 공개 경로로 열고 `/m`·`/api` 보호 유지, 비로그인 `내 프로젝트`는 `/login`으로 연결
 - [x] T85-5 로컬 검증 — typecheck·전체 빌드·vitest·공개판 E2E 목록 컴파일·390~2400px 반응형/다크 모드 시각 검수·가로 오버플로 검사
-- [ ] T85-6 PR·Preview·main 병합 — **PR #88 생성(Ready for review), Codex P2 2건 반영**, 후속 CI·재리뷰·main 병합 대기. main 병합은 건별 명시적 동의 필요
+- [ ] T85-6 PR·Preview·main 병합 — **PR #88 생성(Ready), Codex P2 2건 반영, 수정 커밋 `89ab1d9` CI·Vercel·PR Agent 통과**, 재리뷰·스레드 정리·main 병합 대기. main 병합은 건별 명시적 동의 필요
 
 ## 공개판 확장 ZIP 배포 WBS 체크리스트 (이슈 #43, 2026-07-31 착수 — **완료·main 병합**)
 
@@ -178,8 +178,8 @@
 - 검증: `npm run typecheck` 통과, 루트 빌드와 `@mockspec/web` 프로덕션 빌드 통과, vitest **342 passed·13 skipped**, 공개판 Playwright **8본 목록 컴파일** 통과. 실 브라우저에서 1440·720·390px 라이트/다크를 확인했고 세 너비 모두 가로 오버플로 0이었다. `git diff --check`도 통과했다. 빌드의 기존 `single-file-core` `import.meta` IIFE 경고 외 신규 경고는 없다.
 - PR: 커밋 `1f1d048`을 푸시하고 **PR #88**을 열어 `Closes #85`로 이슈를 연결했다. 처음에는 게시 스킬의 기본값을 따라 Draft로 생성했지만, 이 저장소의 기존 교훈(리뷰 봇을 막으므로 Ready로 올릴 것)과 사용자 지적에 따라 즉시 **Ready for review**로 전환했다. main 병합은 하지 않았다.
 - 리뷰: Codex P2 **2건 모두 타당해 반영했다.** ① `loadProjects()`가 프로젝트 수의 0↔1 경계를 넘을 때 생성 패널도 동기화해 첫 생성 직후 접고 마지막 삭제 직후 연다. 같은 비어 있지 않은 목록끼리의 갱신은 사용자가 직접 정한 열림 상태를 유지한다. ② `max-width: 1180px`인 시작 경로 섹션에서 뷰포트 기반 좌우 패딩을 제거하고 컨테이너 내부 32px로 고정해 초광폭 축소를 막았다. E2E에 새로고침 없는 생성/삭제 전환과 2400px 카드 폭 회귀를 추가했다.
-- 리뷰 후 검증: typecheck·전체 빌드·vitest **342 passed·13 skipped**·Playwright **8본 목록 컴파일**·`git diff --check` 통과. 실 Chromium 2400px에서 카드가 각각 **550px**, 문서 `scrollWidth === clientWidth === 2400`이었다. CodeRabbit은 사용량 제한으로 실제 리뷰를 수행하지 못했다.
-- 다음 할 일: PR #88 후속 CI·재리뷰를 확인하고 실제 Supabase 세션으로 빈 상태/재방문 상태를 검증한다. 리뷰 스레드 답글·해결 처리 후 main 병합은 별도 명시적 동의를 받는다.
+- 리뷰 후 검증: typecheck·전체 빌드·vitest **342 passed·13 skipped**·Playwright **8본 목록 컴파일**·`git diff --check` 통과. 실 Chromium 2400px에서 카드가 각각 **550px**, 문서 `scrollWidth === clientWidth === 2400`이었다. 수정 커밋 `89ab1d9`의 **CI 2본·Vercel Preview·PR Agent가 모두 통과**했다. CodeRabbit은 사용량 제한으로 실제 리뷰를 수행하지 못했다.
+- 다음 할 일: PR #88 재리뷰와 스레드 정리, 실제 Supabase 세션의 빈 상태/재방문 상태 검증. 이후 main 병합은 별도 명시적 동의를 받는다.
 - 막힌 지점: 코드 구현은 없음. 이 작업 환경에는 `apps/web/.env.local`이 없어 실제 Supabase 연동 E2E는 실행하지 못했고 Playwright 목록 컴파일까지만 확인했다. main 병합은 사용자 동의 대기.
 
 ### 2026-08-01 — #81 콘솔 홈 RSC 프리페치 (PR #84 병합) + 디자인 이슈 2건 등록
