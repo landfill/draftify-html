@@ -16,12 +16,7 @@ import {
   readAsset,
 } from "./projectStore.js";
 import { issueToken, verifyToken, revokeToken, hasToken } from "./tokenStore.js";
-import {
-  appendExportRecord,
-  readExportRecords,
-  exportSummary,
-  exportSummaries,
-} from "./exportStore.js";
+import { appendExportRecord, readExportRecords, exportSummary } from "./exportStore.js";
 import { listProjectsForConsole } from "./projectList.js";
 
 loadWebEnvLocal();
@@ -159,11 +154,11 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
     });
   });
 
-  it("listProjectsForConsole — 요약을 한 번에 모으고 0회 프로젝트도 빠뜨리지 않는다 (#81)", async () => {
+  it("listProjectsForConsole — RSC와 라우트가 함께 쓰는 목록 형태 (#81)", async () => {
     // 두 프로젝트: 하나는 export 2회, 하나는 0회. 0회가 목록에서 사라지면 안 된다.
-    const twice = await newProject("요약 일괄 A", { type: "snippet" });
+    const twice = await newProject("요약 A", { type: "snippet" });
     projectIds.push(twice.id);
-    const never = await newProject("요약 일괄 B", { type: "snippet" });
+    const never = await newProject("요약 B", { type: "snippet" });
     projectIds.push(never.id);
 
     const first = await appendExportRecord(userDb, twice.id, {
@@ -177,22 +172,13 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
       masked: true,
     });
 
-    const summaries = await exportSummaries(userDb, [twice.id, never.id]);
-    expect(summaries.get(twice.id)).toEqual({
-      exportCount: 2,
-      // 가장 마지막 것 — 두 레코드 중 큰 createdAt
-      lastExportAt: first.createdAt > second.createdAt ? first.createdAt : second.createdAt,
-    });
-    // export가 없는 프로젝트는 맵에 담기지 않는다(호출부가 0으로 채운다).
-    expect(summaries.has(never.id)).toBe(false);
-
-    // 빈 입력에 쿼리를 날리지 않는다 — `.in()`에 빈 배열을 주면 결과가 비는 대신 왕복만 쓴다.
-    expect((await exportSummaries(userDb, [])).size).toBe(0);
-
-    // 조합 함수는 0회를 exportCount: 0으로 채워 넣는다 (라우트·RSC가 같이 쓰는 계약).
     const listed = await listProjectsForConsole(userDb);
     const byId = new Map(listed.map((p) => [p.id, p]));
     expect(byId.get(twice.id)?.exportCount).toBe(2);
+    expect(byId.get(twice.id)?.lastExportAt).toBe(
+      first.createdAt > second.createdAt ? first.createdAt : second.createdAt,
+    );
+    // export가 0회인 프로젝트도 목록에 남고, 마지막 시각은 비어 있다.
     expect(byId.get(never.id)?.exportCount).toBe(0);
     expect(byId.get(never.id)?.lastExportAt).toBeUndefined();
   });

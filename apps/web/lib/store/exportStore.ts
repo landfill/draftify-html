@@ -53,48 +53,21 @@ export async function appendExportRecord(
 
 export type ExportSummary = { exportCount: number; lastExportAt?: string };
 
-/** 콘솔 목록용 요약 (단건). 여러 건은 아래 `exportSummaries`를 쓴다. */
+/**
+ * 콘솔 목록용 요약.
+ *
+ * **프로젝트별로 부른다(1 + N 왕복).** 이걸 `.in()` 한 방으로 합치는 시도를 PR #84에서
+ * 했다가 철회했다 — PostgREST가 돌려주는 행 수에는 상한이 있고(호스팅 Supabase 기본
+ * 1,000), 넘으면 **오류 없이 잘린 결과**가 온다. 여러 프로젝트를 합치면 그 상한이
+ * *사용자 전체 export 합계*에 걸려 **각 프로젝트가 개별 한도 아래인데도** `exportCount`가
+ * 조용히 틀리게 된다. export 이력에는 개수 한도가 없어(레이트리밋만 시간당 30회) 누적되면
+ * 반드시 도달하는 경로다.
+ *
+ * 제대로 합치려면 DB가 `group by`로 집계해야 한다(RPC + 마이그레이션). 목록 성능이 실제로
+ * 문제가 되면 그때 별건으로 한다 — 조용히 틀린 숫자를 보여 주는 것보다 왕복이 나은 거래다.
+ */
 export async function exportSummary(db: Db, projectId: string): Promise<ExportSummary> {
   const records = await readExportRecords(db, projectId);
   const last = records[records.length - 1];
   return { exportCount: records.length, ...(last ? { lastExportAt: last.createdAt } : {}) };
-}
-
-/**
- * 여러 프로젝트의 요약을 **한 번의 쿼리로** 가져온다 (이슈 #81).
- *
- * 프로젝트마다 `exportSummary()`를 부르면 1 + N 왕복이 된다. 왕복 단가가 ~17ms까지
- * 내려온 지금도(#71 리전 고정) 프로젝트가 20개면 그대로 20번이고, RLS가 매 요청
- * 부모 `projects` 소유권 서브쿼리를 다시 돈다.
- *
- * 이력 **전체**가 아니라 집계만 필요하므로 `id`·`bytes`·`masked`는 가져오지 않는다.
- * 반환에 없는 projectId는 export 0회다(호출부가 기본값을 채운다).
- */
-export async function exportSummaries(
-  db: Db,
-  projectIds: readonly string[],
-): Promise<Map<string, ExportSummary>> {
-  const out = new Map<string, ExportSummary>();
-  if (projectIds.length === 0) return out;
-
-  const { data, error } = await db
-    .from("project_exports")
-    .select("project_id, created_at")
-    .in("project_id", [...projectIds]);
-  if (error) throw new Error(`exportSummaries failed: ${error.message}`);
-
-  for (const row of data ?? []) {
-    const at = new Date(row.created_at).toISOString();
-    const prev = out.get(row.project_id);
-    if (!prev) {
-      out.set(row.project_id, { exportCount: 1, lastExportAt: at });
-      continue;
-    }
-    // ISO 8601은 형식이 같으면 사전순 = 시간순이라 문자열 비교로 최댓값을 고를 수 있다.
-    out.set(row.project_id, {
-      exportCount: prev.exportCount + 1,
-      lastExportAt: prev.lastExportAt && prev.lastExportAt > at ? prev.lastExportAt : at,
-    });
-  }
-  return out;
 }

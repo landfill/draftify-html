@@ -690,6 +690,19 @@ test.describe("공개 서비스 DoD (W9)", () => {
 
     await page.goto(`${baseURL}/`);
     await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toBeVisible();
+
+    /*
+      **hydration이 끝난 뒤에 단언한다** (PR #84 CodeRabbit 지적). 서버 렌더된 `.c-project`는
+      hydration 전에도 보이므로, 요소가 나타나자마자 검사하면 누군가 초기 `useEffect` 조회를
+      되살렸을 때 그 요청이 아직 나가지 않아 **회귀를 놓친다.**
+
+      탭 클릭이 반응한다는 것이 hydration 완료의 증거다(이벤트 핸들러가 붙었다). 그 뒤
+      `networkidle`까지 기다려 지연된 요청도 걸리게 한다.
+    */
+    await page.getByRole("tab", { name: "내 화면에서 편집 (확장)" }).click();
+    await expect(page.getByText("1 · 확장 설치")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
     expect(listCalls, "첫 화면은 목록을 다시 부르지 않는다 — 서버가 이미 보냈다").toEqual([]);
 
     /*

@@ -4,17 +4,10 @@ import { useCallback, useRef, useState } from "react";
 import { encodeConnection, type ProjectListItem } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 import { LIMITS, formatMb } from "@/lib/abuse/limits.js";
+import { formatDate } from "@/lib/format.js";
 import { EXTENSION_RELEASE } from "@/lib/extension-release.js";
 import { uploadMockupZip, completeMockupIntake } from "@/lib/intake/upload.js";
 import type { Db } from "@/lib/store/ids.js";
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("ko-KR");
-  } catch {
-    return iso;
-  }
-}
 
 function mockupHref(projectId: string): string {
   return `/m/${projectId}/`;
