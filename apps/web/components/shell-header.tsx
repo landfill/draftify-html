@@ -71,10 +71,25 @@ export function ShellHeader({ active, email }: { active?: NavActive; email?: str
           비로그인 상태에서도 보여 준다: 로그인 없이 가이드를 읽던 사람에게도 돌아갈 길이
           있어야 한다. `/`는 보호 경로라 누르면 로그인 화면으로 가는데, 프로젝트를 보려면
           어차피 로그인이 필요하므로 그게 자연스러운 다음 걸음이다.
+
+          **문서 메뉴와 다른 형태여야 한다 (이슈 #82).** #77에서 링크만 추가했더니 가이드·
+          샘플·FAQ와 같은 회색 텍스트라 넷 중 하나로 묻혔고, "돌아가는 길"로 인식되지 않았다.
+          테두리·아이콘으로 액션임을 드러내고, 아래 구분선으로 성격이 다름을 보인다.
         */}
-        <Link href="/" className={navCls("home")}>
+        <Link
+          href="/"
+          className={`c-nav-home${active === "home" ? " is-active" : ""}`}
+        >
+          <svg className="c-nav-home-icon" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+            <rect x="0.5" y="0.5" width="5.5" height="5.5" rx="1.2" />
+            <rect x="8" y="0.5" width="5.5" height="5.5" rx="1.2" />
+            <rect x="0.5" y="8" width="5.5" height="5.5" rx="1.2" />
+            <rect x="8" y="8" width="5.5" height="5.5" rx="1.2" />
+          </svg>
           내 프로젝트
         </Link>
+        {/* 장식이므로 스크린리더에서 감춘다 — 읽히면 메뉴 사이에 의미 없는 잡음이 된다. */}
+        <span className="c-nav-divider" aria-hidden="true" />
         <Link href="/guide" className={navCls("guide")}>
           사용 가이드
         </Link>

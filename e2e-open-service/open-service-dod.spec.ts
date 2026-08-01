@@ -578,30 +578,54 @@ test.describe("공개 서비스 DoD (W9)", () => {
         // 텍스트가 있는 항목 전부를 본다(아이콘뿐인 테마 토글은 textContent가 비어 제외된다).
         const items = [...document.querySelectorAll<HTMLElement>(".c-header a, .c-header button, .c-header span")]
           .filter((n) => (n.textContent ?? "").trim().length > 0);
+        /*
+          "낱말이 갈렸는가"는 **텍스트가 몇 줄에 걸쳤는가**로 판정한다. 지금까지 세 가지
+          오탐을 밟았다:
+            ① 요소 **높이**로 재기 → 버튼의 padding을 줄바꿈으로 오인 (#77)
+            ② Range 사각형 **개수**로 재기 → `text-overflow: ellipsis`가 같은 줄을 여러
+               조각으로 나눈 것까지 잡음 (#77)
+            ③ 요소 **전체**를 `selectNodeContents` → 인라인 자식(아이콘 `<svg>`)이 텍스트와
+               세로 중앙 정렬돼 top이 몇 px 다른 것을 줄바꿈으로 오인 (#82, [내 프로젝트])
+          그래서 **텍스트 노드만** 모아 그 top이 서로 다를 때만 갈린 것으로 본다.
+        */
+        const splitTexts = (root: HTMLElement): boolean => {
+          const tops = new Set<number>();
+          for (const node of root.childNodes) {
+            if (node.nodeType !== Node.TEXT_NODE) continue;
+            if (!(node.textContent ?? "").trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            for (const r of range.getClientRects()) tops.add(Math.round(r.top));
+          }
+          return tops.size > 1;
+        };
+
+        /*
+          **판정식을 먼저 역검증한다.** #77에서 판정을 두 번 갈아엎었고 #82에서 또 한 번
+          틀렸다 — 판정식을 믿을 수 없으면 "낱말 분리 0건"은 아무것도 보장하지 않는다.
+          일부러 좁혀 줄을 넘긴 요소를 만들어, 이 검사가 그것을 잡아내는지 확인한다.
+        */
+        const probe = document.createElement("div");
+        probe.style.cssText =
+          "position:fixed;left:-9999px;top:0;width:20px;white-space:normal;font-size:13px";
+        probe.textContent = "줄바꿈 역검증용 긴 문자열";
+        document.body.appendChild(probe);
+        const detectorWorks = splitTexts(probe);
+        probe.remove();
+
         return {
-          /*
-            "낱말이 갈렸는가"는 **텍스트가 몇 줄에 걸쳤는가**로 판정한다. 두 가지 오탐을
-            피해야 한다: 요소 높이로 재면 버튼의 padding을 줄바꿈으로 오인하고, Range의
-            사각형 **개수**로 재면 `text-overflow: ellipsis`가 텍스트를 여러 조각으로
-            나눈 것까지 잡는다(같은 줄인데도 2개가 나온다). 조각들의 top이 서로 다를 때만
-            실제로 줄이 갈린 것이다.
-          */
-          split: items
-            .filter((n) => {
-              const range = document.createRange();
-              range.selectNodeContents(n);
-              const tops = new Set(
-                [...range.getClientRects()].map((r) => Math.round(r.top)),
-              );
-              return tops.size > 1;
-            })
-            .map((n) => n.textContent?.trim()),
+          detectorWorks,
+          split: items.filter(splitTexts).map((n) => n.textContent?.trim()),
           overflowsRight: items.some(
             (n) => n.getBoundingClientRect().right > el.clientWidth + 1,
           ),
           pageScrollsX: el.scrollWidth > el.clientWidth,
         };
       });
+      // 판정식이 살아 있음을 먼저 확인한다 — 이게 false면 아래 두 줄은 무의미하다.
+      expect(header.detectorWorks, `${width}px — 줄바꿈 판정식이 실제 줄바꿈을 잡아낸다`).toBe(
+        true,
+      );
       expect(header.split, `${width}px — 낱말 안에서 줄바꿈되지 않는다`).toEqual([]);
       expect(header.overflowsRight, `${width}px — 항목이 화면 밖으로 나가지 않는다`).toBe(false);
       expect(header.pageScrollsX, `${width}px — 페이지가 가로로 밀리지 않는다`).toBe(false);
