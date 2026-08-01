@@ -254,9 +254,14 @@ SDK `styles.ts`에는 0건이다. SDK 패널은 `width: 360px` 고정이라 390p
 
 | 화면 성격 | 처방 | 대상 |
 |---|---|---|
-| 도구 | **그대로 둔다** (검증됨 — 3.0절) | 콘솔 홈, 편집 패널 |
-| 읽기 | 본문 15px · 줄 45자 · 행간 1.75 · 제목 비 1.6배 | 로그인, 가이드, FAQ |
+| 도구 | **그대로 둔다** (검증됨 — 3.0절 1회차) | 콘솔 홈, 편집 패널 |
+| 읽기 | **그대로 둔다** (검증됨 — 3.0절 2회차) | 가이드, FAQ |
+| 진입 | **구조적 결함만 고친다.** 밀도는 건드리지 않는다 | 로그인(완료), 랜딩 |
 | 전 화면 공통 | 색·반경·그림자·상태·포커스 일관화 (4절) | 전부 |
+
+> **이 표는 한 번 뒤집혔다.** 초안에는 "읽기 = 본문 15px·줄 45자"가 처방으로 적혀 있었으나
+> 3.0절 2회차에서 기각됐다. **가이드·FAQ에 15px를 적용하지 않는다.** 로그인에서 채택된 것은
+> 크기가 아니라 구조(13px `<h1>`·버튼 위계·인라인 `style`)였다.
 
 색·반경·그림자를 줄이는 일(M-01~M-05·M-07)은 **여전히 유효하다.** 다만 그것은 일관성 정비이지
 "디자인 필"을 만드는 레버가 아니다. 둘을 섞어 논하지 않는다.
@@ -411,18 +416,28 @@ FOUC와 SSR 복잡도를 사는 대신 얻는 것이 없다. **파일은 그대�
 문서(이 파일) 승인 후, **표면별로 브랜치를 나눈다.** 한 PR에 네 표면을 담으면 CodeRabbit
 파일 수 한도(100)를 넘겨 리뷰가 스킵된다 (PROGRESS 2026-07-29 기록).
 
-| 단계 | 브랜치 | 내용 | 선행 조건 |
-|---|---|---|---|
-| 1 | `docs/ui-standard-87` | 이 문서 + 대표 화면 A/B 프로토타입 | — |
-| 2 | `fix/` | **F-01 대비 수정** — 두 파일 동시 (F-02 때문에). **3.2절에 따라 크기·여백 조정과 함께 간다** | Q-02·Q-04 |
-| 3 | `chore/` | **F-02 토큰 단일 원천** + 파리티 테스트 | 4.7절 안 확정 |
-| 3.5 | `fix/` | **로그인 화면** — 13px `<h1>`, 버튼 위계, 인라인 `style` 제거, 서비스 설명 1줄 (**채택됨**) | — |
-| 3.6 | `feat/` | **랜딩 프리뷰 실체화 + 정돈** | Q-06 |
-| 4 | `fix/` | **F-03 포커스 통일** — 사내판·SDK에 `:focus-visible` 링 | — |
-| 5 | `feat/` 또는 `fix/` | **SDK 패널 재스타일** — 팔레트·반경·다크 (**크기는 키우지 않는다** — 3.0절) | Q-03 |
-| 6 | — | **산출물** | **#86 완료 + AGENTS.md 4절 절차** |
+### 6.1 완료 (PR #89)
 
-2단계를 먼저 두는 이유: 검증된 접근성 결함이고, 다른 무엇에도 의존하지 않으며, 되돌리기 쉽다.
+| 내용 | 커밋 |
+|---|---|
+| 이 문서 + `docs/README.md`·`AGENTS.md` 등록 | `docs:` |
+| **로그인** — 13px `<h1>`, 버튼 위계, 인라인 `style` 제거, 서비스 설명 1줄 | `fix:` |
+| **랜딩 히어로 중앙 정렬** — CSS만, 마크업 무변경 | `feat:` |
+
+### 6.2 남은 것
+
+| 순서 | 브랜치 | 내용 | 선행 조건 |
+|---|---|---|---|
+| 1 | `fix/` | **F-01 대비 수정** — 두 파일 동시 (F-02 때문에). **3.2절에 따라 크기·여백 조정과 함께 간다** | Q-04 |
+| 2 | `chore/` | **F-02 토큰 단일 원천** + 파리티 테스트 | 4.7절 안 확정 |
+| 3 | `fix/` | **F-03 포커스 통일** — 사내판·SDK에 `:focus-visible` 링 | — |
+| 4 | `feat/` 또는 `fix/` | **SDK 패널** — 팔레트·반경·다크. **크기는 키우지 않는다** (3.0절) | Q-03 |
+| 5 | — | **산출물** | **#86 완료 + AGENTS.md 4절 절차** |
+
+F-01을 앞에 두는 이유: 검증된 접근성 결함이고, 다른 무엇에도 의존하지 않으며, 되돌리기 쉽다.
+
+**여기에 없는 것 = 하지 않기로 한 것이다.** 콘솔·가이드·FAQ 밀도 조정, 랜딩 프리뷰 실체화,
+랜딩 정돈은 전부 3.0절에서 기각·철회됐으므로 이 표에 넣지 않는다.
 
 ## 7. 검증 방법
 
@@ -435,16 +450,46 @@ FOUC와 SSR 복잡도를 사는 대신 얻는 것이 없다. **파일은 그대�
 
 ### 7.1 시각 검증은 렌더한 이미지로 한다
 
-인터랙티브 비교 페이지는 쓰지 않는다 (3.0절 4회차). 대신:
+인터랙티브 비교 페이지는 쓰지 않는다 (3.0절 4회차). 대신 **Playwright로 렌더한 정지
+이미지**를 나란히 놓고 본다. Playwright는 이미 devDependency이므로 `npm i` 뒤
+`npx playwright install chromium` 한 번이면 된다.
 
+지켜야 할 규칙은 둘이다.
+
+1. **A(현재)는 `globals.css`를 원본 그대로 읽어 만든다.** 손으로 옮겨 적으면 "현재 화면"이
+   왜곡돼 비교 자체가 무의미해진다. 커밋 후 비교라면 `git show HEAD:apps/web/app/globals.css`
+2. **B는 A의 CSS 뒤에 패치 문자열을 이어 붙여 만든다.** 그 패치가 곧 적용할 diff다
+
+아래는 그대로 복사해 쓸 수 있는 최소본이다 (임시 파일이므로 스크래치패드에 둔다).
+
+```js
+import { chromium } from "playwright";
+import { readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+
+const AFTER = readFileSync("apps/web/app/globals.css", "utf8");
+const BEFORE = execSync("git show HEAD:apps/web/app/globals.css").toString();
+const MARKUP = "<header class=…>…</header>"; // 비교할 화면의 실제 마크업
+const SELECTOR = ".c-login-card"; // 잘라낼 영역
+
+const page$ = (css) =>
+  `<!doctype html><html lang="ko" data-theme="light"><head><meta charset="utf-8">
+   <style>${css}</style></head><body>${MARKUP}</body></html>`;
+
+const browser = await chromium.launch();
+for (const [name, css] of [["before", BEFORE], ["after", AFTER]]) {
+  const p = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
+  await p.setContent(page$(css), { waitUntil: "load" });
+  // 가로 오버플로는 눈으로 보지 말고 계산한다
+  const overflow = await p.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  console.log(name, "가로 오버플로:", overflow); // 0이 아니면 실패
+  await (await p.$(SELECTOR)).screenshot({ path: `${name}.png` });
+  await p.close();
+}
+await browser.close();
 ```
-# 스크래치패드에서 (레포에 커밋하지 않는다)
-npm i playwright && npx playwright install chromium
-node compose.mjs        # 화면별 A/B 를 나란히 합성한 PNG 생성
-```
 
-`compose.mjs`는 `globals.css`를 **원본 그대로 읽어** A를 만들고 그 위에 패치를 얹어 B를
-만든다. A를 손으로 옮겨 적지 않으므로 "현재 화면"이 왜곡되지 않는다.
-
-가로 오버플로는 눈으로 보지 말고 계산한다:
-`document.documentElement.scrollWidth - clientWidth === 0`
+뷰포트는 최소 **390 · 1440px**, 테마는 **라이트·다크** 양쪽에서 돌린다
+(`data-theme="dark"`로 바꿔 한 번 더).
