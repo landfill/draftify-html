@@ -834,15 +834,30 @@ form > .c-btn[type="submit"] {
   font-size: 14px;
 }
 
+/*
+  히어로는 중앙 정렬 1단이다 (이슈 #87, 2026-08-02 사용자 채택).
+
+  이전에는 좌우 2단(카피 | 미리보기)이었다. 미리보기 칸이 `minmax(480px, …)`을 요구해
+  카피가 좁아지고, 제목이 3줄로 갈리면서 시선이 좌우로 나뉘었다. 1단으로 두면 제목·리드·
+  CTA가 한 축에 서고 미리보기는 그 아래에서 폭을 넓게 쓴다.
+
+  미리보기 폭을 860px로 제한하는 이유: 미리보기는 내용이 없는 와이어프레임이라
+  (`.l-mockup-stats span` 등이 빈 요소다 — 채우지 않기로 결정) 크게 키울수록 빈 면적만
+  넓어진다. 940px까지 늘려 보고 860px로 눌렀다.
+*/
 .l-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(480px, 1.08fr);
-  align-items: center;
-  gap: clamp(48px, 7vw, 96px);
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  text-align: center;
+  gap: 56px;
   max-width: 1180px;
-  min-height: 680px;
   margin: 0 auto;
-  padding: 84px 32px 96px;
+  padding: 76px 32px 88px;
+}
+
+.l-hero-copy {
+  max-width: 720px;
 }
 
 .l-eyebrow,
@@ -858,7 +873,8 @@ form > .c-btn[type="submit"] {
 .l-hero h1 {
   margin: 0;
   color: var(--l-ink);
-  font-size: clamp(38px, 4.7vw, 62px);
+  /* 1단이 되어 가용 폭이 늘었으므로 상한을 조금 낮춘다 — 2줄을 유지하기 위해 */
+  font-size: clamp(36px, 4.4vw, 58px);
   font-weight: 850;
   letter-spacing: -0.055em;
   line-height: 1.08;
@@ -872,7 +888,8 @@ form > .c-btn[type="submit"] {
 
 .l-lead {
   max-width: 590px;
-  margin: 25px 0 0;
+  /* 중앙 정렬이므로 좌우 auto — 읽기 폭(줄당 약 37자)은 그대로 유지한다 */
+  margin: 25px auto 0;
   color: var(--c-text-3);
   font-size: 16px;
   line-height: 1.75;
@@ -883,6 +900,7 @@ form > .c-btn[type="submit"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 14px 22px;
   margin-top: 34px;
 }
@@ -931,6 +949,7 @@ form > .c-btn[type="submit"] {
 .l-principles {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px 18px;
   margin: 30px 0 0;
   padding: 0;
@@ -949,11 +968,13 @@ form > .c-btn[type="submit"] {
 .l-product-preview {
   position: relative;
   min-width: 0;
+  width: 100%;
+  max-width: 860px;
   border: 1px solid var(--c-border-2);
   border-radius: 16px;
   background: var(--c-surface);
   box-shadow: 0 30px 70px rgba(15, 23, 42, 0.16);
-  transform: perspective(1300px) rotateY(-2deg) rotateX(1deg);
+  transform: none;
 }
 
 :root[data-theme="dark"] .l-product-preview {
