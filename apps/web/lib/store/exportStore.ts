@@ -51,11 +51,22 @@ export async function appendExportRecord(
   return record;
 }
 
-/** 콘솔 목록용 요약. */
-export async function exportSummary(
-  db: Db,
-  projectId: string,
-): Promise<{ exportCount: number; lastExportAt?: string }> {
+export type ExportSummary = { exportCount: number; lastExportAt?: string };
+
+/**
+ * 콘솔 목록용 요약.
+ *
+ * **프로젝트별로 부른다(1 + N 왕복).** 이걸 `.in()` 한 방으로 합치는 시도를 PR #84에서
+ * 했다가 철회했다 — PostgREST가 돌려주는 행 수에는 상한이 있고(호스팅 Supabase 기본
+ * 1,000), 넘으면 **오류 없이 잘린 결과**가 온다. 여러 프로젝트를 합치면 그 상한이
+ * *사용자 전체 export 합계*에 걸려 **각 프로젝트가 개별 한도 아래인데도** `exportCount`가
+ * 조용히 틀리게 된다. export 이력에는 개수 한도가 없어(레이트리밋만 시간당 30회) 누적되면
+ * 반드시 도달하는 경로다.
+ *
+ * 제대로 합치려면 DB가 `group by`로 집계해야 한다(RPC + 마이그레이션). 목록 성능이 실제로
+ * 문제가 되면 그때 별건으로 한다 — 조용히 틀린 숫자를 보여 주는 것보다 왕복이 나은 거래다.
+ */
+export async function exportSummary(db: Db, projectId: string): Promise<ExportSummary> {
   const records = await readExportRecords(db, projectId);
   const last = records[records.length - 1];
   return { exportCount: records.length, ...(last ? { lastExportAt: last.createdAt } : {}) };

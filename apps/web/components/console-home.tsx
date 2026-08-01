@@ -1,20 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { encodeConnection, type ProjectListItem } from "@mockspec/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client.js";
 import { LIMITS, formatMb } from "@/lib/abuse/limits.js";
+import { formatDate } from "@/lib/format.js";
 import { EXTENSION_RELEASE } from "@/lib/extension-release.js";
 import { uploadMockupZip, completeMockupIntake } from "@/lib/intake/upload.js";
 import type { Db } from "@/lib/store/ids.js";
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("ko-KR");
-  } catch {
-    return iso;
-  }
-}
 
 function mockupHref(projectId: string): string {
   return `/m/${projectId}/`;
@@ -44,11 +37,15 @@ async function copyOrPrompt(text: string, promptLabel: string): Promise<boolean>
   }
 }
 
-export function ConsoleHome() {
+/**
+ * `initialProjects` — 서버(`app/page.tsx`)가 미리 조회해 넘긴 목록 (이슈 #81).
+ * 첫 렌더에 이미 채워져 있으므로 마운트 시 `/api/projects`를 부르지 않는다.
+ * 이후 갱신(업로드·삭제·토큰 발급)은 `loadProjects()`가 그 라우트를 계속 쓴다.
+ */
+export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListItem[] }) {
   const [activeTab, setActiveTab] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [projects, setProjects] = useState<ProjectListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<ProjectListItem[]>(initialProjects);
   const [uploadStatus, setUploadStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
     null,
   );
@@ -82,17 +79,15 @@ export function ConsoleHome() {
    */
   const [reissuingIds, setReissuingIds] = useState<ReadonlySet<string>>(new Set());
 
+  /**
+   * 목록 갱신 — 업로드·삭제·토큰 발급 뒤에 부른다. **첫 화면은 부르지 않는다**(#81):
+   * 서버가 `initialProjects`로 이미 넘겨 줬다.
+   */
   const loadProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
     if (!res.ok) throw new Error("목록을 불러오지 못했습니다.");
     setProjects((await res.json()) as ProjectListItem[]);
   }, []);
-
-  useEffect(() => {
-    loadProjects()
-      .catch(() => undefined)
-      .finally(() => setLoading(false));
-  }, [loadProjects]);
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -492,9 +487,7 @@ export function ConsoleHome() {
             {listStatus.text}
           </p>
         ) : null}
-        {loading ? (
-          <p className="c-empty">불러오는 중…</p>
-        ) : projects.length === 0 ? (
+        {projects.length === 0 ? (
           <p className="c-empty">
             아직 프로젝트가 없습니다. ZIP을 업로드하거나, 확장으로 내 화면을 연결해 시작하세요.
           </p>

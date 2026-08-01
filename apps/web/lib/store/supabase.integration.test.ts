@@ -17,6 +17,7 @@ import {
 } from "./projectStore.js";
 import { issueToken, verifyToken, revokeToken, hasToken } from "./tokenStore.js";
 import { appendExportRecord, readExportRecords, exportSummary } from "./exportStore.js";
+import { listProjectsForConsole } from "./projectList.js";
 
 loadWebEnvLocal();
 const RUN = hasSupabaseIntegrationEnv();
@@ -151,6 +152,35 @@ describe.skipIf(!RUN)("supabase store adapters (W2 integration)", () => {
       exportCount: 1,
       lastExportAt: record.createdAt,
     });
+  });
+
+  it("listProjectsForConsole — RSC와 라우트가 함께 쓰는 목록 형태 (#81)", async () => {
+    // 두 프로젝트: 하나는 export 2회, 하나는 0회. 0회가 목록에서 사라지면 안 된다.
+    const twice = await newProject("요약 A", { type: "snippet" });
+    projectIds.push(twice.id);
+    const never = await newProject("요약 B", { type: "snippet" });
+    projectIds.push(never.id);
+
+    const first = await appendExportRecord(userDb, twice.id, {
+      specUpdatedAt: twice.updatedAt,
+      bytes: 10,
+      masked: false,
+    });
+    const second = await appendExportRecord(userDb, twice.id, {
+      specUpdatedAt: twice.updatedAt,
+      bytes: 20,
+      masked: true,
+    });
+
+    const listed = await listProjectsForConsole(userDb);
+    const byId = new Map(listed.map((p) => [p.id, p]));
+    expect(byId.get(twice.id)?.exportCount).toBe(2);
+    expect(byId.get(twice.id)?.lastExportAt).toBe(
+      first.createdAt > second.createdAt ? first.createdAt : second.createdAt,
+    );
+    // export가 0회인 프로젝트도 목록에 남고, 마지막 시각은 비어 있다.
+    expect(byId.get(never.id)?.exportCount).toBe(0);
+    expect(byId.get(never.id)?.lastExportAt).toBeUndefined();
   });
 
   it("tokenStore issue/has/verify(admin)/revoke", async () => {
