@@ -849,15 +849,20 @@ form > .c-btn[type="submit"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  text-align: center;
   gap: 56px;
   max-width: 1180px;
   margin: 0 auto;
   padding: 76px 32px 88px;
 }
 
+/*
+  가운데 정렬은 **카피에만** 건다. `.l-hero`에 걸면 `text-align`이 상속되어
+  미리보기 안의 어노테이션 제목·설명(`.l-note strong`·`.l-note p`)까지 가운데로
+  끌려간다 — 그쪽은 편집기 UI를 흉내 낸 것이라 왼쪽 정렬이어야 한다 (PR #89 리뷰).
+*/
 .l-hero-copy {
   max-width: 720px;
+  text-align: center;
 }
 
 .l-eyebrow,

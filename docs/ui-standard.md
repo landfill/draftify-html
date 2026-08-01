@@ -168,8 +168,11 @@ SDK `styles.ts`에는 0건이다. SDK 패널은 `width: 360px` 고정이라 390p
 
 **4회차에서 배운 것(방법론):** 인터랙티브 A/B 페이지(`*-ab.html`)는 창 폭이 좁으면 두 패널이
 세로로 쌓이고 iframe이 2600px라 **나란히 비교가 불가능했다.** 사용자가 "차이를 모르겠다"고 한
-주된 원인이 디자인이 아니라 이 비교 도구였다. 이후로는 **Playwright로 렌더한 정지 이미지를
-나란히 합성해** 보여 준다(`scratchpad/compose.mjs`). 재현 명령은 7절에 있다.
+주된 원인이 디자인이 아니라 이 비교 도구였다. 이후로는 **Playwright로 실제 앱을 띄워 찍은 정지
+이미지**를 나란히 놓고 본다. 절차는 7.1절에 있다.
+
+> 위 표의 산출물(`console-ab.html`·`cmp-hero.png` 등)은 **판단 근거로 쓰고 버린 임시
+> 파일이라 저장소에 없다.** 결론만 이 표에 남긴다 — 다시 확인하려면 7.1절 절차로 새로 찍는다.
 
 **확립된 사실: 이 제품에서 본문 글자 크기를 키우는 방향은 채택되지 않는다.** 현재 밀도가
 사용자의 선호다. 앞으로 어떤 화면에도 "본문을 키워 위계를 만든다"를 기본 처방으로 쓰지 않는다.
@@ -303,27 +306,26 @@ SDK `styles.ts`에는 0건이다. SDK 패널은 `width: 360px` 고정이라 390p
   `#94a3b8`(5.71:1) — 즉 `--c-muted`와 합치는 것이 가장 단순하다. 두 토큰의 존재 이유가
   "더 흐린 것"뿐이고 그 흐림이 AA를 깨는 것이라면, **토큰을 하나 없애는 것이 옳다**(M-07과 같은 방향)
 
-### 4.2 타이포 — 6단계 스케일
+### 4.2 타이포 — 전역 스케일을 강제하지 않는다
 
-절대 px 대신 `rem`을 쓰고 루트에서만 기준을 잡는다 (F-04). 단계는 6개를 넘기지 않는다.
+> **⚠️ 이 절의 초안은 폐기됐다.** 처음에는 `body 14px · title 20px`의 6단계 전역 스케일을
+> 처방했으나, 그것이 바로 3.0절 1회차에서 **기각된 콘솔 실험**이다. 같은 처방을 4절에
+> 남겨 두면 다음 사람이 기각된 작업을 반복하게 되므로 규칙 자체를 바꾼다.
 
-| 역할 | 크기 | 굵기 | 용례 |
-|---|---|---|---|
-| display | 랜딩 히어로만 (`clamp`) | 700+ | `.l-hero h1` |
-| title | 20px | 700 | 화면 최상위 제목 (`.c-section-title`) |
-| subtitle | 16~17px | 600 | 카드·블록 제목, 목록 항목 이름 |
-| body | 14px | **400** | 본문·입력·설명 |
-| meta | 13px | 400 | 보조 정보·힌트·버튼 |
-| micro | 12px | 500 | 배지·카운트·키커 |
+**각 표면은 현재 크기를 유지한다.** 콘솔 11.5px, 랜딩 14px, SDK 13px, 산출물 81.25%는
+그대로 둔다. 화면 성격에 따라 밀도가 다른 것은 결함이 아니다 (3.1절).
 
-두 가지가 핵심이다:
+규칙은 둘뿐이다:
 
-1. **본문 굵기 400을 되살린다.** 지금 콘솔에는 400이 아예 없어서 모든 텍스트가 조금씩 굵고,
-   그래서 무엇도 강조되지 않는다
-2. **body 14px, title 20px** — 최소·최대 비가 12→20으로 **1.7배**가 된다. 현재 콘솔의
-   1.3배보다 벌어지고, 그 여유가 위계를 만든다
+1. **새 크기를 늘리지 않는다.** 이미 그 표면에 있는 값을 쓴다. 새 값이 필요하면 왜 기존
+   값으로 안 되는지를 먼저 적는다 — 공개판 `font-size` 16종(1.2절)이 그렇게 늘어났다
+2. **`--c-faint`처럼 대비를 낮춰 위계를 만들지 않는다** (3.2절). 위계가 필요하면 굵기와
+   여백으로 만든다
 
-랜딩 삽화(`.l-preview-*`)의 6.5~9px는 **삽화 전용 예외**로 명시하고 스케일 밖에 둔다.
+F-04(산출물만 상대값, 나머지는 절대 px)는 **기록만 남긴다.** 전 표면을 `rem`으로 옮기는 것은
+본문 크기를 건드리는 일이라 3.0절의 확립된 사실과 충돌한다 — 별건으로 판단한다.
+
+랜딩 삽화(`.l-preview-*`)의 6.5~9px는 **삽화 전용 예외**다. 본문 스케일 논의 대상이 아니다.
 
 ### 4.3 간격 — 4px 그리드
 
@@ -450,46 +452,65 @@ F-01을 앞에 두는 이유: 검증된 접근성 결함이고, 다른 무엇에
 
 ### 7.1 시각 검증은 렌더한 이미지로 한다
 
-인터랙티브 비교 페이지는 쓰지 않는다 (3.0절 4회차). 대신 **Playwright로 렌더한 정지
-이미지**를 나란히 놓고 본다. Playwright는 이미 devDependency이므로 `npm i` 뒤
-`npx playwright install chromium` 한 번이면 된다.
+인터랙티브 비교 페이지는 쓰지 않는다 (3.0절 4회차). **Playwright로 실제 앱을 띄워
+렌더한 정지 이미지**를 비교한다. Playwright는 이미 devDependency다.
 
-지켜야 할 규칙은 둘이다.
+**손으로 적은 마크업으로 비교하지 않는다.** 화면은 TSX 컴포넌트가 만들고, 마크업을 복사해
+두면 컴포넌트가 바뀔 때 조용히 낡는다 — "현재 화면"이 실제와 달라지면 비교가 무의미해진다.
+실제 라우트를 띄워 찍는다.
 
-1. **A(현재)는 `globals.css`를 원본 그대로 읽어 만든다.** 손으로 옮겨 적으면 "현재 화면"이
-   왜곡돼 비교 자체가 무의미해진다. 커밋 후 비교라면 `git show HEAD:apps/web/app/globals.css`
-2. **B는 A의 CSS 뒤에 패치 문자열을 이어 붙여 만든다.** 그 패치가 곧 적용할 diff다
+**기준(before)은 반드시 별도 리비전에서 빌드한다.** 같은 작업 트리에서 커밋 전후를 비교하면
+커밋한 뒤에는 둘이 같아져 "차이 없음"으로 잘못 나온다. 임시 워크트리를 쓴다:
 
-아래는 그대로 복사해 쓸 수 있는 최소본이다 (임시 파일이므로 스크래치패드에 둔다).
+```bash
+# 1) 기준 리비전을 임시 워크트리에 펼쳐 빌드한다 (base는 보통 origin/main)
+git worktree add ../ui-base origin/main
+cd ../ui-base && npm ci && npm run build && npm run build -w @mockspec/web
+npx next start apps/web -p 4401 &
+
+# 2) 현재 브랜치도 같은 방식으로 띄운다
+cd - && npm run build && npm run build -w @mockspec/web
+npx next start apps/web -p 4402 &
+
+# 3) 두 포트를 같은 스크립트로 찍어 비교한다 (아래)
+# 4) 끝나면 워크트리를 지운다 — AGENTS.md 6절 "병합 후 정리"
+git worktree remove ../ui-base
+```
+
+찍는 쪽은 라우트와 포트만 받으면 된다:
 
 ```js
 import { chromium } from "playwright";
-import { readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
 
-const AFTER = readFileSync("apps/web/app/globals.css", "utf8");
-const BEFORE = execSync("git show HEAD:apps/web/app/globals.css").toString();
-const MARKUP = "<header class=…>…</header>"; // 비교할 화면의 실제 마크업
-const SELECTOR = ".c-login-card"; // 잘라낼 영역
-
-const page$ = (css) =>
-  `<!doctype html><html lang="ko" data-theme="light"><head><meta charset="utf-8">
-   <style>${css}</style></head><body>${MARKUP}</body></html>`;
-
+const ROUTES = ["/", "/login"];
+const PORTS = { before: 4401, after: 4402 };
 const browser = await chromium.launch();
-for (const [name, css] of [["before", BEFORE], ["after", AFTER]]) {
-  const p = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
-  await p.setContent(page$(css), { waitUntil: "load" });
-  // 가로 오버플로는 눈으로 보지 말고 계산한다
-  const overflow = await p.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  console.log(name, "가로 오버플로:", overflow); // 0이 아니면 실패
-  await (await p.$(SELECTOR)).screenshot({ path: `${name}.png` });
-  await p.close();
+
+for (const route of ROUTES) {
+  for (const [tag, port] of Object.entries(PORTS)) {
+    for (const width of [390, 1440]) {
+      for (const theme of ["light", "dark"]) {
+        const page = await browser.newPage({ viewport: { width, height: 1000 }, deviceScaleFactor: 2 });
+        await page.goto(`http://localhost:${port}${route}`, { waitUntil: "networkidle" });
+        await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+        // 가로 오버플로는 눈으로 보지 말고 계산한다 — 0이 아니면 실패
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        console.log(route, tag, width, theme, "overflow:", overflow);
+        await page.screenshot({ path: `${route.replace(/\W/g, "_")}-${tag}-${width}-${theme}.png`, fullPage: true });
+        await page.close();
+      }
+    }
+  }
 }
 await browser.close();
 ```
 
-뷰포트는 최소 **390 · 1440px**, 테마는 **라이트·다크** 양쪽에서 돌린다
-(`data-theme="dark"`로 바꿔 한 번 더).
+**계산으로 잡히지 않는 회귀도 있다.** `text-align` 상속이 그 예다 — 히어로를 가운데 정렬하면서
+미리보기 안의 어노테이션 설명까지 끌려갔는데(PR #89 리뷰), 오버플로는 0이라 통과했다.
+레이아웃 속성을 부모에 걸었을 때는 **상속되는 속성인지 확인하고 자식의 계산값을 찍어 본다:**
+
+```js
+await page.evaluate(() => getComputedStyle(document.querySelector(".l-note p")).textAlign);
+```
