@@ -583,6 +583,18 @@ test.describe("공개 서비스 DoD (W9)", () => {
         await expect(
           anonPage.getByRole("link", { name: /사용 가이드에서 확인하기/ }),
         ).toHaveAttribute("href", "/guide");
+
+        // PR #88 Codex P2 — max-width 컨테이너에 viewport 기반 패딩을 넣으면 초광폭에서
+        // 오히려 콘텐츠가 찌그러진다. 2400px에서도 두 시작 경로가 충분한 폭을 유지해야 한다.
+        await anonPage.setViewportSize({ width: 2400, height: 1000 });
+        const pathCards = anonPage.locator(".l-path-grid article");
+        await expect(pathCards).toHaveCount(2);
+        const firstPathBox = await pathCards.nth(0).boundingBox();
+        const secondPathBox = await pathCards.nth(1).boundingBox();
+        expect(firstPathBox!.width, "초광폭에서도 시작 경로 카드 폭 유지").toBeGreaterThan(400);
+        expect(secondPathBox!.x + secondPathBox!.width, "시작 경로가 화면 밖으로 나가지 않음")
+          .toBeLessThanOrEqual(2400);
+        await anonPage.setViewportSize({ width: 1280, height: 720 });
       }
     }
 
@@ -707,6 +719,12 @@ test.describe("공개 서비스 DoD (W9)", () => {
     const created0 = decodeConnection(await page.evaluate(() => navigator.clipboard.readText()));
     created.projectIds.push(created0!.projectId);
 
+    // PR #88 Codex P2 — 새로고침하지 않아도 첫 프로젝트 생성 즉시 재방문 레이아웃이 된다.
+    await expect(page.locator(".c-new-project")).not.toHaveAttribute("open", "");
+    const liveListBox = await page.locator(".c-project-section").boundingBox();
+    const liveCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    expect(liveListBox!.y, "첫 생성 직후 프로젝트 목록이 먼저").toBeLessThan(liveCreateBox!.y);
+
     /*
       ① 서버가 실어 보냈는가 — HTML **문서 자체**에 이름이 들어 있어야 한다.
       화면에 보이는지만 보면 클라이언트가 나중에 채운 경우와 구별되지 않는다.
@@ -757,6 +775,10 @@ test.describe("공개 서비스 DoD (W9)", () => {
       .getByRole("button", { name: "삭제" })
       .click();
     await expect(page.locator(".c-project", { hasText: "프리페치 회귀" })).toHaveCount(0);
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
+    const emptyCreateBox = await page.locator(".c-new-project-section").boundingBox();
+    const emptyListBox = await page.locator(".c-project-section").boundingBox();
+    expect(emptyCreateBox!.y, "마지막 삭제 직후 새 프로젝트가 먼저").toBeLessThan(emptyListBox!.y);
     expect(listCalls.length, "삭제 뒤에는 목록을 다시 부른다").toBeGreaterThan(0);
   });
 

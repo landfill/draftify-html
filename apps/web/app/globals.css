@@ -1154,8 +1154,7 @@ form > .c-btn[type="submit"] {
   background: var(--c-btn-bg);
 }
 
-.l-flow,
-.l-paths {
+.l-flow {
   padding: 96px max(32px, calc((100vw - 1116px) / 2));
 }
 
@@ -1221,6 +1220,7 @@ form > .c-btn[type="submit"] {
 .l-paths {
   max-width: 1180px;
   margin: 0 auto;
+  padding: 96px 32px;
 }
 
 .l-path-grid {

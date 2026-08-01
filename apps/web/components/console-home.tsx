@@ -46,6 +46,7 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
   const [activeTab, setActiveTab] = useState(0);
   const [newProjectOpen, setNewProjectOpen] = useState(initialProjects.length === 0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const projectCountRef = useRef(initialProjects.length);
   const [projects, setProjects] = useState<ProjectListItem[]>(initialProjects);
   const [uploadStatus, setUploadStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(
     null,
@@ -87,7 +88,13 @@ export function ConsoleHome({ initialProjects }: { initialProjects: ProjectListI
   const loadProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
     if (!res.ok) throw new Error("목록을 불러오지 못했습니다.");
-    setProjects((await res.json()) as ProjectListItem[]);
+    const nextProjects = (await res.json()) as ProjectListItem[];
+    const crossedEmptyBoundary =
+      (projectCountRef.current === 0) !== (nextProjects.length === 0);
+    projectCountRef.current = nextProjects.length;
+    setProjects(nextProjects);
+    // 첫 생성 뒤에는 접고, 마지막 삭제 뒤에는 연다. 같은 상태의 단순 갱신은 사용자 선택 유지.
+    if (crossedEmptyBoundary) setNewProjectOpen(nextProjects.length === 0);
   }, []);
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
