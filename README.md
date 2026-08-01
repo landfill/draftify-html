@@ -268,6 +268,8 @@ npm run test:e2e:web  # 공개판 DoD — 실 Supabase에 붙는다(apps/web/.en
 
 `vercel-build`가 필요한 이유: `apps/web`이 `packages/viewer/dist/main.js`·`packages/sdk/dist/sdk.js`를 `?raw`로 인라인하는데, 이 산출물은 다른 워크스페이스가 생성 (technical-spec 8절).
 
+**함수 리전은 대시보드가 아니라 `apps/web/vercel.json`이 정한다** (`icn1` = 서울, 이슈 #71). Supabase가 도쿄에 있어 다른 리전에 두면 요청마다 태평양을 왕복한다 — 근거와 실측값은 [apps/web/README.md](./apps/web/README.md) "함수 리전".
+
 ### 환경변수 (Production)
 
 | 키 | 비고 |
