@@ -77,7 +77,7 @@
 - [x] T85-3 콘솔 우선순위 — 빈 상태는 생성 폼 우선·펼침, 프로젝트가 있으면 목록 우선·생성 폼 접힘
 - [x] T85-4 인증·헤더 회귀 — `/`만 공개 경로로 열고 `/m`·`/api` 보호 유지, 비로그인 `내 프로젝트`는 `/login`으로 연결
 - [x] T85-5 로컬 검증 — typecheck·전체 빌드·vitest·공개판 E2E 목록 컴파일·390~2400px 반응형/다크 모드 시각 검수·가로 오버플로 검사
-- [ ] T85-6 PR·Preview·main 병합 — **PR #88 생성(Ready), Codex P2 5건 반영**, 후속 CI·재리뷰·스레드 정리·main 병합 대기. main 병합은 건별 명시적 동의 필요
+- [ ] T85-6 PR·Preview·main 병합 — **PR #88 생성(Ready), Codex P2 5건 반영, 수정 커밋 `8fd9980` CI·Vercel·PR Agent 통과**, 재리뷰·스레드 정리·main 병합 대기. main 병합은 건별 명시적 동의 필요
 
 ## 공개판 확장 ZIP 배포 WBS 체크리스트 (이슈 #43, 2026-07-31 착수 — **완료·main 병합**)
 
@@ -180,7 +180,7 @@
 - 리뷰: Codex P2 **2건 모두 타당해 반영했다.** ① `loadProjects()`가 프로젝트 수의 0↔1 경계를 넘을 때 생성 패널도 동기화해 첫 생성 직후 접고 마지막 삭제 직후 연다. 같은 비어 있지 않은 목록끼리의 갱신은 사용자가 직접 정한 열림 상태를 유지한다. ② `max-width: 1180px`인 시작 경로 섹션에서 뷰포트 기반 좌우 패딩을 제거하고 컨테이너 내부 32px로 고정해 초광폭 축소를 막았다. E2E에 새로고침 없는 생성/삭제 전환과 2400px 카드 폭 회귀를 추가했다.
 - 리뷰 후 검증: typecheck·전체 빌드·vitest **342 passed·13 skipped**·Playwright **8본 목록 컴파일**·`git diff --check` 통과. 실 Chromium 2400px에서 카드가 각각 **550px**, 문서 `scrollWidth === clientWidth === 2400`이었다. 수정 커밋 `89ab1d9`의 **CI 2본·Vercel Preview·PR Agent가 모두 통과**했다. CodeRabbit은 사용량 제한으로 실제 리뷰를 수행하지 못했다.
 - 재리뷰: Codex P2 **3건이 추가됐고 모두 타당해 반영했다.** ① CSS `order`를 없애고 프로젝트 유무에 따라 섹션의 실제 DOM 순서를 바꿔 화면·키보드·스크린리더 순서를 일치시켰다. ② 재방문 E2E가 접힌 `<details>` 내부 탭을 바로 누르던 타임아웃을 고쳐 summary를 먼저 연다. ③ 첫 생성 직후 패널이 접혀도 성공 안내·연결 코드 지침·`편집 열기` 링크를 패널 밖에 유지하고, 숨겨질 submit 버튼 대신 결과 영역으로 포커스를 옮긴다. E2E가 DOM 순서·결과 가시성·포커스를 고정한다.
-- 재리뷰 후 검증: typecheck·전체 빌드·vitest **342 passed·13 skipped**·Playwright **8본 목록 컴파일**·`git diff --check` 통과. 빌드의 기존 `single-file-core` `import.meta` IIFE 경고 외 신규 경고는 없다.
+- 재리뷰 후 검증: typecheck·전체 빌드·vitest **342 passed·13 skipped**·Playwright **8본 목록 컴파일**·`git diff --check` 통과. 수정 커밋 `8fd9980`의 **CI 2본·Vercel Preview·PR Agent가 모두 통과**했다. CodeRabbit은 다시 사용량 제한으로 실제 리뷰를 수행하지 못했다. 빌드의 기존 `single-file-core` `import.meta` IIFE 경고 외 신규 경고는 없다.
 - 다음 할 일: PR #88 후속 CI·재리뷰와 스레드 정리, 실제 Supabase 세션의 빈 상태/재방문 상태 검증. 이후 main 병합은 별도 명시적 동의를 받는다.
 - 막힌 지점: 코드 구현은 없음. 이 작업 환경에는 `apps/web/.env.local`이 없어 실제 Supabase 연동 E2E는 실행하지 못했고 Playwright 목록 컴파일까지만 확인했다. main 병합은 사용자 동의 대기.
 
