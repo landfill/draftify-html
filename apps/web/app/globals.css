@@ -1978,20 +1978,18 @@ ul.g-list li {
 }
 
 @media (max-width: 960px) {
+  /*
+    히어로가 중앙 정렬 1단이 되면서(이슈 #87) 이 블록의 대부분이 불필요해졌다 —
+    `grid-template-columns: 1fr`·`min-height: 0`·`.l-hero-copy`의 720px·미리보기의
+    `transform: none`은 전부 기본 규칙과 같은 값이라 지웠다.
+
+    특히 미리보기의 `width: min(100%, 700px)`는 **해로웠다.** 2단 시절 좁은 화면에서
+    미리보기가 과하게 커지는 것을 막던 값인데, 1단에서는 960px 경계에서 폭이
+    700 → 860px로 튀게 만든다(실측). 960px에서도 히어로 내부폭이 895px라 860px가
+    들어가므로 기본 규칙(`max-width: 860px`)에 맡기면 연속적으로 줄어든다.
+  */
   .l-hero {
-    grid-template-columns: 1fr;
-    min-height: 0;
     padding-top: 72px;
-  }
-
-  .l-hero-copy {
-    max-width: 720px;
-  }
-
-  .l-product-preview {
-    width: min(100%, 700px);
-    margin: 8px auto 0;
-    transform: none;
   }
 
   .l-flow,
