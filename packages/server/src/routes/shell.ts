@@ -102,6 +102,23 @@ button, input { font: inherit; }
 .c-nav-link { font-size: 13px; color: var(--c-text-3); text-decoration: none; font-weight: 500; }
 .c-nav-link:hover { color: var(--c-text); }
 .c-nav-link.is-active { color: var(--c-accent); font-weight: 600; }
+/*
+  [내 프로젝트] — 작업 기점으로 돌아가는 길 (이슈 #82). #77에서 링크만 추가했더니 문서
+  메뉴(가이드·샘플·FAQ)와 같은 회색 텍스트라 넷 중 하나로 묻혔다. 성격이 다르므로
+  (문서 읽기 vs 작업 공간 이동) 버튼 형태로 두고 구분선으로 두 부류를 가른다.
+  공개판 globals.css와 같은 값이다 — 한쪽만 고치면 어긋난다.
+*/
+.c-nav-home {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+  border: 1px solid var(--c-border-2); border-radius: 6px; background: var(--c-surface);
+  color: var(--c-text-2); font-size: 13px; font-weight: 600; text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.c-nav-home:hover { border-color: var(--c-border-hover); background: var(--c-surface-2); color: var(--c-text); }
+.c-nav-home.is-active { color: var(--c-accent); border-color: var(--c-accent); }
+/* currentcolor라 위 상태 변화를 아이콘이 따라온다. */
+.c-nav-home-icon { width: 11px; height: 11px; fill: currentcolor; flex: none; }
+.c-nav-divider { width: 1px; height: 16px; background: var(--c-border-2); flex: none; }
 .c-theme-toggle {
   border: 1px solid var(--c-border-2); background: var(--c-surface); border-radius: 999px;
   width: 30px; height: 30px; padding: 0; cursor: pointer; font-size: 14px; line-height: 1;
@@ -125,6 +142,8 @@ button, input { font: inherit; }
 @media (max-width: 720px) {
   .c-header { padding: 8px 16px; gap: 8px 12px; }
   .c-header-right { gap: 8px 12px; }
+  /* 구분선은 장식이다 — 줄바꿈되면 줄 끝에 홀로 남아 무엇을 가르는지 알 수 없다 (#82). */
+  .c-nav-divider { display: none; }
 }
 
 .c-section { margin-bottom: 36px; }
@@ -178,8 +197,13 @@ export function pageHeader(active?: "home" | "guide" | "faq"): string {
     </div>
     <div class="c-header-right">
       <!-- 작업 기점(프로젝트 목록)으로 돌아오는 링크 (이슈 #77). 로고 클릭이 유일한 길이면
-           처음 쓰는 사람이 찾지 못한다. 공개판 shell-header.tsx와 같은 처리다. -->
-      <a href="/" class="${cls("home")}">내 프로젝트</a>
+           처음 쓰는 사람이 찾지 못한다. 공개판 shell-header.tsx와 같은 처리다.
+
+           문서 메뉴와 다른 형태여야 한다 (이슈 #82) — 같은 회색 텍스트면 넷 중 하나로 묻힌다.
+           구분선(span)은 장식이므로 aria-hidden. -->
+      <a href="/" class="c-nav-home${active === "home" ? " is-active" : ""}">
+        <svg class="c-nav-home-icon" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><rect x="0.5" y="0.5" width="5.5" height="5.5" rx="1.2"/><rect x="8" y="0.5" width="5.5" height="5.5" rx="1.2"/><rect x="0.5" y="8" width="5.5" height="5.5" rx="1.2"/><rect x="8" y="8" width="5.5" height="5.5" rx="1.2"/></svg>내 프로젝트</a>
+      <span class="c-nav-divider" aria-hidden="true"></span>
       <a href="/guide" class="${cls("guide")}">사용 가이드</a>
       <a href="/sample" class="c-nav-link" target="_blank" rel="noopener">샘플 보기</a>
       <a href="/faq" class="${cls("faq")}">FAQ</a>
