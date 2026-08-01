@@ -711,16 +711,100 @@ form > .c-btn[type="submit"] {
   text-align: center;
 }
 
+/*
+  로그인 (이슈 #87, 2026-08-02).
+
+  이전 상태의 문제 셋:
+  ① `<h1>`이 `.c-section-title`을 재사용해 제목이 13px이었다 — 본문보다 1.5px 크다
+  ② [Google로 계속]과 [매직링크 보내기]가 둘 다 `.c-btn` 채움이라 주 동작이 없었다
+  ③ 폼이 인라인 `style`로 콘솔의 2단 그리드를 되돌리고 있었다 (컴포넌트의 땜질)
+*/
+
 .c-login-card {
-  max-width: 420px;
-  margin: 80px auto;
+  max-width: 440px;
+  margin: 72px auto;
+  padding: 40px;
 }
 
-.c-login-divider {
-  text-align: center;
+.c-login-title {
+  margin: 0 0 8px;
+  color: var(--c-text);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+
+.c-login-sub {
+  margin: 0 0 28px;
   color: var(--c-muted);
-  margin: 20px 0;
-  font-size: 11px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* 이 카드 안의 버튼은 폭을 채운다 — 컴포넌트에서 인라인으로 주던 것 */
+.c-login-card .c-btn {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.c-btn-social {
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border-2);
+  font-weight: 500;
+}
+
+.c-btn-social:hover:not(:disabled) {
+  background: var(--c-surface-2);
+  border-color: var(--c-border-hover);
+}
+
+/* 구분선 — 가운데 글자 양옆으로 선이 지나간다 */
+.c-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: var(--c-muted);
+  font-size: 11.5px;
+}
+
+.c-login-divider::before,
+.c-login-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--c-border);
+}
+
+/* 콘솔의 2단 폼 그리드를 이 카드 안에서만 1단으로 되돌린다 */
+.c-login-card .c-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.c-login-card .c-row label {
+  flex: none;
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--c-text-2);
+}
+
+.c-login-card .c-row input {
+  max-width: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.c-login-card form > .c-btn[type="submit"] {
+  margin-left: 0;
 }
 
 .c-user-email {
