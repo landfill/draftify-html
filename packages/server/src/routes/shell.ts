@@ -29,6 +29,22 @@ body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-s
 button, input { font: inherit; }
 
 /*
+  포커스 링 — 전 표면 공통 형태 (이슈 #87 F-03, ui-standard 4.6절).
+  공개판 globals.css에도 같은 블록이 있다. 형태를 맞추는 것이 목적이므로 값이 갈리면 안 된다.
+
+  이 셸은 콘솔·가이드·FAQ가 공유하므로, 여기 한 곳이면 사내판 전체에 닿는다 —
+  console.ts(931줄)와 pages.ts에 따로 넣지 않는다.
+
+  input 계열은 일부러 제외한다: console.ts의 입력이 이미 :focus에 outline: none +
+  3px box-shadow 링을 쓴다. 여기에 outline까지 걸면 링이 둘로 보인다.
+  (이 CSS는 TS 템플릿 리터럴 안이라 주석에도 백틱을 쓸 수 없다 — 리터럴이 끊긴다.)
+*/
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--c-accent-focus);
+  outline-offset: 2px;
+}
+
+/*
   줄바꿈은 브레이크포인트가 아니라 내용이 정한다 (이슈 #77) — 특정 폭 아래에서만 wrap을 켜면
   그 경계 바로 위에서 헤더가 깨진다. 넓은 화면에서는 어차피 한 줄에 들어가 보이는 것이 같다.
 */

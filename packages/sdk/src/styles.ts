@@ -5,6 +5,30 @@
 export const STYLES = /* css */ `
 :host, * { box-sizing: border-box; }
 
+/*
+  포커스 링 (이슈 #87 F-03, ui-standard 4.6절). 형태는 다른 표면과 같다 — 2px 링 + 2px offset.
+
+  값을 직접 적는 이유: Shadow DOM 안이라 :root의 --c-accent-focus가 닿지 않는다. 4.6절이
+  적은 대로 THEME_TOKENS를 :host에 선언해야 하는데, SDK는 강조색 자체가 다르므로(#2f6feb)
+  토큰을 먹이는 일과 팔레트를 맞추는 일은 같이 가야 한다 → T87-13에서 함께 정리한다.
+
+  다른 표면과 달리 input도 포함한다. 사내판·공개판의 입력은 box-shadow 링 규약이 이미
+  있지만 SDK에는 없어, 여기서 버튼만 링을 주면 SDK 안에서 입력과 버튼이 갈린다.
+*/
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #2f6feb;
+  outline-offset: 2px;
+}
+/*
+  이 셋만 사용자의 목업 페이지 위에 직접 떠 있어 **링 바깥 색을 통제할 수 없다.**
+  파랑 위에 파랑 링이면 대비가 1:1이 된다(.fab의 배경이 링과 같은 #2f6feb다).
+  흰 띠를 덧대 분리한다 — .marker가 흰 테두리로 푸는 것과 같은 처리다.
+  기존 그림자를 함께 적어야 사라지지 않는다.
+*/
+.fab:focus-visible { box-shadow: 0 0 0 6px rgba(255,255,255,.92), 0 4px 14px rgba(0,0,0,.28); }
+.panel-tab:focus-visible { box-shadow: 0 0 0 6px rgba(255,255,255,.92), -2px 2px 10px rgba(0,0,0,.15); }
+.marker:focus-visible { box-shadow: 0 0 0 6px rgba(255,255,255,.92), 0 1px 4px rgba(0,0,0,.35); }
+
 .fab {
   position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
   width: 52px; height: 52px; border-radius: 50%; border: none;

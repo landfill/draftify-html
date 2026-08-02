@@ -37,7 +37,14 @@ const CONSOLE_CSS = `
 .c-hint { margin: 6px 0 18px calc(var(--c-label-w) + var(--c-row-gap)); color: var(--c-muted); font-size: 11px; line-height: 1.55; max-width: 640px; }
 .c-btn {
   padding: 6px 12px; border: none; border-radius: 6px; text-decoration: none; display: inline-block;
-  background: var(--c-btn-bg); color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+  background: var(--c-btn-bg); color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer;
+  /*
+    transition: all 이었다 (이슈 #87 T87-12). all은 outline까지 전이 대상으로 잡아
+    **포커스 링이 0.15초 늦게 떴고**, 그 사이에는 밝은 배경에서 잘 보이지 않는
+    브라우저 기본 링(3px 흰색)이 보였다. Tab 직후와 300ms 뒤의 computed 값이 다른 것으로
+    확인했다. 전이가 실제로 필요한 것은 hover의 배경·테두리·글자색뿐이다.
+  */
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .c-btn:hover:not(:disabled) { background: var(--c-btn-bg-hover); }
 .c-btn:disabled { opacity: 0.5; cursor: not-allowed; }
