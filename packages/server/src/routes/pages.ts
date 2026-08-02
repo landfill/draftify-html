@@ -101,7 +101,7 @@ code {
 .g-badge.is-primary { background: var(--c-accent-ring); color: var(--c-accent); border-color: transparent; }
 .g-path p { margin: 0; font-size: 11.5px; color: var(--c-muted); line-height: 1.6; }
 .g-path dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 11px; }
-.g-path dt { color: var(--c-faint); }
+.g-path dt { color: var(--c-muted); font-weight: 500; }
 .g-path dd { margin: 0; color: var(--c-text-3); }
 
 .g-table-wrap { overflow-x: auto; }
@@ -135,7 +135,7 @@ ul.g-list li { margin-bottom: 5px; }
   list-style: none; display: flex; gap: 10px; align-items: baseline;
 }
 .g-faq-item summary::-webkit-details-marker { display: none; }
-.g-faq-item summary::before { content: "＋"; color: var(--c-faint); font-weight: 400; flex: 0 0 auto; }
+.g-faq-item summary::before { content: "＋"; color: var(--c-muted); font-weight: 400; flex: 0 0 auto; }
 .g-faq-item[open] summary::before { content: "－"; }
 .g-faq-item summary:hover { color: var(--c-accent); }
 .g-faq-a { padding: 0 2px 16px 24px; }

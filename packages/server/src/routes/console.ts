@@ -62,7 +62,7 @@ form > .c-btn[type="submit"] { margin-left: calc(var(--c-label-w) + var(--c-row-
 .c-project-name { font-weight: 600; font-size: 12.5px; color: var(--c-text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 a.c-project-name:hover { color: var(--c-accent); text-decoration: underline; }
 .c-badge { flex: 0 0 auto; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 500; background: var(--c-chip); color: var(--c-text-3); border: 1px solid var(--c-border); }
-.c-project-meta { color: var(--c-faint); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-project-meta { color: var(--c-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-id-code { padding: 1px 6px; background: var(--c-chip); border: 1px solid var(--c-border); border-radius: 4px; font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--c-muted); user-select: all; }
 .c-project-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .c-project-actions .c-btn { padding: 4px 10px; font-size: 11px; background: var(--c-surface); border: 1px solid var(--c-border-2); color: var(--c-text-2); font-weight: 500; }

@@ -22,7 +22,6 @@ export const SHELL_CSS = `
   --c-text-2: #334155;
   --c-text-3: #475569;
   --c-muted: #64748b;
-  --c-faint: #94a3b8;
   --c-accent: #4f46e5;
   --c-btn-bg: #4f46e5;
   --c-btn-bg-hover: #4338ca;
@@ -57,7 +56,6 @@ export const SHELL_CSS = `
   --c-text-2: #e2e8f0;
   --c-text-3: #cbd5e1;
   --c-muted: #94a3b8;
-  --c-faint: #64748b;
   --c-accent: #a5b4fc;
   --c-btn-bg: #6366f1;
   --c-btn-bg-hover: #818cf8;

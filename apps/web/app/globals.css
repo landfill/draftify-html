@@ -13,7 +13,6 @@
   --c-text-2: #334155;
   --c-text-3: #475569;
   --c-muted: #64748b;
-  --c-faint: #94a3b8;
   --c-accent: #4f46e5;
   --c-btn-bg: #4f46e5;
   --c-btn-bg-hover: #4338ca;
@@ -59,7 +58,6 @@
   --c-text-2: #e2e8f0;
   --c-text-3: #cbd5e1;
   --c-muted: #94a3b8;
-  --c-faint: #64748b;
   --c-accent: #a5b4fc;
   --c-btn-bg: #6366f1;
   --c-btn-bg-hover: #818cf8;
@@ -508,7 +506,7 @@ input {
   position: absolute;
   top: 11px;
   left: 0;
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
@@ -687,7 +685,7 @@ form > .c-btn[type="submit"] {
 }
 
 .c-project-meta {
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-size: 11px;
 }
 
@@ -1872,7 +1870,7 @@ ul.g-list li {
 
 .g-faq-item summary::before {
   content: "＋";
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-weight: 400;
   flex: 0 0 auto;
 }
