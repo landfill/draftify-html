@@ -30,6 +30,13 @@ export {
 export { encodeConnection, decodeConnection, type ConnectionInfo } from "./connection.js";
 
 export {
+  THEME_TOKENS,
+  themeTokenDeclarations,
+  type ThemeMode,
+  type ThemeTokenName,
+} from "./theme.js";
+
+export {
   sceneDisplayTitle,
   scenePageBandActive,
   sceneStageHeaderTitle,
