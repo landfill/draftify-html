@@ -13,7 +13,6 @@
   --c-text-2: #334155;
   --c-text-3: #475569;
   --c-muted: #64748b;
-  --c-faint: #94a3b8;
   --c-accent: #4f46e5;
   --c-btn-bg: #4f46e5;
   --c-btn-bg-hover: #4338ca;
@@ -59,7 +58,6 @@
   --c-text-2: #e2e8f0;
   --c-text-3: #cbd5e1;
   --c-muted: #94a3b8;
-  --c-faint: #64748b;
   --c-accent: #a5b4fc;
   --c-btn-bg: #6366f1;
   --c-btn-bg-hover: #818cf8;
@@ -94,6 +92,23 @@ body {
 button,
 input {
   font: inherit;
+}
+
+/*
+  포커스 링 — 전 표면 공통 형태 (이슈 #87 F-03, ui-standard 4.6절).
+  사내판 shell.ts에도 같은 블록이 있다. 형태를 맞추는 것이 목적이므로 값이 갈리면 안 된다.
+
+  input 계열은 일부러 제외한다: 이미 `:focus`에 `outline: none` + 3px box-shadow 링이라는
+  규약이 있고 공개판·사내판이 이미 일치한다. 여기에 outline까지 걸면 링이 둘로 보인다.
+
+  개별 규칙(.c-tab·.c-new-project-summary)은 클래스가 하나 더 있어 특이도로 이긴다 —
+  컨테이너 경계에 붙는 요소라 offset이 음수여야 링이 잘리지 않는다.
+*/
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--c-accent-focus);
+  outline-offset: 2px;
 }
 
 .c-header {
@@ -508,7 +523,7 @@ input {
   position: absolute;
   top: 11px;
   left: 0;
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
@@ -687,7 +702,7 @@ form > .c-btn[type="submit"] {
 }
 
 .c-project-meta {
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-size: 11px;
 }
 
@@ -1872,7 +1887,7 @@ ul.g-list li {
 
 .g-faq-item summary::before {
   content: "＋";
-  color: var(--c-faint);
+  color: var(--c-muted);
   font-weight: 400;
   flex: 0 0 auto;
 }

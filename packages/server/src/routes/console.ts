@@ -37,7 +37,14 @@ const CONSOLE_CSS = `
 .c-hint { margin: 6px 0 18px calc(var(--c-label-w) + var(--c-row-gap)); color: var(--c-muted); font-size: 11px; line-height: 1.55; max-width: 640px; }
 .c-btn {
   padding: 6px 12px; border: none; border-radius: 6px; text-decoration: none; display: inline-block;
-  background: var(--c-btn-bg); color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+  background: var(--c-btn-bg); color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer;
+  /*
+    transition: all 이었다 (이슈 #87 T87-12). all은 outline까지 전이 대상으로 잡아
+    **포커스 링이 0.15초 늦게 떴고**, 그 사이에는 밝은 배경에서 잘 보이지 않는
+    브라우저 기본 링(3px 흰색)이 보였다. Tab 직후와 300ms 뒤의 computed 값이 다른 것으로
+    확인했다. 전이가 실제로 필요한 것은 hover의 배경·테두리·글자색뿐이다.
+  */
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .c-btn:hover:not(:disabled) { background: var(--c-btn-bg-hover); }
 .c-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -62,7 +69,7 @@ form > .c-btn[type="submit"] { margin-left: calc(var(--c-label-w) + var(--c-row-
 .c-project-name { font-weight: 600; font-size: 12.5px; color: var(--c-text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 a.c-project-name:hover { color: var(--c-accent); text-decoration: underline; }
 .c-badge { flex: 0 0 auto; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 500; background: var(--c-chip); color: var(--c-text-3); border: 1px solid var(--c-border); }
-.c-project-meta { color: var(--c-faint); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-project-meta { color: var(--c-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-id-code { padding: 1px 6px; background: var(--c-chip); border: 1px solid var(--c-border); border-radius: 4px; font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--c-muted); user-select: all; }
 .c-project-actions { display: flex; gap: 6px; flex: 0 0 auto; }
 .c-project-actions .c-btn { padding: 4px 10px; font-size: 11px; background: var(--c-surface); border: 1px solid var(--c-border-2); color: var(--c-text-2); font-weight: 500; }

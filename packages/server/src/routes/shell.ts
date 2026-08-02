@@ -1,4 +1,4 @@
-import { EDITION_NAME } from "@mockspec/shared";
+import { EDITION_NAME, themeTokenDeclarations } from "@mockspec/shared";
 
 /**
  * 콘솔 계열 페이지(콘솔·가이드·FAQ) 공통 셸 — 테마 변수·헤더·다크 모드 토글.
@@ -6,39 +6,15 @@ import { EDITION_NAME } from "@mockspec/shared";
  * 테마는 CSS 변수 2벌(라이트 기본, `:root[data-theme="dark"]` 오버라이드)로 구현한다.
  * 선택은 localStorage("mockspec:theme")에 남기고, FOUC를 막기 위해
  * `THEME_INIT_JS`를 <head>에서 스타일보다 먼저 실행한다.
+ *
+ * 토큰 값은 여기 적지 않는다 — `@mockspec/shared`의 `THEME_TOKENS`가 정본이고, 공개판
+ * `globals.css`와의 일치는 파리티 테스트가 잡는다 (이슈 #87 F-02 / ui-standard 4.7절).
  */
 
 export const SHELL_CSS = `
 :root {
   color-scheme: light;
-  --c-bg: #f8fafc;
-  --c-surface: #fff;
-  --c-surface-2: #f8fafc;
-  --c-chip: #f1f5f9;
-  --c-border: #e2e8f0;
-  --c-border-2: #cbd5e1;
-  --c-border-hover: #94a3b8;
-  --c-text: #0f172a;
-  --c-text-2: #334155;
-  --c-text-3: #475569;
-  --c-muted: #64748b;
-  --c-faint: #94a3b8;
-  --c-accent: #4f46e5;
-  --c-btn-bg: #4f46e5;
-  --c-btn-bg-hover: #4338ca;
-  --c-accent-focus: #6366f1;
-  --c-accent-ring: rgba(99, 102, 241, 0.15);
-  --c-danger: #e11d48;
-  --c-danger-solid: #e11d48;
-  --c-danger-text: #be123c;
-  --c-danger-bg: #fff1f2;
-  --c-danger-border: #fecdd3;
-  --c-danger-border-2: #fda4af;
-  --c-ok-text: #15803d;
-  --c-ok-bg: #f0fdf4;
-  --c-ok-border: #bbf7d0;
-  --c-overlay: rgba(15, 23, 42, 0.5);
-  --c-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+${themeTokenDeclarations("light")}
   font-family: Pretendard, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--c-text);
   background: var(--c-bg);
@@ -46,38 +22,27 @@ export const SHELL_CSS = `
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --c-bg: #0f172a;
-  --c-surface: #1e293b;
-  --c-surface-2: #26334a;
-  --c-chip: #334155;
-  --c-border: #334155;
-  --c-border-2: #475569;
-  --c-border-hover: #64748b;
-  --c-text: #f1f5f9;
-  --c-text-2: #e2e8f0;
-  --c-text-3: #cbd5e1;
-  --c-muted: #94a3b8;
-  --c-faint: #64748b;
-  --c-accent: #a5b4fc;
-  --c-btn-bg: #6366f1;
-  --c-btn-bg-hover: #818cf8;
-  --c-accent-focus: #818cf8;
-  --c-accent-ring: rgba(129, 140, 248, 0.25);
-  --c-danger: #fb7185;
-  --c-danger-solid: #e11d48;
-  --c-danger-text: #fda4af;
-  --c-danger-bg: rgba(244, 63, 94, 0.12);
-  --c-danger-border: rgba(244, 63, 94, 0.35);
-  --c-danger-border-2: rgba(244, 63, 94, 0.5);
-  --c-ok-text: #4ade80;
-  --c-ok-bg: rgba(34, 197, 94, 0.12);
-  --c-ok-border: rgba(34, 197, 94, 0.35);
-  --c-overlay: rgba(2, 6, 23, 0.7);
-  --c-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+${themeTokenDeclarations("dark")}
 }
 * { box-sizing: border-box; }
 body { margin: 0; padding: 0; min-height: 100vh; background: transparent; font-size: 11.5px; line-height: 1.5; }
 button, input { font: inherit; }
+
+/*
+  포커스 링 — 전 표면 공통 형태 (이슈 #87 F-03, ui-standard 4.6절).
+  공개판 globals.css에도 같은 블록이 있다. 형태를 맞추는 것이 목적이므로 값이 갈리면 안 된다.
+
+  이 셸은 콘솔·가이드·FAQ가 공유하므로, 여기 한 곳이면 사내판 전체에 닿는다 —
+  console.ts(931줄)와 pages.ts에 따로 넣지 않는다.
+
+  input 계열은 일부러 제외한다: console.ts의 입력이 이미 :focus에 outline: none +
+  3px box-shadow 링을 쓴다. 여기에 outline까지 걸면 링이 둘로 보인다.
+  (이 CSS는 TS 템플릿 리터럴 안이라 주석에도 백틱을 쓸 수 없다 — 리터럴이 끊긴다.)
+*/
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--c-accent-focus);
+  outline-offset: 2px;
+}
 
 /*
   줄바꿈은 브레이크포인트가 아니라 내용이 정한다 (이슈 #77) — 특정 폭 아래에서만 wrap을 켜면
