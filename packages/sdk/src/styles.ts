@@ -110,8 +110,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   경계를 넘는 부분이 잘린다(실측: 링 top 58 / left 934 vs .seg 59 / 935).
   안쪽으로 그려 온전히 보이게 한다. 공개판 .c-tab이 같은 이유로 -2px를 쓴다.
   (PR #92 Codex 리뷰)
+
+  **안쪽으로 옮기면 링이 '버튼 자신의 배경' 위에 놓인다 — 그 배경과의 대비를 다시 재야 한다.**
+  활성 세그먼트는 배경이 강조색 채움(--c-btn-bg #4f46e5)이라 같은 계열 링(#6366f1)이
+  1.41:1로 묻힌다. 포커스가 반드시 보여야 하는 바로 그 상태에서 안 보이는 셈이다.
+  흰 링으로 분리한다(6.29:1) — .fab에 흰 띠를 덧댄 것과 같은 사고다. (Codex 2차 리뷰)
 */
 .seg button:focus-visible { outline-offset: -2px; }
+.seg button.active:focus-visible { outline-color: #fff; }
 
 .hint {
   margin: 0 14px 12px; padding: 8px 10px; border-radius: 8px;
