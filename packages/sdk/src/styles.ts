@@ -154,6 +154,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .marker--sel { background: #c2410c; }
 .marker--uncertain { background: var(--c-muted); border-style: dashed; }
 .marker--empty { opacity: .65; } /* 미작성 핀 — 내용이 비어 있음을 구분 표시 */
+/*
+  opacity는 outline·box-shadow까지 **요소 전체**를 함께 합성한다. 그래서 미작성 핀에
+  포커스가 가면 링(#6366f1)이 흰 목업 위에서 #9a9cf6로 렌더돼 대비가 2.48:1까지 떨어졌다
+  (SC 1.4.11은 3:1). 포커스 동안만 불투명으로 돌려 4.47:1을 회복한다.
+
+  대신 그 순간에는 "미작성" 흐림 표시가 사라진다 — 포커스는 일시적이고 그때는 링 자체가
+  더 강한 신호이므로 접근성을 우선했다. 흐림을 background 알파로 옮기는 방법도 있으나
+  흰 테두리·글자의 겉모습까지 바뀐다. (PR #92 Codex 3차 리뷰 → 이 PR에서 반영)
+*/
+.marker--empty:focus-visible { opacity: 1; }
 
 .row { display: flex; align-items: center; gap: 6px; }
 .row h4 { flex: 1; }
