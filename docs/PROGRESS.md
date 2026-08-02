@@ -214,6 +214,8 @@
 **PR 리뷰 대응 (2026-08-02):**
 - **⚠️ Codex는 "처음부터 Ready로 연 PR"에 붙지 않는다 — `@codex review`를 직접 달아야 한다.** 트리거는 ①PR 오픈 ②Draft→Ready 전환 ③`@codex review` 코멘트인데(2026-07-30 세션 로그에 이미 적혀 있다), **①은 실제로 동작하지 않았다.** 관찰: #88은 Draft→Ready 전환이 있어 붙었고(②), **처음부터 Ready로 `gh pr create`한 #89·#92는 0건**이었다. #92는 `@codex review`를 달아 트리거했다. **기존 교훈("Draft는 봇 리뷰를 막으니 Ready로 열 것")은 CodeRabbit에만 맞다** — Codex는 Ready로 열어도 안 오므로, PR을 열면 `@codex review`를 붙이는 것을 기본 절차로 삼는다
 - **PR Agent의 코드 지적 1건은 기각했다.** `theme.parity.test.ts`의 `repoRoot`가 `../../../`라 `packages/`를 가리킨다며 `../../../../`로 고치라 했으나 **틀렸다.** `new URL(path, fileURL)`은 base가 파일이라 파일명이 먼저 제거되므로 시작점이 `src/`다 — `src → shared → packages → 루트`로 3단계가 맞다. 실제로 평가해 확인했고(`../../../` → 저장소 루트, `../../../../` → `/Users/h0977/dev`), 제안대로 바꾸면 저장소 밖을 가리켜 깨진다. CI `verify` 통과도 같은 근거다
+- **Codex P2 1건 반영 (타당했다).** SDK `.seg button`의 포커스 링이 부모 `.seg`의 `overflow: hidden`에 **위·왼쪽 1px씩 잘리고 있었다**(실측: 링 top 58 / left 934 vs `.seg` 59 / 935). 공개판은 `.c-tab`이 이미 `outline-offset: -2px`로 같은 문제를 푸는데 **SDK에만 빠뜨린 것**이다. `-2px`로 고쳐 62 / 938이 됐다. **T87-12의 "링 형태 종류 수" 측정으로는 이 결함이 안 잡힌다** — 링은 있고 일부만 잘리기 때문이다. **공통 규칙을 깔 때는 `overflow: hidden` 컨테이너에 꽉 찬 자식을 먼저 찾을 것**
+- **Codex는 `@codex review`를 달고 약 4분 뒤 도착했다.** 리뷰는 코멘트가 아니라 **`reviews` 배열 + 인라인 코멘트**로 온다 — `gh pr view --json comments`에는 안 잡히므로 `--json reviews`와 `gh api .../pulls/92/comments`를 함께 봐야 한다
 - **"사람이 확인 필요"로 남긴 반응형 회귀를 실측하다 기존 결함을 찾았다 → 이슈 #93.** 사내판 콘솔 `/`가 **390px에서 67px 넘친다**(`.c-project-actions`의 버튼 5개가 줄바꿈 안 됨). `origin/main`에서도 같은 값이라 이번 작업과 무관하고, **`ui-standard.md` F-05가 "미검증"으로 남겨 둔 바로 그 항목**이다. #87 범위(색·타이포·상태·포커스)에 반응형이 들어간 적이 없어 별건으로 뺐다. 공개판은 390px에서도 0이다 — 두 배포가 이 지점에서 갈려 있다
 
 다음 할 일:

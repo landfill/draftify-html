@@ -105,6 +105,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   font-size: 12px; color: var(--c-muted);
 }
 .seg button.active { background: var(--c-btn-bg); color: #fff; font-weight: 600; }
+/*
+  세그먼트 버튼은 .seg의 overflow: hidden 안에 꽉 차 있다 — 바깥쪽 링(offset 2px)은
+  경계를 넘는 부분이 잘린다(실측: 링 top 58 / left 934 vs .seg 59 / 935).
+  안쪽으로 그려 온전히 보이게 한다. 공개판 .c-tab이 같은 이유로 -2px를 쓴다.
+  (PR #92 Codex 리뷰)
+*/
+.seg button:focus-visible { outline-offset: -2px; }
 
 .hint {
   margin: 0 14px 12px; padding: 8px 10px; border-radius: 8px;
