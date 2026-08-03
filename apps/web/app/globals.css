@@ -2200,4 +2200,26 @@ ul.g-list li {
     justify-content: center;
     width: 100%;
   }
+
+  /*
+    좁은 화면 목록 (이슈 #93) — 사내판 console.ts와 같은 규칙이다.
+
+    공개판은 액션 버튼이 2~3개라 가로 오버플로는 0으로 측정됐지만, 원인이던 가로 배치는
+    두 판이 같다. 버튼이 폭을 먼저 가져가고 .c-project-info가 그 나머지로 밀려나므로
+    좁은 화면에서는 이름·메타가 읽을 수 없게 눌린다 — 넘치지 않았을 뿐이다.
+    사내판만 접으면 같은 화면의 접히는 폭이 배포마다 갈리므로 함께 둔다.
+  */
+  .c-project {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .c-project-info {
+    flex: 0 0 auto;
+  }
+
+  .c-project-actions {
+    flex-wrap: wrap;
+  }
 }
