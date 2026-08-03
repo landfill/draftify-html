@@ -104,6 +104,23 @@ a.c-project-name:hover { color: var(--c-accent); text-decoration: underline; }
 .c-mask-row input { flex: 1 1 0; padding: 6px 10px; background: var(--c-surface); border: 1px solid var(--c-border-2); border-radius: 6px; font-size: 11.5px; }
 .c-mask-del { border: none; background: var(--c-danger-bg); color: var(--c-danger); cursor: pointer; font-weight: 700; padding: 4px 9px; border-radius: 6px; font-size: 11.5px; }
 .c-mask-del:hover { background: var(--c-danger-solid); color: #fff; }
+
+/*
+ * 좁은 화면 목록 (이슈 #93) — 한 줄을 두 줄로 접는다. 정보 구조는 그대로다.
+ *
+ * 가로 배치를 유지하면 액션 버튼(경로 D는 5개)이 줄바꿈되지 않아 390px에서 67px 넘쳤고,
+ * 넘치기 전인 480px에서도 .c-project-info가 0px까지 짓눌려 프로젝트 이름이 아예 사라졌다.
+ * 오버플로가 0이라고 읽을 수 있는 목록이었던 것은 아니다 — 그래서 브레이크포인트는
+ * 넘침이 시작되는 480px이 아니라, 이름·메타가 읽을 만한 폭을 되찾는 720px이다.
+ * 720px은 shell.ts의 헤더 규칙과 같은 지점이라 사내판 안에서 접는 폭이 하나로 유지된다.
+ */
+@media (max-width: 720px) {
+  .c-project { flex-direction: column; align-items: stretch; gap: 12px; }
+  /* 세로 스택에서는 정보가 전체 폭을 쓴다 — 가로 배치의 압축 근원이던 flex 기저를 푼다. */
+  .c-project-info { flex: 0 0 auto; }
+  /* 버튼은 남는 폭만큼만 채우고 접힌다. flex: 0 0 auto가 넘침의 직접 원인이었다. */
+  .c-project-actions { flex-wrap: wrap; }
+}
 `.trim();
 
 /**
