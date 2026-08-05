@@ -165,6 +165,8 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
 .ms-flow-body { overflow: auto; max-height: 40vh; padding: 0 14px 14px; }
 .ms-flow-body svg { display: block; }
 .ms-flow-edge { fill: none; stroke: var(--c-muted); stroke-width: 1.5; }
+/* 화살촉은 marker 안의 path다 — 간선과 같은 토큰을 써야 둘이 갈리지 않는다 */
+.ms-flow-arrow { fill: var(--c-muted); }
 /* stroke: #fff는 배경색이 아니라 글자 뒤 헤일로다 — 간선에 겹쳐도 읽히게 한다 */
 .ms-flow-label { font: 600 11px/1 Pretendard, Inter, ui-sans-serif, system-ui, sans-serif; fill: var(--c-muted); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
 .ms-flow-node { cursor: pointer; }
