@@ -444,7 +444,13 @@ function renderFlowSvg(
   marker.setAttribute("orient", "auto-start-reverse");
   const arrow = svgEl("path");
   arrow.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
-  arrow.setAttribute("fill", "#5f6368");
+  /*
+    색은 CSS(.ms-flow-arrow)가 준다 — 여기에 리터럴을 쓰면 간선(.ms-flow-edge)만 토큰을
+    따라가고 화살촉은 옛 팔레트에 남는다(T87-14 리뷰에서 실제로 그랬다).
+    이 파일은 산출물에 단일 모듈로 인라인되므로 @mockspec/shared를 import할 수 없다 —
+    토큰을 참조할 유일한 경로가 CSS다.
+  */
+  arrow.setAttribute("class", "ms-flow-arrow");
   marker.append(arrow);
   defs.append(marker);
   svg.append(defs);
