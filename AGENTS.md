@@ -149,8 +149,20 @@
 `npm run test:e2e:web`을 직접 실행한다:**
 
 - `apps/web/**`
-- 두 배포가 공유하는 코드 — 특히 `packages/server/src/routes/export.ts`
-  (`apps/web/lib/export/build-export.ts`가 `buildExportHtml`을 import한다), `packages/shared`, `packages/viewer`
+- **`apps/web`이 끌어오는 모든 `packages/`** — 목록을 외우지 말고 그때그때 뽑는다:
+
+  ```
+  grep -rhoE '(\.\./)*packages/[a-z-]+|@mockspec/[a-z-]+' apps/web --include='*.ts' --include='*.tsx' \
+    | sed -E 's#(\.\./)*packages/##; s#@mockspec/##' | sort -u
+  ```
+
+  2026-08-06 기준 이 명령이 내놓는 것: `extension` · `sdk` · `server` · `shared` · `viewer`.
+  **"공개판 코드가 아니니 사내판 E2E면 된다"는 판단이 틀리는 지점이다** — 이들은 대부분
+  **빌드 시점에 공개판 번들 안으로 들어간다**: `apps/web/lib/sdk-bundle.ts`가
+  `packages/sdk/dist/sdk.js`를, `lib/export/viewer-script.ts`가 `packages/viewer/dist/main.js`를
+  문자열로 박아 넣고, `lib/export/build-export.ts`는 `packages/server`의 `buildExportHtml`을
+  import한다. 공개판 스위트는 그 결과를 직접 단정한다(서빙된 SDK가 실제 번들인지,
+  저장이 `/__mockspec/api`로 가는지)
 
 **`skipped`가 하나라도 있으면 검증한 것이 아니다.** 스위트는 환경이 갖춰지지 않으면
 **전부 조용히 스킵**된다(설계된 동작 — `playwright.open-service.config.ts` 주석).
