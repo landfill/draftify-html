@@ -6,6 +6,7 @@ import {
   deleteAnnotation, deleteEmptyAnnotations, isEmptyAnnotation,
   annotationsOfScene, updateAnchorSelector, setSceneSnapshot, updateSceneTitle,
   updateSceneHeaderFields,
+  updateSceneTargetDevice,
   docFromProject, applyDocToProject, projectContentSignature,
   type EditorDoc,
 } from "../state.js";
@@ -818,6 +819,34 @@ export function App({ projectId }: { projectId: string }) {
                   }))
                 }
               />
+            </label>
+          </div>
+        )}
+
+        {scene && (
+          <div class="section">
+            <h4>대상 기기</h4>
+            {/*
+              산출물의 렌더 기준 폭만 정한다 (킥오프 11절 21차, 이슈 #99). 캡처 폭은 그대로
+              기록되고, 여기서 고른 값이 뷰어의 iframe 기준 폭을 바꾼다. 신규 화면은
+              직전 화면 값을 이어받으므로(createScene) 보통 첫 화면에서 한 번만 고르면 된다.
+            */}
+            <p class="muted">산출물에서 이 화면을 그릴 기준 폭입니다. 모바일 화면을 넓은 창에서 캡처하면 좌우가 비는데, 모바일을 고르면 390px 폭으로 그립니다.</p>
+            <label class="field">
+              <span class="field__label">기기</span>
+              <select
+                class="field__input"
+                value={scene.targetDevice ?? ""}
+                onChange={(e) => {
+                  const raw = (e.target as HTMLSelectElement).value;
+                  const next = raw === "mobile" || raw === "desktop" ? raw : undefined;
+                  setDoc(updateSceneTargetDevice(doc, scene.id, next));
+                }}
+              >
+                <option value="">선택 안 함 (캡처한 폭 그대로)</option>
+                <option value="desktop">PC</option>
+                <option value="mobile">모바일 (390px)</option>
+              </select>
             </label>
           </div>
         )}

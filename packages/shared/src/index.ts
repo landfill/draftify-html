@@ -13,7 +13,10 @@ export type {
   Transition,
   ExportRecord,
   ProjectListItem,
+  TargetDevice,
 } from "./types.js";
+
+export { MOBILE_RENDER_WIDTH } from "./types.js";
 
 export {
   WORKING_NAME,
@@ -42,4 +45,6 @@ export {
   sceneStageHeaderTitle,
   sceneNavLabel,
   previousSceneSectionLabel,
+  previousSceneTargetDevice,
+  sceneRenderWidth,
 } from "./sceneDisplay.js";

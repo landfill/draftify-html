@@ -1,6 +1,6 @@
 import { customAlphabet } from "nanoid";
-import type { Scene, Annotation, Anchor, SpecProject } from "@mockspec/shared";
-import { previousSceneSectionLabel } from "@mockspec/shared";
+import type { Scene, Annotation, Anchor, SpecProject, TargetDevice } from "@mockspec/shared";
+import { previousSceneSectionLabel, previousSceneTargetDevice } from "@mockspec/shared";
 
 /**
  * 편집 상태 (인메모리). 서버 저장 시 SpecProject에 다시 합쳐 전체 문서 PUT으로 보낸다.
@@ -54,7 +54,10 @@ export function sceneCode(seq: number): string {
 /** 장면 생성. 반환 doc의 sceneCodeSeq는 단조 증가(재부여 방지). 캡처는 App이 등록 직후 트리거. */
 export function createScene(
   doc: EditorDoc,
-  fields: { title: string; route: string; stateNote?: string; pageSectionLabel?: string },
+  fields: {
+    title: string; route: string; stateNote?: string;
+    pageSectionLabel?: string; targetDevice?: TargetDevice;
+  },
 ): { doc: EditorDoc; scene: Scene } {
   const order = doc.scenes.reduce((max, s) => Math.max(max, s.order), -1) + 1;
   const scene: Scene = {
@@ -68,6 +71,9 @@ export function createScene(
   };
   const sectionLabel = fields.pageSectionLabel ?? previousSceneSectionLabel(doc.scenes, order);
   if (sectionLabel) scene.pageSectionLabel = sectionLabel;
+  // 대상 기기도 직전 장면 값을 이어받는다 (킥오프 11절 21차 ⑤ — 섹션 라벨과 같은 방식).
+  const targetDevice = fields.targetDevice ?? previousSceneTargetDevice(doc.scenes, order);
+  if (targetDevice) scene.targetDevice = targetDevice;
   return {
     doc: { ...doc, sceneCodeSeq: doc.sceneCodeSeq + 1, scenes: [...doc.scenes, scene] },
     scene,
@@ -166,6 +172,27 @@ export function updateSceneHeaderFields(
         if (fields.headerTitle) next.headerTitle = fields.headerTitle;
         else delete next.headerTitle;
       }
+      return next;
+    }),
+  };
+}
+
+/**
+ * 대상 기기 지정 (이슈 #99, 킥오프 11절 21차). `undefined`를 주면 필드를 지운다 —
+ * 미지정이 곧 현행 동작(캡처 폭 렌더)이므로 "선택 안 함"으로 되돌릴 길이 있어야 한다.
+ */
+export function updateSceneTargetDevice(
+  doc: EditorDoc,
+  sceneId: string,
+  targetDevice: TargetDevice | undefined,
+): EditorDoc {
+  return {
+    ...doc,
+    scenes: doc.scenes.map((s) => {
+      if (s.id !== sceneId) return s;
+      const next = { ...s };
+      if (targetDevice) next.targetDevice = targetDevice;
+      else delete next.targetDevice;
       return next;
     }),
   };

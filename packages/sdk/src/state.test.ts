@@ -3,7 +3,7 @@ import type { Anchor, SpecProject } from "@mockspec/shared";
 import {
   applyDocToProject, createScene, deleteAnnotation, deleteEmptyAnnotations, deleteScene, docFromProject,
   projectContentSignature, updateAnnotation, addAnnotation, setSceneSnapshot, updateSceneTitle,
-  updateSceneHeaderFields,
+  updateSceneHeaderFields, updateSceneTargetDevice,
 } from "./state.js";
 
 const project: SpecProject = {
@@ -75,6 +75,41 @@ describe("EditorDoc ↔ SpecProject 변환 (T7)", () => {
     });
     const created = createScene(doc, { title: "", route: "/next" });
     expect(created.scene.pageSectionLabel).toBe("03 화면상세");
+  });
+
+  it("신규 장면은 직전 장면의 targetDevice를 프리필한다 (#99, 킥오프 §11 21차)", () => {
+    const doc = docFromProject({
+      ...project,
+      scenes: [{ ...project.scenes[0]!, targetDevice: "mobile" }],
+    });
+    expect(createScene(doc, { title: "", route: "/next" }).scene.targetDevice).toBe("mobile");
+  });
+
+  it("직전 장면에 targetDevice가 없으면 신규 장면도 비운다 — 기본값을 부여하지 않는다 (POL-M03)", () => {
+    const doc = docFromProject(project);
+    expect(createScene(doc, { title: "", route: "/next" }).scene.targetDevice).toBeUndefined();
+  });
+
+  it("명시 지정은 프리필보다 우선한다 (#99)", () => {
+    const doc = docFromProject({
+      ...project,
+      scenes: [{ ...project.scenes[0]!, targetDevice: "mobile" }],
+    });
+    const created = createScene(doc, { title: "", route: "/next", targetDevice: "desktop" });
+    expect(created.scene.targetDevice).toBe("desktop");
+  });
+
+  it("targetDevice는 지정·변경·해제된다 — 해제는 필드 자체를 지운다 (#99)", () => {
+    let doc = docFromProject(project);
+    doc = updateSceneTargetDevice(doc, "scn_one", "mobile");
+    expect(doc.scenes[0]?.targetDevice).toBe("mobile");
+
+    doc = updateSceneTargetDevice(doc, "scn_one", "desktop");
+    expect(doc.scenes[0]?.targetDevice).toBe("desktop");
+
+    // 미지정이 곧 현행 동작(캡처 폭)이므로 "선택 안 함"으로 되돌릴 수 있어야 한다
+    doc = updateSceneTargetDevice(doc, "scn_one", undefined);
+    expect(doc.scenes[0]).not.toHaveProperty("targetDevice");
   });
 
   it("중간 장면 삭제 후 신규 장면 — order 중복 없음 + 직전 pageSectionLabel 프리필 (#39)", () => {
