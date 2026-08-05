@@ -876,7 +876,24 @@ test.describe("공개 서비스 DoD (W9)", () => {
     // 회귀 고정 (#51/PR #53): 목록은 탭 밖에 있으므로 **기본 ZIP 탭으로 돌아간 상태에서**
     // 누른다. 목록 액션의 피드백을 탭 패널 안에 그리면 숨은 패널(display:none)에 들어가
     // 버튼이 아무 반응 없어 보였다.
+    //
+    // 단, 위에서 프로젝트를 만들며 수가 0→1이 됐으므로 생성 패널은 **자동으로 접혔다**
+    // (#85/PR #88 — `loadProjects()`의 0↔1 경계 동기화). 접힌 `<details>` 안의 탭은
+    // 끝내 actionable해지지 않아 클릭이 테스트 타임아웃까지 대기한다(#91). summary를 먼저
+    // 연다 — 767행과 같은 처리다. 여는 것이 이 회귀 고정을 약화시키지 않는다: 패널이 닫혀
+    // 있으면 탭 패널 전체가 숨어 단언이 무의미해지고, 열어야 "ZIP 탭이 선택돼 경로 D 패널만
+    // display:none"인 실제 회귀 상황이 만들어진다.
+    await expect(
+      page.locator(".c-new-project"),
+      "첫 생성 뒤 생성 패널은 접힌다 (#85)",
+    ).not.toHaveAttribute("open", "");
+    await page.locator(".c-new-project-summary").click();
+    await expect(page.locator(".c-new-project")).toHaveAttribute("open", "");
     await page.getByRole("tab", { name: "ZIP 업로드" }).click();
+    await expect(page.getByRole("tab", { name: "ZIP 업로드" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "토큰 재발급" }).click();
     await expect(page.getByText(/토큰을 재발급하고 새 연결 코드를 복사했습니다/)).toBeVisible();
