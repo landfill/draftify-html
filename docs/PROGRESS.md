@@ -265,8 +265,10 @@
   - **뷰어의 390 상수는 복제다**(산출물 단일 모듈 인라인 제약, 18차와 같은 이유). 드리프트는 `sceneDisplay.parity.test.ts`가 잡는다 — `sceneRenderWidth` 동등성 + 폴백 값까지 비교하는 케이스를 추가했다
   - **검증**: `typecheck` 0 에러 · `vitest` **411 passed**(기존 365 + 46) · 사내판 E2E **4본 통과**(`transitions.spec.ts`에 모바일 화면 1개를 더해 **captureWidth 1470을 무시하고 390px로 렌더**하는지 단정) · **공개판 E2E `test:e2e:web` 8 passed / skipped 0**(AGENTS.md 6절 — `shared`·`sdk`·`viewer`·`server`를 건드렸다)
 
+- **PR [#102](https://github.com/landfill/draftify-html/pull/102) 오픈 — CI 전부 pass, 봇 리뷰 3종 도착·처리 완료.** `verify` 2건·`pr_agent_job`·CodeRabbit·Vercel 전부 green. **Codex는 `@codex review`를 손으로 걸어 받았다**("Didn't find any major issues"). PR-Agent는 이슈 #99 대비 **Fully compliant** 판정. **CodeRabbit 지적 2건은 전부 기각**했다 — 또 **UTC 기준 날짜 지적**(커밋이 `6e86e28` `2026-08-06 07:00:59 +0900` = UTC 8월 5일 22:00)이라 아래 세션 로그의 기각 근거를 그대로 재사용했다. **이로써 같은 부류를 여섯 번 기각한 셈이다.** 답글로 근거를 남기고 스레드 2개 모두 resolved
+
 다음 할 일:
-- **`main` 병합 동의를 받는다** (AGENTS.md 6절 — 건별 동의). 병합 전 봇 리뷰 3종 확인, 특히 **Codex는 자동으로 안 붙을 수 있으니 `@codex review`를 손으로 건다**
+- **`main` 병합 동의를 받는다** (AGENTS.md 6절 — 건별 동의). **리뷰·CI는 전부 끝났고 남은 것은 동의뿐이다**
 - ~~사용자 결정 2건 대기~~ — 아래는 결정 전 기록이다: ① 모바일 폭 값(**390px 권장** — #93 실측·`ui-standard.md` 7절이 이미 390을 좁은 폭 표준으로 쓴다. PC는 `captureWidth` 그대로 = 현행) ② 적용 단위(**`Scene` 필드 + 직전 화면 값 프리필 권장** — 프로젝트 기본값 필드를 안 두고도 반복 입력이 사라진다. `pageSectionLabel`이 T38-4에서 쓴 패턴)
 - **호환**: `targetDevice` 없으면 `desktop`으로 읽어 현행 동작 유지. `captureWidth` 폴백 계약도 그대로 (구현·테스트로 확인했다)
 
