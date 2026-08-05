@@ -602,7 +602,13 @@ function applyStageFit(iframe: HTMLIFrameElement, docWidth: number, docHeight: n
   const styles = getComputedStyle(body);
   const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
   const padBottom = parseFloat(styles.paddingBottom);
-  const availWidth = body.clientWidth - padX;
+  // wrap은 전역 `box-sizing: border-box`에 테두리 1px + `overflow: hidden`이다. 지정한
+  // width/height에서 테두리만큼 콘텐츠 상자가 작아지므로, 그대로 두면 축소된 캡처의
+  // 오른쪽·아래가 잘린다 (실측: 1.58px / 1.61px). 가용 폭에서 빼고 최종 크기에 되돌린다.
+  const wrapStyles = getComputedStyle(wrap);
+  const borderX = parseFloat(wrapStyles.borderLeftWidth) + parseFloat(wrapStyles.borderRightWidth);
+  const borderY = parseFloat(wrapStyles.borderTopWidth) + parseFloat(wrapStyles.borderBottomWidth);
+  const availWidth = body.clientWidth - padX - borderX;
   const wrapTop = wrap.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
   if (availWidth <= 0 || docWidth <= 0 || docHeight <= 0) return;
 
@@ -611,7 +617,7 @@ function applyStageFit(iframe: HTMLIFrameElement, docWidth: number, docHeight: n
   // 콘텐츠 높이라 제약으로 쓰면 배율이 무의미하게 작아진다 — 실측에서 900px일 때 0.217까지
   // 떨어져 캡처가 278px로 쪼그라들었다. 이 구간은 폭으로만 맞춘다.
   const heightBounded = styles.overflowY !== "visible";
-  const availHeight = body.clientHeight - wrapTop - padBottom;
+  const availHeight = body.clientHeight - wrapTop - padBottom - borderY;
   const scale = heightBounded && availHeight > 0
     ? Math.min(1, availWidth / docWidth, availHeight / docHeight)
     : Math.min(1, availWidth / docWidth);
@@ -623,8 +629,9 @@ function applyStageFit(iframe: HTMLIFrameElement, docWidth: number, docHeight: n
   }
   scaler.style.transformOrigin = "top left";
   scaler.style.transform = `scale(${scale})`;
-  wrap.style.width = `${Math.round(docWidth * scale)}px`;
-  wrap.style.height = `${Math.round(docHeight * scale)}px`;
+  // 올림 — 내림하면 콘텐츠 상자가 축소본보다 1px 작아져 다시 잘린다
+  wrap.style.width = `${Math.ceil(docWidth * scale) + borderX}px`;
+  wrap.style.height = `${Math.ceil(docHeight * scale) + borderY}px`;
 }
 
 function renderMarkers(
