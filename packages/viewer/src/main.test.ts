@@ -195,6 +195,9 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
     const root = document.getElementById("app")!;
     renderViewer(flowProject(), new Map(), root, { showScrCodes: true });
 
+    // 흐름도는 기본 접힘(킥오프 19차)이라 그래프를 보려면 먼저 펼친다
+    root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
+
     // 섹션 2 흐름도 — 노드 4개(장면 전부) + 간선 라벨
     const flow = root.querySelector(".ms-flow");
     expect(flow).not.toBeNull();
@@ -222,17 +225,21 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
     expect(root.querySelector(".ms-flow")).toBeNull();
   });
 
-  it("뷰어: 흐름도 접기 토글 — 접으면 SVG 본문이 사라지고 다시 펼 수 있다", () => {
+  it("뷰어: 흐름도는 기본 접힘이고 토글로 펼쳤다 접을 수 있다 (킥오프 19차)", () => {
     document.body.innerHTML = `<div id="app"></div>`;
     const root = document.getElementById("app")!;
     renderViewer(flowProject(), new Map(), root);
 
-    root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
-    expect(root.querySelector(".ms-flow-body")).toBeNull();      // 본문 숨김
-    expect(root.querySelector(".ms-flow")).not.toBeNull();       // 헤드는 유지
+    // 기본 접힘 — 순차 읽기는 전/후 컨트롤이 담당하고 흐름도는 비순차 점프 전용이다.
+    // 헤드(제목+토글)는 남아 있어야 언제든 펼 수 있다.
+    expect(root.querySelector(".ms-flow-body")).toBeNull();
+    expect(root.querySelector(".ms-flow")).not.toBeNull();
 
     root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
     expect(root.querySelector(".ms-flow-body svg")).not.toBeNull();
+
+    root.querySelector<HTMLButtonElement>(".ms-flow .ms-collapse-btn")!.click();
+    expect(root.querySelector(".ms-flow-body")).toBeNull();
   });
 
   it("뷰어(산출물): SCR 미노출 + 페이지 헤더 밴드 + headerTitle 우선 제목", () => {
@@ -267,5 +274,93 @@ describe("프로세스 흐름도 (T28, output-standard §2 섹션 2)", () => {
 
     renderViewer(project({ scenes: [scene("scn_1", 0)] }), new Map(), root);
     expect(root.querySelector(".ms-meta")?.textContent).not.toContain("작성자");
+  });
+});
+
+describe("산출물 레이아웃 — 화면기획서 2컬럼 (이슈 #86, s1-kickoff 11절 19차)", () => {
+  beforeEach(() => {
+    document.body.innerHTML = `<div id="app"></div>`;
+  });
+
+  const threeScenes = () =>
+    project({
+      scenes: [scene("scn_1", 0), scene("scn_2", 1), scene("scn_3", 2)],
+      annotations: [annotation()],
+    });
+
+  it("좌측 화면목록을 렌더하지 않는다 — 화면영역 + 디스크립션 2컬럼", () => {
+    const root = document.getElementById("app")!;
+    renderViewer(threeScenes(), new Map(), root);
+
+    expect(root.querySelector(".ms-sidebar")).toBeNull();
+    expect(root.querySelector(".ms-scene-button")).toBeNull();
+    // 남는 두 열은 화면영역과 디스크립션이다
+    expect(root.querySelector(".ms-main")).not.toBeNull();
+    expect(root.querySelector(".ms-panel")).not.toBeNull();
+  });
+
+  it("전/후 컨트롤로 화면을 앞뒤로 옮기고 현재 위치를 보여준다", () => {
+    const root = document.getElementById("app")!;
+    renderViewer(threeScenes(), new Map(), root);
+
+    const nav = () => root.querySelector(".ms-scene-nav")!;
+    const buttons = () => [...nav().querySelectorAll<HTMLButtonElement>(".ms-nav-btn")];
+    const position = () => nav().querySelector(".ms-nav-position")?.textContent;
+
+    expect(position()).toBe("1 / 3");
+    expect(buttons()[0]!.disabled).toBe(true); // 첫 화면에서 [이전] 비활성
+    expect(buttons()[1]!.disabled).toBe(false);
+
+    buttons()[1]!.click();
+    expect(position()).toBe("2 / 3");
+    expect(root.querySelector(".ms-stage-title")?.textContent).toBe("scn_2");
+    expect(buttons()[0]!.disabled).toBe(false);
+
+    buttons()[1]!.click();
+    expect(position()).toBe("3 / 3");
+    expect(buttons()[1]!.disabled).toBe(true); // 마지막 화면에서 [다음] 비활성
+
+    buttons()[0]!.click();
+    expect(position()).toBe("2 / 3");
+    expect(root.querySelector(".ms-stage-title")?.textContent).toBe("scn_2");
+  });
+
+  it("전이가 없어 흐름도가 없어도 모든 화면에 도달할 수 있다", () => {
+    // 이 단정이 19차 개정의 핵심 근거다 — 흐름도를 유일한 이동 수단으로 두면
+    // 전이 미입력 프로젝트는 2번째 화면부터 도달 불가가 된다.
+    const root = document.getElementById("app")!;
+    renderViewer(threeScenes(), new Map(), root);
+
+    expect(root.querySelector(".ms-flow")).toBeNull(); // 전이 0건 → 흐름도 생략(계약 유지)
+    const nav = root.querySelector(".ms-scene-nav");
+    expect(nav).not.toBeNull();
+
+    const next = () => [...root.querySelectorAll<HTMLButtonElement>(".ms-nav-btn")][1]!;
+    next().click();
+    next().click();
+    expect(root.querySelector(".ms-stage-title")?.textContent).toBe("scn_3");
+  });
+
+  it("화면이 하나뿐이면 전/후 버튼이 둘 다 비활성이다", () => {
+    const root = document.getElementById("app")!;
+    renderViewer(project({ scenes: [scene("scn_1", 0)], annotations: [annotation()] }), new Map(), root);
+
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>(".ms-nav-btn")];
+    expect(buttons.map((b) => b.disabled)).toEqual([true, true]);
+    expect(root.querySelector(".ms-nav-position")?.textContent).toBe("1 / 1");
+  });
+
+  it("전/후 컨트롤은 스크롤 영역 밖에 있어 스냅샷을 내려봐도 남는다", () => {
+    const root = document.getElementById("app")!;
+    renderViewer(threeScenes(), new Map(), root);
+
+    const main = root.querySelector(".ms-main")!;
+    const body = main.querySelector(".ms-main-body");
+    const nav = main.querySelector(".ms-scene-nav");
+    expect(body).not.toBeNull();
+    expect(nav).not.toBeNull();
+    // 컨트롤이 스크롤 영역(.ms-main-body) 안에 있으면 함께 스크롤돼 사라진다
+    expect(body!.contains(nav!)).toBe(false);
+    expect(nav!.parentElement).toBe(main);
   });
 });

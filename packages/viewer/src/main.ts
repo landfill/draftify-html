@@ -45,9 +45,10 @@ interface ResolveResult {
 interface ViewerState {
   activeAnnotationId: string | null;
   selectedSceneId: string | null;
-  /** 왼쪽 장면 네비 접힘 — 넓은 캡처에서 중앙을 넓혀 가로 스크롤을 줄인다 */
-  sidebarCollapsed: boolean;
-  /** 프로세스 흐름도 섹션 접힘 (output-standard §2 섹션 2) */
+  /**
+   * 프로세스 흐름도 섹션 접힘 (output-standard §2 섹션 2). **기본 true** — 순차 읽기는
+   * 화면영역 하단 전/후 컨트롤이 담당하고 흐름도는 비순차 점프 전용이다 (킥오프 19차).
+   */
   flowCollapsed: boolean;
 }
 
@@ -573,6 +574,59 @@ function frameDocument(iframe: HTMLIFrameElement): Document | null {
   }
 }
 
+/**
+ * 캡처를 화면영역에 맞춰 축소한다 (s1-kickoff 11절 19차, 이슈 #86).
+ *
+ * 배율은 iframe과 마커 레이어를 함께 감싼 `.ms-stage-scale`에만 걸린다 — 마커 좌표는
+ * iframe **문서** 좌표계에서 나오고 부모의 transform은 그 좌표계를 바꾸지 않으므로,
+ * 둘을 한 덩어리로 축소하면 정합이 그대로 유지된다(E2E ≤2px 계약).
+ *
+ * `transform`은 레이아웃 상자를 줄이지 않아 그대로 두면 `.ms-main`이 계속 스크롤된다.
+ * 그래서 바깥 `.ms-stage-wrap`에 축소 후 크기를 직접 지정한다.
+ *
+ * **1.0을 넘겨 확대하지 않는다** — 작은 캡처를 늘리면 흐려지기만 한다.
+ */
+function applyStageFit(iframe: HTMLIFrameElement, docWidth: number, docHeight: number): void {
+  const scaler = iframe.closest(".ms-stage-scale");
+  const wrap = iframe.closest(".ms-stage-wrap");
+  if (!(scaler instanceof HTMLElement) || !(wrap instanceof HTMLElement)) return;
+  const body = wrap.closest(".ms-main-body");
+  if (!(body instanceof HTMLElement)) return;
+
+  // 가용 공간 = 스크롤 영역의 내부 폭·높이에서 wrap 위쪽 요소(밴드·스테이지 헤더)를 뺀 값.
+  //
+  // **`offsetTop`을 쓰지 않는다.** 그 값은 `offsetParent` 기준인데 `.ms-main-body`는
+  // static이라 부모가 셸까지 올라간다 — 헤더·흐름도 높이가 함께 딸려와 이중으로 빠졌다
+  // (실측: 1470px에서 22px짜리 헤더 뒤인데 offsetTop이 140, 배율이 0.706 대신 0.571).
+  // 두 rect의 차이는 어떤 배치에서도 body 기준 오프셋을 준다.
+  const styles = getComputedStyle(body);
+  const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+  const padBottom = parseFloat(styles.paddingBottom);
+  const availWidth = body.clientWidth - padX;
+  const wrapTop = wrap.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
+  if (availWidth <= 0 || docWidth <= 0 || docHeight <= 0) return;
+
+  // **높이는 셸이 뷰포트에 고정돼 있을 때만 제약이다.** 좁은 화면(≤900px)은 1단 스택 +
+  // 페이지 스크롤로 돌아가고(`.ms-main-body { overflow: visible }`), 그때 clientHeight는
+  // 콘텐츠 높이라 제약으로 쓰면 배율이 무의미하게 작아진다 — 실측에서 900px일 때 0.217까지
+  // 떨어져 캡처가 278px로 쪼그라들었다. 이 구간은 폭으로만 맞춘다.
+  const heightBounded = styles.overflowY !== "visible";
+  const availHeight = body.clientHeight - wrapTop - padBottom;
+  const scale = heightBounded && availHeight > 0
+    ? Math.min(1, availWidth / docWidth, availHeight / docHeight)
+    : Math.min(1, availWidth / docWidth);
+  if (scale >= 1) {
+    scaler.style.transform = "";
+    wrap.style.width = "";
+    wrap.style.height = "";
+    return;
+  }
+  scaler.style.transformOrigin = "top left";
+  scaler.style.transform = `scale(${scale})`;
+  wrap.style.width = `${Math.round(docWidth * scale)}px`;
+  wrap.style.height = `${Math.round(docHeight * scale)}px`;
+}
+
 function renderMarkers(
   scene: Scene,
   annotations: Annotation[],
@@ -645,6 +699,7 @@ function renderMarkers(
   layer.style.width = `${docWidth}px`;
   layer.style.height = `${docHeight}px`;
   layer.innerHTML = "";
+  applyStageFit(iframe, docWidth, docHeight);
 
   for (const annotation of annotationsOf(scene, annotations)) {
     const resolved = resolveAnchor(annotation.anchor, doc);
@@ -757,57 +812,40 @@ function renderAnnotationPanel(
   return panel;
 }
 
-function renderSidebar(
+/**
+ * 화면 이동 컨트롤 — 화면영역 하단 (s1-kickoff 11절 19차, 이슈 #86).
+ *
+ * 좌측 화면목록을 없앤 뒤의 **주** 이동 수단이다. 흐름도(비순차 점프)는 전이가 하나도
+ * 없으면 렌더되지 않으므로, 이 컨트롤이 없으면 전이 미입력 프로젝트는 2번째 화면부터
+ * 도달할 수 없다 — 그래서 흐름도 유무와 무관하게 **항상** 그린다.
+ */
+function renderSceneNav(
   scenes: Scene[],
-  selectedSceneId: string | null,
-  collapsed: boolean,
+  selectedSceneId: string,
   onSelect: (sceneId: string) => void,
-  onToggle: () => void,
-  showScrCodes: boolean,
 ): HTMLElement {
-  if (collapsed) {
-    // 접힘: 얇은 레일 + 펼치기 버튼만 (중앙을 최대한 넓힌다)
-    const rail = child("aside", "ms-sidebar ms-sidebar--collapsed");
-    const expand = child("button", "ms-collapse-btn");
-    expand.type = "button";
-    expand.title = "화면 목록 펼치기";
-    setText(expand, "»");
-    expand.addEventListener("click", onToggle);
-    rail.append(expand);
-    return rail;
-  }
+  const nav = child("nav", "ms-scene-nav");
+  nav.setAttribute("aria-label", "화면 이동");
+  const index = scenes.findIndex((scene) => scene.id === selectedSceneId);
 
-  const aside = child("aside", "ms-sidebar");
-  const head = child("div", "ms-sidebar-head");
-  const heading = child("div", "ms-section-title");
-  setText(heading, "화면");
-  const collapse = child("button", "ms-collapse-btn");
-  collapse.type = "button";
-  collapse.title = "화면 목록 접기";
-  setText(collapse, "«");
-  collapse.addEventListener("click", onToggle);
-  head.append(heading, collapse);
-  aside.append(head);
-
-  for (const scene of scenes) {
-    const button = child("button", `ms-scene-button${scene.id === selectedSceneId ? " is-active" : ""}`);
+  const step = (delta: number, label: string, title: string): HTMLButtonElement => {
+    const button = child("button", "ms-nav-btn") as HTMLButtonElement;
     button.type = "button";
-    button.addEventListener("click", () => onSelect(scene.id));
-
-    const code = child("span", "ms-code");
-    setText(code, scene.code);
-    const title = child("span", "ms-scene-title");
-    setText(title, scene.title || "(제목 없음)");
-    if (showScrCodes) {
-      button.append(code, title);
+    setText(button, label);
+    button.title = title;
+    const target = scenes[index + delta];
+    if (target) {
+      button.addEventListener("click", () => onSelect(target.id));
     } else {
-      setText(title, sceneNavLabel(scene, false));
-      button.append(title);
+      button.disabled = true;
     }
-    aside.append(button);
-  }
+    return button;
+  };
 
-  return aside;
+  const position = child("span", "ms-nav-position");
+  setText(position, `${index + 1} / ${scenes.length}`);
+  nav.append(step(-1, "← 이전", "이전 화면"), position, step(1, "다음 →", "다음 화면"));
+  return nav;
 }
 
 /** 페이지 헤더 밴드 — pageSectionLabel·headerTitle 중 하나라도 있을 때만 (output-standard §2). */
@@ -840,9 +878,13 @@ function renderStage(
 ): HTMLElement {
   markerRefresh.current = null; // 이전 장면의 stale 콜백 제거 (스냅샷 없는 장면 포함)
   const main = child("main", "ms-main");
+  // 화면영역은 [스크롤 영역][전/후 컨트롤] 세로 2단이다 — 컨트롤은 스크롤을 따라가지 않고
+  // 바닥에 붙어 있어야 한다 (s1-kickoff 11절 19차, 이슈 #86).
+  const body = child("div", "ms-main-body");
+  main.append(body);
 
   const band = renderPageHeaderBand(scene);
-  if (band) main.append(band);
+  if (band) body.append(band);
 
   const header = child("div", "ms-stage-header");
   const titleGroup = child("div");
@@ -857,17 +899,20 @@ function renderStage(
   const route = child("div", "ms-meta");
   setText(route, scene.route);
   header.append(titleGroup, route);
-  main.append(header);
+  body.append(header);
 
   const snapshotHtml = snapshots.get(scene.id);
   if (!snapshotHtml) {
     const placeholder = child("div", "ms-empty");
     placeholder.innerHTML = `<p class="ms-warning">스냅샷이 없는 화면입니다.</p><p>편집 화면에서 캡처 후 다시 내보내세요.</p>`;
-    main.append(placeholder);
+    body.append(placeholder);
     return main;
   }
 
   const wrap = child("div", "ms-stage-wrap");
+  // fit 축소는 이 안쪽 요소에만 건다 — iframe과 마커 레이어가 한 덩어리로 축소되므로
+  // 둘의 좌표계가 어긋나지 않는다. 테두리를 가진 wrap은 배율 밖에 둬서 1px로 유지한다.
+  const scaler = child("div", "ms-stage-scale");
   const iframe = child("iframe", "ms-frame") as HTMLIFrameElement;
   iframe.setAttribute("sandbox", "allow-same-origin");
   iframe.title = `${sceneDisplayTitle(scene)} 스냅샷`;
@@ -883,8 +928,9 @@ function renderStage(
     void frameDocument(iframe)?.fonts?.ready?.then(() => requestAnimationFrame(settle));
   });
   iframe.srcdoc = snapshotHtml;
-  wrap.append(iframe, layer);
-  main.append(wrap);
+  scaler.append(iframe, layer);
+  wrap.append(scaler);
+  body.append(wrap);
 
   // resize 재계산은 renderViewer의 단일 리스너가 이 콜백을 호출한다
   // (장면 전환마다 window 리스너를 새로 달면 누적됨)
@@ -921,8 +967,9 @@ export function renderViewer(
   const scenes = orderedScenes(project);
   const state: ViewerState = {
     activeAnnotationId: null,
-    sidebarCollapsed: false,
-    flowCollapsed: false,
+    // 흐름도는 기본 접힘 — 순차 읽기는 화면영역 하단 전/후 컨트롤이 담당하고, 흐름도는
+    // 비순차 점프 전용이다 (s1-kickoff 11절 19차, 이슈 #86).
+    flowCollapsed: true,
     selectedSceneId: scenes[0]?.id ?? null,
   };
   const generatedAt = document.querySelector<HTMLMetaElement>('meta[name="mockspec-generated-at"]')?.content ?? null;
@@ -963,22 +1010,12 @@ export function renderViewer(
     }, showScrCodes);
     if (flow) shell.append(flow);
 
-    // 접힘 시 왼쪽 컬럼을 얇은 레일로 → 중앙 확대 (가로 스크롤 감소). 클래스로 처리해
-    // 모바일 미디어쿼리(1단 스택)가 정상 우선하도록 한다 (인라인 스타일 회피).
-    const layout = child("div", `ms-layout${state.sidebarCollapsed ? " ms-layout--collapsed" : ""}`);
+    // 화면영역 + 디스크립션 2컬럼 (s1-kickoff 11절 19차) — 좌측 화면목록은 두지 않는다.
+    const layout = child("div", "ms-layout");
+    const stage = renderStage(selectedScene, project, snapshots, state, root, markerRefresh, showScrCodes);
+    stage.append(renderSceneNav(scenes, selectedScene.id, onSelectScene));
     layout.append(
-      renderSidebar(
-        scenes,
-        selectedScene.id,
-        state.sidebarCollapsed,
-        onSelectScene,
-        () => {
-          state.sidebarCollapsed = !state.sidebarCollapsed;
-          render();
-        },
-        showScrCodes,
-      ),
-      renderStage(selectedScene, project, snapshots, state, root, markerRefresh, showScrCodes),
+      stage,
       renderAnnotationPanel(selectedScene, project.annotations, scenes, state, root, onSelectScene, showScrCodes),
     );
     shell.append(layout);

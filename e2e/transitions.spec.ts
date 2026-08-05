@@ -104,9 +104,14 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
 
   await viewer.goto(`file://${exportPath}`);
 
-  // 섹션 2: 프로세스 흐름도 — 장면 노드 2 + 간선 라벨(조건)
+  // 섹션 2: 프로세스 흐름도 — 기본은 접혀 있고(s1-kickoff 11절 19차) 헤드만 보인다.
+  // 순차 읽기는 하단 전/후 컨트롤이 담당하므로 흐름도는 비순차 점프 전용이다.
   const flow = viewer.locator(".ms-flow");
   await expect(flow).toBeVisible();
+  await expect(flow.locator(".ms-flow-body")).toHaveCount(0);
+  await flow.locator(".ms-collapse-btn").click();
+
+  // 펼치면 장면 노드 2 + 간선 라벨(조건)
   await expect(flow.locator(".ms-flow-node")).toHaveCount(2);
   await expect(flow.locator(".ms-flow-node text").first()).toHaveText("로그인");
   await expect(flow.locator(".ms-flow-label")).toHaveText("성공 시");
@@ -124,18 +129,26 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
     .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientHeight), { message: "장면 1 iframe = captureHeight" })
     .toBe(800);
 
-  // 세로 스크롤 내부화: 긴 스냅샷(800px > 뷰포트)이어도 페이지는 스크롤되지 않고
-  // 중앙(.ms-main)만 내부 스크롤 — 헤더·화면 목록·어노테이션 패널이 항상 보인다
+  // 셸은 뷰포트에 고정 — 페이지 세로 스크롤은 없다 (PR #3에서 채택, 계속 유효).
   // 서브픽셀 렌더링·배율 환경에서 scrollHeight가 1px 크게 측정될 수 있어 1px는 허용
   const pageScrolls = await viewer.evaluate(
     () => document.documentElement.scrollHeight - document.documentElement.clientHeight > 1,
   );
   expect(pageScrolls, "페이지 세로 스크롤 없음").toBe(false);
+
+  // fit 축소 (s1-kickoff 11절 19차, 이슈 #86): 캡처(1280×800)가 화면영역보다 크므로
+  // 축소해 담는다 — **화면영역도 더 이상 세로로 스크롤되지 않는다.** 종전에는 이 자리에서
+  // "중앙 컬럼 내부 스크롤 > 0"을 단정했는데, 그 스크롤을 없애는 것이 #86의 목적이다.
+  const fitScale = await viewer
+    .locator(".ms-stage-scale")
+    .evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
+  expect(fitScale, "캡처를 화면영역에 맞게 축소한다").toBeLessThan(1);
+  expect(fitScale, "축소 배율은 양수").toBeGreaterThan(0);
   await expect
-    .poll(() => viewer.locator(".ms-main").evaluate((el) => el.scrollHeight - el.clientHeight), {
-      message: "중앙 컬럼 내부 세로 스크롤",
+    .poll(() => viewer.locator(".ms-main-body").evaluate((el) => el.scrollHeight - el.clientHeight), {
+      message: "화면영역 세로 스크롤 — fit로 담기므로 없어야 한다",
     })
-    .toBeGreaterThan(0);
+    .toBeLessThanOrEqual(1);
 
   // 링크 클릭 → 장면 2로 전환(실행 대신 이동) + 흐름도 하이라이트 동기화
   await link.click();

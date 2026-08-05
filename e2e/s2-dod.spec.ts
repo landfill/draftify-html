@@ -181,9 +181,10 @@ test("S2 DoD: 프록시 URL 등록 → 장면 2/어노테이션 4 → 마스킹 
   }
   expect(maskedFound).toBe(true);
 
-  // 장면 2개
-  const sceneButtons = viewer.locator(".ms-scene-button");
-  await expect(sceneButtons).toHaveCount(2);
+  // 화면 2개 — 좌측 화면목록 없이 하단 전/후 컨트롤로 이동한다 (s1-kickoff 11절 19차, 이슈 #86)
+  await expect(viewer.locator(".ms-sidebar")).toHaveCount(0);
+  const navButtons = viewer.locator(".ms-nav-btn");
+  await expect(viewer.locator(".ms-nav-position")).toHaveText("1 / 2");
 
   const verifyScene = async (specs: typeof SCENE1 | typeof SCENE2) => {
     const markers = viewer.locator(".ms-marker");
@@ -224,7 +225,8 @@ test("S2 DoD: 프록시 URL 등록 → 장면 2/어노테이션 4 → 마스킹 
   await expect(viewer.locator(".ms-stage-title")).toHaveText("(제목 없음)");
   await verifyScene(SCENE1);
 
-  await sceneButtons.nth(1).click();
+  await navButtons.nth(1).click();
+  await expect(viewer.locator(".ms-nav-position")).toHaveText("2 / 2");
   await expect(viewer.locator(".ms-stage-title")).toHaveText("(제목 없음)");
   await verifyScene(SCENE2);
 

@@ -21,8 +21,9 @@ const VIEWER_CSS = `
 body { margin: 0; background: #f7f8f9; }
 button, input, textarea { font: inherit; }
 /* 헤더·(선택)흐름도·본문 3단 — 흐름도 섹션이 없어도 본문이 남은 높이를 채우도록 flex.
-   셸을 뷰포트 높이에 고정해 페이지 세로 스크롤을 없앤다 — 헤더·화면 목록·어노테이션
-   패널은 항상 보이고, 세로 스크롤은 3컬럼 각자 내부에서 일어난다 (긴 스냅샷은 중앙만 스크롤) */
+   셸을 뷰포트 높이에 고정해 페이지 세로 스크롤을 없앤다 — 타이틀과 디스크립션은 항상
+   보이고, 세로 스크롤은 2컬럼 각자 내부에서 일어난다 (킥오프 19차 이후 화면영역은 fit
+   축소로 캡처 전체를 담으므로 통상 스크롤이 생기지 않는다) */
 .ms-shell { height: 100vh; display: flex; flex-direction: column; }
 .ms-layout { flex: 1; }
 /* 문서 헤더 밴드 — 첫 화면에서 "기획서 문서"임이 드러나도록 본문과 대비 (#10).
@@ -37,33 +38,36 @@ button, input, textarea { font: inherit; }
 /* .ms-meta는 중앙 스테이지(route)에서도 쓰인다 — 밝은 색은 헤더 안으로 한정.
    흰색 — 그라디언트 밝은 쪽(#1a73e8) 위에서도 WCAG AA 4.5:1 충족 (리뷰 반영) */
 .ms-header .ms-meta { color: #fff; }
-/* 행을 minmax(0,1fr)로 고정 — auto 행은 콘텐츠 높이로 커져 셸을 넘치므로 내부 스크롤이 안 생긴다 */
-.ms-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); min-height: 0; }
-.ms-layout--collapsed { grid-template-columns: 40px minmax(0, 1fr) 300px; }
-.ms-sidebar, .ms-panel {
-  background: #fff; border-right: 1px solid #dfe3e7; overflow: auto; min-width: 0;
-}
-.ms-sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-right: 8px; }
-.ms-sidebar-head .ms-section-title { padding-bottom: 0; }
-.ms-sidebar--collapsed { display: flex; justify-content: center; padding-top: 10px; overflow: hidden; }
+/* 화면영역 + 디스크립션 2컬럼 (s1-kickoff 11절 19차, 이슈 #86) — 좌측 화면목록은 없앴다.
+   행을 minmax(0,1fr)로 고정 — auto 행은 콘텐츠 높이로 커져 셸을 넘치므로 내부 스크롤이 안 생긴다 */
+.ms-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.ms-panel { background: #fff; overflow: auto; min-width: 0; }
 .ms-collapse-btn {
   border: 1px solid #dfe3e7; background: #fff; border-radius: 6px; cursor: pointer;
   color: #5f6368; font-size: 14px; line-height: 1; padding: 4px 8px;
 }
 .ms-collapse-btn:hover { background: #f1f3f4; color: #202124; }
-.ms-panel { border-right: 0; border-left: 1px solid #dfe3e7; }
+.ms-panel { border-left: 1px solid #dfe3e7; }
 .ms-section-title { padding: 12px 14px 8px; font-size: 12px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: .04em; }
-.ms-scene-button {
-  display: block; width: calc(100% - 16px); margin: 0 8px 6px; padding: 10px 10px;
-  text-align: left; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #202124; cursor: pointer;
-  font-size: 12px;
-}
-.ms-scene-button:hover { background: #f1f3f4; }
-.ms-scene-button.is-active { border-color: #1a73e8; background: #e8f0fe; }
 .ms-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #1a73e8; font-size: 12px; font-weight: 700; }
 .ms-scene-title { display: block; margin-top: 2px; overflow-wrap: anywhere; }
-.ms-main { min-width: 0; overflow: auto; padding: 16px; }
-/* 넓은 캡처는 .ms-main이 양방향 스크롤 — 스테이지는 콘텐츠 너비로 커진다 (JS가 iframe 너비 지정) */
+/* 화면영역은 [스크롤 영역][전/후 컨트롤] 세로 2단 — 컨트롤은 스크롤을 따라가지 않는다 */
+.ms-main { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.ms-main-body { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+/* 화면 이동 컨트롤 (s1-kickoff 11절 19차) — 좌측 화면목록을 없앤 뒤의 주 이동 수단.
+   흐름도는 전이가 없으면 렌더되지 않으므로 이 컨트롤은 흐름도 유무와 무관하게 항상 있다 */
+.ms-scene-nav {
+  flex: none; display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 6px 16px; background: #fff; border-top: 1px solid #dfe3e7;
+}
+.ms-nav-btn {
+  border: 1px solid #dfe3e7; background: #fff; border-radius: 8px; cursor: pointer;
+  color: #202124; font-size: 13px; line-height: 1; padding: 8px 14px;
+}
+.ms-nav-btn:hover:not(:disabled) { background: #f1f3f4; }
+.ms-nav-btn:disabled { color: #9aa0a6; cursor: default; }
+.ms-nav-position { color: #5f6368; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* 축소 하한을 넘길 만큼 큰 캡처만 .ms-main-body가 양방향 스크롤한다 (통상은 fit로 담긴다) */
 .ms-stage-header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 12px; }
 .ms-page-band {
   margin-bottom: 12px; padding: 12px 14px; background: #fff; border: 1px solid #dfe3e7;
@@ -74,9 +78,14 @@ button, input, textarea { font: inherit; }
 .ms-stage-title { margin: 0; font-size: 16px; line-height: 1.4; }
 .ms-note { margin: 6px 0 0; color: #5f6368; font-size: 13px; }
 .ms-stage-wrap {
-  position: relative; min-height: 480px; background: #fff; border: 1px solid #dfe3e7;
+  position: relative; background: #fff; border: 1px solid #dfe3e7;
   border-radius: 8px; overflow: hidden; width: max-content; max-width: none;
+  /* fit 축소 후 남는 가로 여백은 양옆으로 나눈다 — 한쪽에 몰리면 빈 공간이 결함처럼 보인다 */
+  margin-inline: auto;
 }
+/* fit 축소 (킥오프 19차): iframe과 마커 레이어를 한 덩어리로 줄여 좌표계가 어긋나지 않게 한다.
+   transform은 레이아웃 상자를 줄이지 않으므로 축소 후 크기는 JS가 .ms-stage-wrap에 지정한다 */
+.ms-stage-scale { position: relative; transform-origin: top left; }
 .ms-frame { display: block; width: 100%; min-height: 480px; border: 0; background: #fff; }
 .ms-marker-layer { position: absolute; inset: 0; pointer-events: none; }
 .ms-marker {
@@ -117,7 +126,7 @@ button, input, textarea { font: inherit; }
 .ms-flow { background: #fff; border-bottom: 1px solid #dfe3e7; }
 .ms-flow-head { display: flex; align-items: center; justify-content: space-between; padding-right: 12px; }
 .ms-flow-head .ms-section-title { padding-bottom: 8px; }
-/* 큰 그래프가 본문(3컬럼)을 밀어내지 않도록 높이를 제한하고 섹션 안에서만 스크롤 */
+/* 큰 그래프가 본문(2컬럼)을 밀어내지 않도록 높이를 제한하고 섹션 안에서만 스크롤 */
 .ms-flow-body { overflow: auto; max-height: 40vh; padding: 0 14px 14px; }
 .ms-flow-body svg { display: block; }
 .ms-flow-edge { fill: none; stroke: #5f6368; stroke-width: 1.5; }
@@ -129,14 +138,16 @@ button, input, textarea { font: inherit; }
 .ms-flow-node.is-active rect { stroke: #1a73e8; stroke-width: 2; fill: #d2e3fc; }
 .ms-warning { color: #b06000; font-weight: 700; }
 @media (max-width: 900px) {
-  /* 1단 스택은 뷰포트에 3컬럼이 다 안 들어간다 — 페이지 스크롤로 되돌린다 */
+  /* 1단 스택은 뷰포트에 2컬럼이 다 안 들어간다 — 페이지 스크롤로 되돌린다 */
   .ms-shell { height: auto; min-height: 100vh; }
   .ms-header { align-items: flex-start; flex-direction: column; }
   .ms-meta { white-space: normal; }
-  .ms-layout { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
-  .ms-sidebar, .ms-panel { border: 0; border-bottom: 1px solid #dfe3e7; max-height: 240px; }
-  .ms-main { order: 2; }
-  .ms-panel { order: 3; max-height: none; }
+  .ms-layout { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+  .ms-panel { border: 0; border-top: 1px solid #dfe3e7; }
+  .ms-main { order: 1; }
+  .ms-panel { order: 2; }
+  /* 페이지 스크롤로 돌아가므로 화면영역 내부 스크롤을 풀어 캡처가 잘리지 않게 한다 */
+  .ms-main-body { overflow: visible; }
 }
 `.trim();
 
