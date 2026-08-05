@@ -152,10 +152,17 @@
 - 두 배포가 공유하는 코드 — 특히 `packages/server/src/routes/export.ts`
   (`apps/web/lib/export/build-export.ts`가 `buildExportHtml`을 import한다), `packages/shared`, `packages/viewer`
 
-**통과 개수를 눈으로 확인한다.** `apps/web/.env.local`이 없으면 8본이 **조용히 전부
-스킵**된다(설계된 동작 — `playwright.open-service.config.ts` 주석). 출력이 `8 passed`가
-아니라 `8 skipped`이면 **검증한 것이 아니다.** 새 환경이면 `apps/web/.env.example`을
-복사해 세 키를 채운다. PR 본문에는 실행 결과(통과 개수)를 적는다.
+**`skipped`가 하나라도 있으면 검증한 것이 아니다.** 스위트는 환경이 갖춰지지 않으면
+**전부 조용히 스킵**된다(설계된 동작 — `playwright.open-service.config.ts` 주석).
+`passed`만 있고 `skipped`가 0인지 눈으로 확인하고, PR 본문에 그 결과를 적는다.
+
+**스킵을 가르는 것은 파일의 존재가 아니라 값이다.** 게이트는
+`e2e-open-service/open-service-dod.spec.ts`의 `hasEnv`이고, 세 조건을 모두 본다 —
+`NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 비어 있지 않고,
+`SUPABASE_SECRET_KEY`가 `sb_secret_`로 시작할 것. **`apps/web/.env.local`이 있어도 값이
+비었거나 시크릿 키 접두가 다르면 그대로 전부 스킵된다.** 새 환경이면
+`apps/web/.env.example`을 복사해 채운다. (조건은 위 스펙 파일이 정본이다 — 여기 옮겨
+적은 것이 어긋나면 그쪽을 믿는다.)
 
 **왜 CI에 넣지 않는가 (세 안 중 C를 택한 이유):** Supabase 프로젝트가 하나뿐이라
 Preview·Production이 같은 DB·Storage를 본다. CI에 키를 넣으면 푸시마다 **프로덕션 DB에**
