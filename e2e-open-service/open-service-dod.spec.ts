@@ -251,8 +251,11 @@ test.describe("공개 서비스 DoD (W9)", () => {
     viewer.on("request", (req) => requests.push(req.url()));
     await viewer.goto(`file://${exportPath}`);
 
-    const sceneButtons = viewer.locator(".ms-scene-button");
-    await expect(sceneButtons).toHaveCount(2);
+    // 좌측 화면목록은 없다 — 화면영역 + 디스크립션 2컬럼이고 이동은 하단 전/후 컨트롤이
+    // 담당한다 (s1-kickoff 11절 19차, 이슈 #86)
+    await expect(viewer.locator(".ms-sidebar")).toHaveCount(0);
+    const navButtons = viewer.locator(".ms-nav-btn");
+    await expect(viewer.locator(".ms-nav-position")).toHaveText("1 / 2");
     await expect(viewer.locator(".ms-title")).toContainText("Todo 목업 기획서");
     await expect(viewer.locator(".ms-header .ms-meta"), "작성자 라벨·집계").toContainText(
       "작성자 김기획 · 생성:",
@@ -295,7 +298,8 @@ test.describe("공개 서비스 DoD (W9)", () => {
     };
 
     await verifyScene(SCENE1);
-    await sceneButtons.nth(1).click();
+    await navButtons.nth(1).click();
+    await expect(viewer.locator(".ms-nav-position")).toHaveText("2 / 2");
     await verifyScene(SCENE2);
 
     const external = requests.filter((u) => !u.startsWith("file://"));

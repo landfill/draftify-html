@@ -105,11 +105,14 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
 
   await viewer.goto(`file://${exportPath}`);
 
-  // 장면 2개 — 산출물(export)은 SCR 미노출, 제목 슬롯만 표시 (#38 방향 2)
-  const sceneButtons = viewer.locator(".ms-scene-button");
-  await expect(sceneButtons).toHaveCount(2);
-  await expect(sceneButtons.nth(0)).toContainText("(제목 없음)");
-  await expect(sceneButtons.nth(0)).not.toContainText("SCR-");
+  // 좌측 화면목록은 없다 — 화면영역 + 디스크립션 2컬럼 (s1-kickoff 11절 19차, 이슈 #86)
+  await expect(viewer.locator(".ms-sidebar")).toHaveCount(0);
+
+  // 화면 2개 — 이동은 화면영역 하단 전/후 컨트롤. 산출물은 SCR 미노출 (#38 방향 2)
+  const navButtons = viewer.locator(".ms-nav-btn");
+  const navPosition = viewer.locator(".ms-nav-position");
+  await expect(navPosition).toHaveText("1 / 2");
+  await expect(viewer.locator(".ms-stage-title")).not.toContainText("SCR-");
 
   // 장면별 검증 헬퍼: 마커 2개가 "올바른 요소 위"(대상 좌상단) + 설명 텍스트 일치
   const verifyScene = async (specs: typeof SCENE1 | typeof SCENE2) => {
@@ -147,15 +150,19 @@ test("S1 DoD: 업로드 → 장면 2·어노테이션 4 → export → file:// �
     }
   };
 
-  // 장면 1 검증 → 장면 2로 전환 → 검증 → 다시 장면 1로 (전환 왕복)
+  // 장면 1 검증 → [다음 →]으로 장면 2 → 검증 → [← 이전]으로 복귀 (전환 왕복)
   await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
+  await expect(navButtons.nth(0)).toBeDisabled(); // 첫 화면에서 [이전] 비활성
   await verifyScene(SCENE1);
 
-  await sceneButtons.nth(1).click();
+  await navButtons.nth(1).click();
+  await expect(navPosition).toHaveText("2 / 2");
+  await expect(navButtons.nth(1)).toBeDisabled(); // 마지막 화면에서 [다음] 비활성
   await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
   await verifyScene(SCENE2);
 
-  await sceneButtons.nth(0).click();
+  await navButtons.nth(0).click();
+  await expect(navPosition).toHaveText("1 / 2");
   await expect(viewer.locator(".ms-stage-title")).toContainText("(제목 없음)");
 
   // 마커 ↔ 목록 상호 하이라이트
