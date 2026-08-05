@@ -142,6 +142,29 @@
 - 임시 파일은 커밋하지 않는다. `data/`는 gitignore 대상
 - **커밋 메시지에 co-author 트레일러를 넣지 않는다** (`Co-Authored-By:`, `Claude-Session:` 등). 에이전트 서명·세션 링크를 커밋 본문에 남기지 않는다
 
+### 병합 전 검증 — 공개판을 건드리면 `test:e2e:web`을 손으로 돌린다 (2026-08-06 결정, 이슈 #97)
+
+**CI(`.github/workflows/ci.yml`)는 사내판 E2E(`npm run test:e2e`)만 실행한다. 공개판
+스위트는 자동으로 돌지 않는다.** 따라서 다음을 건드린 작업은 **병합 전에 로컬에서
+`npm run test:e2e:web`을 직접 실행한다:**
+
+- `apps/web/**`
+- 두 배포가 공유하는 코드 — 특히 `packages/server/src/routes/export.ts`
+  (`apps/web/lib/export/build-export.ts`가 `buildExportHtml`을 import한다), `packages/shared`, `packages/viewer`
+
+**통과 개수를 눈으로 확인한다.** `apps/web/.env.local`이 없으면 8본이 **조용히 전부
+스킵**된다(설계된 동작 — `playwright.open-service.config.ts` 주석). 출력이 `8 passed`가
+아니라 `8 skipped`이면 **검증한 것이 아니다.** 새 환경이면 `apps/web/.env.example`을
+복사해 세 키를 채운다. PR 본문에는 실행 결과(통과 개수)를 적는다.
+
+**왜 CI에 넣지 않는가 (세 안 중 C를 택한 이유):** Supabase 프로젝트가 하나뿐이라
+Preview·Production이 같은 DB·Storage를 본다. CI에 키를 넣으면 푸시마다 **프로덕션 DB에**
+테스트 사용자·프로젝트가 쌓이고, W8 남용 방어의 `rate_limit_counters`가 CI 트래픽으로
+오염된다(B안). 테스트 전용 프로젝트를 따로 파는 A안은 마이그레이션 이중 적용이 딸려
+와 **#57(마이그레이션 통합 관리)이 선행해야 비용이 내려간다.** 지금 단계에서는 비용 0인
+수동 규약을 택한다 — 다만 **이 방식은 사람에 의존하고, #91이 정확히 그 틈으로 새어
+나갔다.** #57이 끝나면 A안을 재검토한다.
+
 ### main 병합 — 사용자 동의 필수
 
 - **`main`으로의 병합(merge/PR merge/fast-forward 포함)은 사용자의 명시적 동의 없이 절대 하지 않는다.**
