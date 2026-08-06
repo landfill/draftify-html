@@ -937,6 +937,9 @@ describe("내보내기 전 미저장 편집 선저장 (킥오프 §11 22차, 이
     await clickExport();
 
     expect(putBodies.length, "편집이 없어도 선저장을 시도한다").toBeGreaterThan(putsAfterBoot);
+    // 횟수만으로는 부족하다 — 서버의 옛 사본을 되보내도 횟수는 늘어난다.
+    // 큐에 남아 있던 최신 내용을 보내는지까지 봐야 이 계약이 지켜진 것이다.
+    expect(putBodies.at(-1)?.scenes[0]?.title, "큐에 남은 최신 내용을 보낸다").toBe("큐에 남은 제목");
     expect(confirmSpy.mock.calls.some(([m]) => String(m).includes("저장하지 못한 편집이 있습니다"))).toBe(true);
     expect(calls, "취소했으므로 옛 사본을 내보내지 않는다").not.toContain("POST /export");
   });
