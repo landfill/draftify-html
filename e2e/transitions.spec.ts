@@ -17,6 +17,9 @@ const SNAP1 = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title
 <body><h1>로그인</h1><button id="go">다음으로</button></body></html>`;
 const SNAP2 = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>완료</title></head>
 <body><h1 id="done-title">완료</h1></body></html>`;
+// [이슈 #99] 대상 기기 검증용 — 넓은 창(1470)에서 캡처된 모바일 화면을 흉내낸다
+const SNAP3 = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>알림</title></head>
+<body style="margin:0"><h1 id="noti-title">알림</h1></body></html>`;
 
 async function uploadSnapshot(
   request: APIRequestContext,
@@ -46,6 +49,7 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
   // ── 2. 스냅샷 업로드 + 장면 2·전이 1(조건) PUT ────────────────────
   const asset1 = await uploadSnapshot(request, project.id, token, SNAP1);
   const asset2 = await uploadSnapshot(request, project.id, token, SNAP2);
+  const asset3 = await uploadSnapshot(request, project.id, token, SNAP3);
 
   const now = new Date().toISOString();
   const spec = {
@@ -55,12 +59,14 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
     createdAt: project.createdAt,
     updatedAt: now,
     mockupSource: { type: "snippet", registeredAt: project.createdAt },
-    sceneCodeSeq: 3,
+    sceneCodeSeq: 4,
     scenes: [
       // captureWidth/Height: 캡처 시점 뷰포트 크기 — 뷰어가 이 크기로 렌더 (반응형·100vh류 캡처 재현)
       { id: "scn_login00001", code: "SCR-001", title: "로그인", route: "/", order: 0, annoNumberSeq: 2, snapshotAsset: asset1, frozenAt: now, captureWidth: 1280, captureHeight: 800 },
       // 구 스냅샷 호환: captureWidth/Height 없음 → 뷰어가 중앙 가용 폭·최소 높이로 폴백 (300px 붕괴 금지)
       { id: "scn_done000001", code: "SCR-002", title: "완료", route: "/done", order: 1, annoNumberSeq: 2, snapshotAsset: asset2, frozenAt: now },
+      // [이슈 #99] targetDevice=mobile → captureWidth(1470)를 무시하고 390px로 렌더 (킥오프 11절 21차)
+      { id: "scn_noti000001", code: "SCR-003", title: "알림", route: "/noti", order: 2, annoNumberSeq: 1, snapshotAsset: asset3, frozenAt: now, captureWidth: 1470, captureHeight: 800, targetDevice: "mobile" },
     ],
     annotations: [
       {
@@ -112,7 +118,7 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
   await flow.locator(".ms-collapse-btn").click();
 
   // 펼치면 장면 노드 2 + 간선 라벨(조건)
-  await expect(flow.locator(".ms-flow-node")).toHaveCount(2);
+  await expect(flow.locator(".ms-flow-node")).toHaveCount(3);
   await expect(flow.locator(".ms-flow-node text").first()).toHaveText("로그인");
   await expect(flow.locator(".ms-flow-label")).toHaveText("성공 시");
 
@@ -160,6 +166,15 @@ test("전이·흐름도: 전이 지정 spec → export → file://에서 흐름�
   await expect
     .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientWidth), { message: "장면 2 iframe 폴백 폭" })
     .toBeGreaterThan(500);
+
+  // [이슈 #99] 대상 기기 = 모바일이면 captureWidth(1470)가 아니라 390px로 그린다.
+  // 넓은 창에서 캡처된 모바일 화면이 좌우 여백을 안고 들어오는 것을 막는 계약이다
+  // (킥오프 11절 21차). 390이면 화면영역에 그대로 들어가므로 fit 축소도 걸리지 않는다.
+  await viewer.locator('.ms-flow-node[data-scene-id="scn_noti000001"]').click();
+  await expect(viewer.locator(".ms-stage-title")).toHaveText("알림");
+  await expect
+    .poll(() => viewer.locator(".ms-frame").evaluate((el) => el.clientWidth), { message: "장면 3 iframe = 모바일 폭" })
+    .toBe(390);
 
   // 흐름도 노드 클릭 → 장면 1로 복귀
   await viewer.locator('.ms-flow-node[data-scene-id="scn_login00001"]').click();

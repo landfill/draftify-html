@@ -77,6 +77,18 @@ export interface MaskingRule {
   replace: string;
 }
 
+/**
+ * [이슈 #99] 대상 기기 — 2종 고정 (킥오프 11절 21차). 태블릿은 두지 않는다.
+ * 렌더 기준 폭만 정하고 캡처에는 관여하지 않는다.
+ */
+export type TargetDevice = "mobile" | "desktop";
+
+/**
+ * `targetDevice === "mobile"`일 때 뷰어·산출물이 쓰는 렌더 기준 폭(px).
+ * 390은 이 저장소가 이미 좁은 폭 표준으로 쓰는 값이다 (이슈 #93 실측, ui-standard 7절).
+ */
+export const MOBILE_RENDER_WIDTH = 390;
+
 export interface Scene {
   /** "scn_" + nanoid(10) */
   id: string;
@@ -118,6 +130,13 @@ export interface Scene {
    * 높이로 렌더해야 잘리지 않는다. 없으면 뷰어는 최소 480px 폴백.
    */
   captureHeight?: number;
+  /**
+   * [이슈 #99] 대상 기기 — 뷰어·산출물의 **렌더 기준 폭**만 정한다 (킥오프 11절 21차).
+   * `"mobile"`이면 MOBILE_RENDER_WIDTH, `"desktop"`이거나 없으면 captureWidth(현행 동작).
+   * 캡처는 건드리지 않는다 — captureWidth/Height는 계속 캡처 시점 뷰포트 크기다.
+   * 사람 입력·추론 없음. 미지정이 기존 스펙 전부이므로 없을 때가 현행 동작이어야 한다.
+   */
+  targetDevice?: TargetDevice;
   /** [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존 — 규칙 변경 시 원본에서 재생성 */
   maskedSnapshotAsset?: string;
   /** [S2] 마스킹본 생성 시각 (ISO 8601) */

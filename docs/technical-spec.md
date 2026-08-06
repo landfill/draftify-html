@@ -133,6 +133,7 @@ export interface Scene {
   frozenAt?: string;
   captureWidth?: number;         // 캡처 시점 뷰포트 레이아웃 폭(px) — 뷰어가 스냅샷 iframe 기준 폭으로 사용, 반응형 캡처 레이아웃 재현 (킥오프 11절 8차)
   captureHeight?: number;        // 캡처 시점 뷰포트 높이(px) — 100vh류 페이지는 scrollHeight 측정 불가, 캡처 높이로 렌더해야 잘리지 않음 (킥오프 11절 8차)
+  targetDevice?: "mobile" | "desktop"; // [이슈 #99] 대상 기기 — 뷰어·산출물 렌더 폭 기준. mobile=390px 고정, desktop/미지정=captureWidth(현행 동작). 캡처는 건드리지 않는다 (킥오프 11절 21차)
   maskedSnapshotAsset?: string;  // [S2] 마스킹 적용본 asset 키. 원본(snapshotAsset)은 보존
   maskedAt?: string;             // [S2] 마스킹본 생성 시각 (ISO 8601)
 }

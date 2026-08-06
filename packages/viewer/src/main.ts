@@ -6,8 +6,26 @@ import type { Anchor, Annotation, Scene, SpecProject } from "@mockspec/shared";
  * shared와 드리프트 방지: sceneDisplay.parity.test.ts 동등성 테스트 + 킥오프 §11 18차.
  */
 
+/**
+ * [이슈 #99] 모바일 렌더 기준 폭 — shared의 `MOBILE_RENDER_WIDTH` 복제 (킥오프 11절 21차).
+ * 위 주석과 같은 이유로 런타임 import가 불가능하다. 동등성은 parity 테스트가 지킨다.
+ */
+const MOBILE_RENDER_WIDTH = 390;
+
 function hasDisplayText(value: string | undefined): boolean {
   return Boolean(value?.trim());
+}
+
+/**
+ * 스냅샷 iframe의 렌더 기준 폭 (킥오프 11절 21차).
+ * 대상 기기가 모바일이면 390px, 아니면 캡처 시점 폭 — 없으면(구 스냅샷) 호출부의 폴백.
+ *
+ * `captureWidth`는 기획자 브라우저 창 폭이라, 모바일 화면을 넓은 창에서 캡처하면 좌우가
+ * 빈 채로 문서에 들어가고 fit 축소(19차 ④)마저 그 빈 폭을 포함해 배율을 계산한다(#99).
+ */
+export function sceneRenderWidth(scene: Scene, fallbackWidth: number): number {
+  if (scene.targetDevice === "mobile") return MOBILE_RENDER_WIDTH;
+  return scene.captureWidth ?? fallbackWidth;
 }
 
 export function sceneDisplayTitle(scene: Scene): string {
@@ -656,13 +674,14 @@ function renderMarkers(
 
   const docRoot = doc.documentElement;
   const docBody = doc.body;
-  // 기준 폭 = 캡처 시점 뷰포트 폭(captureWidth) — 반응형 캡처가 그 폭으로 리플로우되어
-  // 캡처했던 레이아웃(데스크톱/모바일)이 그대로 재현된다. 구 스냅샷(필드 없음)은 중앙
-  // 가용 폭으로 폴백: .ms-stage-wrap(max-content) 안의 iframe(width:100%)은 기본 300px로
-  // 붕괴해 반응형 페이지가 모바일 레이아웃으로 보였다 (첫 레이아웃 폭이 measurement를 오염).
+  // 기준 폭 = 대상 기기(21차) → 캡처 시점 뷰포트 폭(captureWidth, 8차) → 중앙 가용 폭 순.
+  // captureWidth는 반응형 캡처가 그 폭으로 리플로우되어 캡처했던 레이아웃이 재현되게 한다.
+  // 구 스냅샷(필드 없음)은 중앙 가용 폭으로 폴백: .ms-stage-wrap(max-content) 안의
+  // iframe(width:100%)은 기본 300px로 붕괴해 반응형 페이지가 모바일 레이아웃으로 보였다
+  // (첫 레이아웃 폭이 measurement를 오염).
   const mainEl = iframe.closest(".ms-main");
   const fallbackWidth = mainEl instanceof HTMLElement ? mainEl.clientWidth - 32 /* 좌우 패딩 */ : 0;
-  const baseWidth = Math.max(scene.captureWidth ?? fallbackWidth, 1);
+  const baseWidth = Math.max(sceneRenderWidth(scene, fallbackWidth), 1);
   // 기준 높이 = 캡처 시점 뷰포트 높이. 100vh류(뷰포트 고정 높이) 페이지는 scrollHeight가
   // 항상 iframe 높이와 같아 콘텐츠 높이를 측정할 수 없다 — 최소값(480)으로 잠기면 캡처
   // 아래쪽이 잘린다(실사용: 메인 메뉴·박스오피스 소실). 캡처 높이로 먼저 리플로우한다.
