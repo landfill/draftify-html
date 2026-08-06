@@ -245,20 +245,18 @@ as $$
   );
 $$;
 
+-- ⚠️ `revoke ... from public`만으로는 부족하다 (이슈 #105).
+--    PUBLIC은 의사역할이라 그것만 회수해도 **Supabase default privileges가 명시적으로 부여한**
+--    anon·authenticated·service_role의 EXECUTE는 그대로 남는다. 그래서 anon을 따로 회수한다
+--    (같은 저장소의 `consume_rate_limit`·`rls_auto_enable`이 쓰는 방식과 같다).
 revoke all on function public.storage_object_owned_by_user(text) from public;
+revoke execute on function public.storage_object_owned_by_user(text) from anon;
 grant execute on function public.storage_object_owned_by_user(text) to authenticated;
 
--- ⚠️ 의도 ≠ 실제 (2026-08-06 실측, 이슈 #57 조사에서 발견).
---    위 두 줄의 의도는 "authenticated만 실행 가능"이었지만, 실제 ACL은
---    `postgres=X | anon=X | authenticated=X | service_role=X`로 **anon·service_role도 갖고 있다.**
---    원인: Supabase의 default privileges가 public 스키마 신규 함수에 세 역할 EXECUTE를
---    **명시적으로** 부여하는데, `revoke ... from public`은 PUBLIC 의사역할만 지우고
---    명시적 역할 grant는 지우지 않는다.
---    → security advisor 0028(anon이 SECURITY DEFINER 함수 실행 가능)이 지금 WARN 상태다.
---    영향: anon 컨텍스트에서는 auth.uid()가 null이라 항상 false를 반환하므로 정보 노출은
---    사실상 없다. 다만 **의도대로면 anon은 호출 자체가 불가해야 한다.**
---    조치는 이슈 #105로 분리했다 — 프로덕션 권한 변경이라 이 작업(정본 문서화)의 범위 밖이다.
---    적용할 때 필요한 문장: revoke execute on function public.storage_object_owned_by_user(text) from anon;
+-- service_role은 남긴다 — RLS를 우회하므로 이 함수를 쓸 일이 없지만, 회수는 이득 없이
+-- 서버 경로만 위태롭게 한다. advisor도 anon(0028)·authenticated(0029)만 본다.
+-- **authenticated는 의도적으로 유지한다** — 아래 정책들이 이 함수를 호출하고,
+-- 정책 표현식은 호출한 역할 권한으로 평가되므로 회수하면 업로드가 전부 막힌다.
 
 drop policy if exists "owner_storage_all" on storage.objects;  -- 구 통합 정책 (init) — 위 이유로 교체됐다
 
@@ -309,6 +307,13 @@ create policy "owner_storage_delete" on storage.objects
 --
 --  - sync_project_derived·storage_object_owned_by_user: search_path 고정 ''
 --  - consume_rate_limit: search_path = public 고정 + service_role만 EXECUTE
+--
+-- **수용하는 advisor 2건** (2026-08-06 실측 기준, 고치지 않기로 한 것들):
+--  - 0029 authenticated가 storage_object_owned_by_user 실행 가능 — **의도된 상태다.**
+--    storage.objects 정책 4종이 이 함수를 호출하고 정책 표현식은 호출 역할의 권한으로
+--    평가되므로, 회수하면 업로드·조회가 전부 RLS 위반으로 막힌다. 반환값도 "이 오브젝트가
+--    내 것인가" 불리언 하나뿐이다. (0028 anon 건은 이슈 #105로 회수했다.)
+--  - 0008 rate_limit_counters RLS 활성·정책 없음 — 위 4절대로 의도된 상태다.
 --  - rls_auto_enable(): "Enable automatic RLS" 옵션이 만든 SECURITY DEFINER 이벤트-트리거
 --    헬퍼. public 스키마라 PostgREST가 /rest/v1/rpc/로 노출하고 anon·authenticated가 호출
 --    가능하다(advisor 0028·0029). 이벤트 트리거 발화는 grant와 무관하므로 회수해도 자동

@@ -1,0 +1,25 @@
+-- ─────────────────────────────────────────────────────────────
+-- storage_object_owned_by_user의 anon EXECUTE 회수 (이슈 #105)
+--
+-- 20260724150000_fix_storage_object_rls의 의도는 "authenticated만 실행 가능"이었으나,
+-- `revoke all ... from public`은 **PUBLIC 의사역할만** 지운다. Supabase의 default
+-- privileges가 public 스키마 신규 함수에 anon·authenticated·service_role EXECUTE를
+-- **명시적으로** 부여하므로, 그 grant는 그대로 남아 있었다.
+-- 결과: anon이 /rest/v1/rpc/storage_object_owned_by_user 로 SECURITY DEFINER 함수를
+-- 호출할 수 있는 상태(security advisor 0028 WARN).
+--
+-- 영향은 낮았다 — anon 컨텍스트에서는 auth.uid()가 null이라 항상 false를 반환한다.
+-- 그래도 의도대로면 호출 자체가 불가해야 하므로 회수한다.
+--
+-- 적용 순서: **코드와 무관하다.** anon은 이 함수를 쓰는 어떤 경로도 타지 않는다 —
+-- storage.objects 정책 4종이 모두 `to authenticated`이고, 앱 코드에 이 함수의 RPC 호출이
+-- 없다(전부 정책 내부 호출). 따라서 배포 순서 제약이 없다.
+--
+-- 범위 주의:
+--  - **authenticated는 회수하지 않는다.** 정책 표현식은 호출한 역할의 권한으로 평가되므로
+--    회수하면 업로드·조회가 전부 RLS 위반으로 막힌다 (advisor 0029는 의도된 상태).
+--  - **service_role도 회수하지 않는다.** RLS를 우회해 이 함수가 필요 없지만, 회수는
+--    이득 없이 서버 경로만 위태롭게 한다.
+-- ─────────────────────────────────────────────────────────────
+
+revoke execute on function public.storage_object_owned_by_user(text) from anon;
