@@ -312,7 +312,7 @@ resolve(anchor):
 | `DELETE /projects/:id` | 프로젝트 삭제 | 확인은 콘솔 UI 책임 |
 | `POST /projects/:id/assets` | 캡처 스냅샷 업로드 | 응답: `{ assetKey }`. 50MB 제한, 재캡처·장면 삭제 시 이전 asset 즉시 삭제 (ID-11) |
 | `GET /projects/:id/assets/:key` | 스냅샷 반환 | |
-| `POST /projects/:id/export` | 산출물 HTML 조립 (8절) | 응답: HTML 파일 다운로드. [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec 3.12절). [T29] 성공 시 이력 메타 기록 (6.3절) |
+| `POST /projects/:id/export` | 산출물 HTML 조립 (8절) | 응답: HTML 파일 다운로드. **서버는 마지막으로 저장된 spec을 읽는다 — 요청에 문서를 싣지 않으므로, 호출자가 미저장 편집을 먼저 PUT할 책임이 있다** (이슈 #103, 킥오프 11절 22차). [S2] 장면별 `maskedSnapshotAsset` 우선 사용 (detailed-spec 3.12절). [T29] 성공 시 이력 메타 기록 (6.3절) |
 | `POST /projects/:id/token` | [S2.5] 경로 D 토큰 재발급·폐기 | 경로 D 프로젝트 한정. 재발급 시 구 토큰 즉시 무효 (pathD 킥오프 6절) |
 
 에러 응답 표준 (ID-10): `{ "error": { "code": "...", "message": "..." } }` — 코드는 `INVALID_REQUEST`(400) / `NOT_FOUND`(404) / `TOO_LARGE`(413) / `INTERNAL`(500) 4개로 시작. [S2] 프록시(경로 B)가 `BAD_GATEWAY`(502) 추가 — 오리진 도달 실패·오리진 밖 리다이렉트.
