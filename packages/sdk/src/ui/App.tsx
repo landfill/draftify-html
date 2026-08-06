@@ -614,6 +614,36 @@ export function App({ projectId }: { projectId: string }) {
     }
   };
 
+  // 내보내기 전 미저장 편집 선저장 (킥오프 §11 22차, 이슈 #103).
+  // export는 서버가 **마지막 저장본**을 읽어 조립하고 로컬 문서는 요청에 실리지 않는다.
+  // 저장은 500ms 디바운스라, 편집 직후 내보내면 그 편집이 **오류도 경고도 없이** 산출물에서
+  // 빠진다. 그래서 디바운스를 기다리지 않고 여기서 즉시 PUT한다.
+  // 반환값 = 계속 진행해도 되는가.
+  const saveBeforeExport = async (): Promise<boolean> => {
+    const snapshot = currentProjectSnapshot();
+    if (!snapshot) return true;
+    // 이미 동기화돼 있으면 불필요한 PUT을 만들지 않는다 (디바운스 저장과 같은 판정 기준).
+    if (projectContentSignature(snapshot) === lastSyncedRef.current) return true;
+
+    setSaveStatus("saving");
+    const result = await saveProjectWithQueue(snapshot);
+    if (result.queued) {
+      // 실패본은 오프라인 큐에 남는다(§6.4). 조용히 옛 spec을 내보내지 않고 사람에게 묻는다 —
+      // 6차의 "스냅샷 없는 장면"·상세 §3.12의 "마스킹 미적용"과 같은 방식(제1원칙 1).
+      setSaveStatus("offline");
+      console.warn("[mockspec] 내보내기 전 저장 실패, localStorage 큐에 보관:", result.error);
+      return confirm("저장하지 못한 편집이 있습니다. 지금 내보내면 그 편집이 산출물에서 빠집니다. 계속할까요?");
+    }
+
+    // 성공 경로는 디바운스 저장과 동일하게 동기화 기준점을 옮긴다. setProject로 저장
+    // useEffect가 재실행되며 서명이 같아져 조기 반환하므로, 예약돼 있던 디바운스 PUT은
+    // cleanup으로 취소된다 — 같은 내용을 두 번 보내지 않는다.
+    lastSyncedRef.current = projectContentSignature(result.project);
+    setProject(result.project);
+    setSaveStatus("saved");
+    return true;
+  };
+
   // 편집 화면 내보내기 — 콘솔과 동일 규칙(스냅샷 없는 장면 확인·50MB 경고), §3.9·킥오프 §11 6차.
   const runExport = async () => {
     const d = docRef.current;
@@ -623,6 +653,7 @@ export function App({ projectId }: { projectId: string }) {
     setExporting(true);
     setExportNote(null);
     try {
+      if (!await saveBeforeExport()) return;
       const result = await exportProjectHtml(projectId);
       if (result.nativeDownload) {
         // 경로 D: 확장이 chrome.downloads로 직접 저장 — 브라우저 다운로드 바에서 확인
