@@ -2,4 +2,7 @@
 project_id = "dhzojuatkmafgwiwtdwe"
 
 [db]
-major_version = 15
+# 원격 실제 버전과 맞춘다 (2026-08-06 실측: Postgres 17.6.1, 이슈 #57).
+# 종전 15는 원격과 어긋나 있었다 — 로컬 스택·섀도 DB로 검증하면 다른 메이저 버전에서
+# 확인하는 셈이 되어 재현 실증(이슈 #106)의 의미가 없어진다.
+major_version = 17

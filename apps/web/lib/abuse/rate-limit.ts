@@ -2,7 +2,7 @@ import { createSupabaseAdminClient } from "../supabase/admin.js";
 import { RATE_LIMITS, type RateBucket } from "./limits.js";
 
 /**
- * 레이트리밋 — Postgres 고정 윈도우 카운터(마이그레이션 20260725090000).
+ * 레이트리밋 — Postgres 고정 윈도우 카운터(마이그레이션 20260725140447_rate_limit_counters).
  * in-memory 카운터를 쓰지 않는 이유는 technical-spec §7.4: 서버리스는 인스턴스가 갈린다.
  */
 
