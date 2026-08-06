@@ -915,6 +915,32 @@ describe("내보내기 전 미저장 편집 선저장 (킥오프 §11 22차, 이
     expect(calls.indexOf("POST /export"), "export는 마지막 PUT 뒤에 온다").toBeGreaterThan(lastPutIndex);
   });
 
+  it("부팅 재전송이 실패해 큐가 남아 있으면, 편집이 없어도 선저장을 건너뛰지 않는다", async () => {
+    // 부팅 시 큐 재전송이 실패하면 lastSyncedRef가 **로컬 큐 내용**으로 잡힌 채 남는다.
+    // 그 값은 "서버가 가진 것"이 아니므로 서명 비교만 믿으면 옛 사본이 산출물이 된다 (§11 22차 ①-0).
+    const pending: SpecProject = {
+      ...project,
+      scenes: [{ ...project.scenes[0]!, title: "큐에 남은 제목" }],
+    };
+    localStorage.setItem(`mockspec:pending:${project.id}`, JSON.stringify(pending));
+
+    const confirmSpy = vi.fn((msg?: string) => !String(msg).includes("저장하지 못한"));
+    vi.stubGlobal("confirm", confirmSpy);
+    const { calls, putBodies } = mockExportFlow({ putFails: true });
+    await mountAndOpen();
+
+    // 부팅 재전송이 실패해 큐가 그대로 남아 있다
+    expect(localStorage.getItem(`mockspec:pending:${project.id}`), "큐 유지").not.toBeNull();
+    const putsAfterBoot = putBodies.length;
+
+    // 편집을 전혀 하지 않고 내보낸다 — 서명은 같지만 서버는 뒤처져 있다
+    await clickExport();
+
+    expect(putBodies.length, "편집이 없어도 선저장을 시도한다").toBeGreaterThan(putsAfterBoot);
+    expect(confirmSpy.mock.calls.some(([m]) => String(m).includes("저장하지 못한 편집이 있습니다"))).toBe(true);
+    expect(calls, "취소했으므로 옛 사본을 내보내지 않는다").not.toContain("POST /export");
+  });
+
   it("선저장이 실패해도 사람이 확인하면 내보낸다 — 차단이 아니라 결정 위임 (제1원칙 1)", async () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     const { calls } = mockExportFlow({ putFails: true });

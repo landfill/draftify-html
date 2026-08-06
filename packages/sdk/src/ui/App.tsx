@@ -658,8 +658,14 @@ export function App({ projectId }: { projectId: string }) {
     // 기다리는 동안 편집이 더 있었을 수 있으므로 여기서 다시 계산한다.
     const snapshot = currentProjectSnapshot();
     if (!snapshot) return true;
+
+    // 큐에 실패본이 남아 있으면 **서버는 정의상 로컬보다 뒤처져 있다.** 서명이 같아 보여도
+    // 동기화된 것이 아니다 — 부팅 시 큐 재전송이 실패하면 lastSyncedRef가 로컬 큐 내용으로
+    // 잡힌 채 남기 때문이다(로드 때 대입했고 실패 경로가 되돌리지 않는다). 이 검사가 없으면
+    // 편집이 없는 한 선저장이 통째로 건너뛰어진다 (§11 22차 ①-0, PR #104 리뷰).
+    const queuedLocally = readPendingProject(projectId) !== null;
     // 이미 동기화돼 있으면 불필요한 PUT을 만들지 않는다 (디바운스 저장과 같은 판정 기준).
-    if (projectContentSignature(snapshot) === lastSyncedRef.current) return true;
+    if (!queuedLocally && projectContentSignature(snapshot) === lastSyncedRef.current) return true;
 
     setSaveStatus("saving");
     const result = await enqueueSave(() => saveProjectWithQueue(snapshot));
