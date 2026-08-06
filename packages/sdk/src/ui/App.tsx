@@ -90,10 +90,27 @@ export function App({ projectId }: { projectId: string }) {
   const newAnnRef = useRef<string | null>(null);
   const lastSyncedRef = useRef<string | null>(null);
   const flushingRef = useRef(false);
+  // 예약된 디바운스 저장 타이머 — 내보내기가 기다리지 않고 취소할 수 있어야 한다 (§11 22차 ①).
+  const saveTimerRef = useRef<number | null>(null);
+  // 진행 중인 PUT의 꼬리. 저장은 문서 **전체 교체**(technical-spec §6.1)라 요청 두 개가
+  // 겹치면 늦게 도착한 옛 문서가 최신 편집을 덮는다 — 모든 PUT을 여기에 한 줄로 세운다
+  // (§11 22차 ①-1, PR #104 리뷰).
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
   const getDoc = useRef(() => docRef.current).current;
   const onSelectorUpdate = useRef((annId: string, selector: string) => {
     setDoc((d) => updateAnchorSelector(d, annId, selector));
   }).current;
+
+  /**
+   * 저장 요청을 직렬 체인 끝에 붙인다 — 앞선 PUT이 끝나기 전에는 다음 PUT을 띄우지 않는다.
+   * 아래 저장 useEffect의 의존 배열이 렌더 중 이 값을 읽으므로 effect들보다 앞에 둔다.
+   */
+  const enqueueSave = useCallback(<T,>(run: () => Promise<T>): Promise<T> => {
+    const next = saveChainRef.current.then(run, run);
+    // 체인은 실패해도 끊기지 않아야 한다 — 한 번의 저장 실패가 이후 저장을 막으면 안 된다.
+    saveChainRef.current = next.then(() => {}, () => {});
+    return next;
+  }, []);
 
   const annSignature = currentSceneId
     ? annotationsOfScene(doc, currentSceneId).map((a) => `${a.id}:${a.anchor.selector}`).join(",")
@@ -136,7 +153,8 @@ export function App({ projectId }: { projectId: string }) {
       if (pending) {
         if (!cancelled) applyLoadedProject(pending, "saving");
         try {
-          const saved = await flushPendingProject(projectId);
+          // 이 재전송도 체인에 태운다 — 부팅 직후 편집이 생기면 디바운스 PUT과 겹칠 수 있다.
+          const saved = await enqueueSave(() => flushPendingProject(projectId));
           if (!cancelled && saved) applyLoadedProject(saved, "saved");
         } catch (err) {
           if (!cancelled) {
@@ -162,7 +180,7 @@ export function App({ projectId }: { projectId: string }) {
 
     void boot();
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [enqueueSave, projectId]);
 
   const currentProjectSnapshot = useCallback((): SpecProject | null => {
     const base = projectRef.current;
@@ -179,7 +197,7 @@ export function App({ projectId }: { projectId: string }) {
     setSaveStatus("saving");
     const pendingSignature = projectContentSignature(pending);
     try {
-      const saved = await flushPendingProject(projectId);
+      const saved = await enqueueSave(() => flushPendingProject(projectId));
       if (!saved) return;
       const savedSignature = projectContentSignature(saved);
       lastSyncedRef.current = savedSignature;
@@ -202,7 +220,7 @@ export function App({ projectId }: { projectId: string }) {
     } finally {
       flushingRef.current = false;
     }
-  }, [currentProjectSnapshot, projectId]);
+  }, [currentProjectSnapshot, enqueueSave, projectId]);
 
   // online 이벤트와 서버 재기동 케이스를 모두 커버: pending이 있으면 짧게 재시도한다.
   useEffect(() => {
@@ -226,11 +244,12 @@ export function App({ projectId }: { projectId: string }) {
 
     setSaveStatus("saving");
     const timer = window.setTimeout(() => {
+      saveTimerRef.current = null;
       const snapshot = currentProjectSnapshot();
       if (!snapshot) return;
       const sentSignature = projectContentSignature(snapshot);
 
-      void saveProjectWithQueue(snapshot).then((result) => {
+      void enqueueSave(() => saveProjectWithQueue(snapshot)).then((result) => {
         if (result.queued) {
           const current = currentProjectSnapshot();
           if (!current || projectContentSignature(current) === sentSignature) {
@@ -256,9 +275,13 @@ export function App({ projectId }: { projectId: string }) {
         }
       });
     }, 500);
+    saveTimerRef.current = timer;
 
-    return () => window.clearTimeout(timer);
-  }, [currentProjectSnapshot, doc, loadError, project]);
+    return () => {
+      window.clearTimeout(timer);
+      if (saveTimerRef.current === timer) saveTimerRef.current = null;
+    };
+  }, [currentProjectSnapshot, doc, enqueueSave, loadError, project]);
 
   // 패널 도킹 시 목업 레이아웃 360px 축소 (peek 중에는 패널이 접혀 있으니 원폭 복귀).
   // 도킹 중일 때만 스타일을 건드리고 margin·transition 모두 원복한다 — 닫힘 상태에서
@@ -619,14 +642,27 @@ export function App({ projectId }: { projectId: string }) {
   // 저장은 500ms 디바운스라, 편집 직후 내보내면 그 편집이 **오류도 경고도 없이** 산출물에서
   // 빠진다. 그래서 디바운스를 기다리지 않고 여기서 즉시 PUT한다.
   // 반환값 = 계속 진행해도 되는가.
+  //
+  // 순서: 예약 취소 → 진행 중 PUT 대기 → 최신 상태 재계산 → 필요하면 PUT → export.
+  // "취소"만으로는 부족하다 — 이미 날아간 요청은 취소되지 않는다.
   const saveBeforeExport = async (): Promise<boolean> => {
+    // 예약된 디바운스 저장은 취소하고, **이미 날아간** PUT은 끝날 때까지 기다린다.
+    // 겹쳐 보내면 늦게 도착한 옛 문서가 최신 편집을 덮어(전체 교체) 서버 최신본이 되돌아가고,
+    // 그 상태로 export하면 이 수정이 없애려는 증상이 그대로 재현된다 (§11 22차 ①-1).
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await saveChainRef.current;
+
+    // 기다리는 동안 편집이 더 있었을 수 있으므로 여기서 다시 계산한다.
     const snapshot = currentProjectSnapshot();
     if (!snapshot) return true;
     // 이미 동기화돼 있으면 불필요한 PUT을 만들지 않는다 (디바운스 저장과 같은 판정 기준).
     if (projectContentSignature(snapshot) === lastSyncedRef.current) return true;
 
     setSaveStatus("saving");
-    const result = await saveProjectWithQueue(snapshot);
+    const result = await enqueueSave(() => saveProjectWithQueue(snapshot));
     if (result.queued) {
       // 실패본은 오프라인 큐에 남는다(§6.4). 조용히 옛 spec을 내보내지 않고 사람에게 묻는다 —
       // 6차의 "스냅샷 없는 장면"·상세 §3.12의 "마스킹 미적용"과 같은 방식(제1원칙 1).
@@ -636,8 +672,8 @@ export function App({ projectId }: { projectId: string }) {
     }
 
     // 성공 경로는 디바운스 저장과 동일하게 동기화 기준점을 옮긴다. setProject로 저장
-    // useEffect가 재실행되며 서명이 같아져 조기 반환하므로, 예약돼 있던 디바운스 PUT은
-    // cleanup으로 취소된다 — 같은 내용을 두 번 보내지 않는다.
+    // useEffect가 재실행되며 서명이 같아져 조기 반환하므로 타이머가 다시 잡히지 않는다 —
+    // 같은 내용을 두 번 보내지 않는다.
     lastSyncedRef.current = projectContentSignature(result.project);
     setProject(result.project);
     setSaveStatus("saved");

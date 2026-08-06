@@ -711,6 +711,8 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
     expect(btn.disabled).toBe(false);
     await act(async () => {
       btn.click();
+      // 선저장 체인(§11 22차)을 거치므로 export 완료까지 마이크로태스크가 더 필요하다
+      await flushPromises();
       await flushPromises();
     });
 
@@ -850,6 +852,67 @@ describe("내보내기 전 미저장 편집 선저장 (킥오프 §11 22차, 이
     const pending = localStorage.getItem(`mockspec:pending:${project.id}`);
     expect(pending).not.toBeNull();
     expect((JSON.parse(pending!) as SpecProject).scenes[0]?.title).toBe("주문 상세");
+  });
+
+  it("PUT이 진행 중일 때 추가 편집 후 내보내면, 그 PUT을 기다렸다가 최신본을 보내고 export한다", async () => {
+    // 디바운스 타이머는 취소할 수 있지만 **이미 날아간 요청은 취소되지 않는다.** 겹쳐 보내면
+    // 전체 교체 저장이라 늦게 도착한 옛 문서가 최신 편집을 덮는다 (§11 22차 ①-1).
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const calls: string[] = [];
+    const putBodies: SpecProject[] = [];
+    let releaseFirstPut: (() => void) | null = null;
+    const firstPutSent = { done: false };
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${url.replace(`/__mockspec/api/projects/${project.id}`, "")}`);
+      if (url.endsWith("/export") && method === "POST") {
+        return new Response("<!doctype html><html></html>", {
+          status: 200,
+          headers: { "content-type": "text/html", "content-disposition": `attachment; filename="mockup.html"` },
+        });
+      }
+      if (method === "GET") return jsonResponse(project);
+      const body = JSON.parse(String(init!.body)) as SpecProject;
+      putBodies.push(body);
+      if (!firstPutSent.done) {
+        // 첫 PUT을 붙잡아 "진행 중" 상태를 만든다
+        firstPutSent.done = true;
+        await new Promise<void>((resolve) => { releaseFirstPut = resolve; });
+      }
+      return jsonResponse({ ...body, updatedAt: "2026-07-10T00:00:05.000Z" });
+    });
+    vi.stubGlobal("URL", Object.assign(Object.create(URL), {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    }));
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    await mountAndOpen();
+
+    // 1차 편집 → 디바운스 발화 → PUT이 날아가 붙잡힌다
+    await renameScene("1차");
+    await saveTick();
+    expect(putBodies.map((p) => p.scenes[0]?.title), "1차 PUT이 떠 있다").toEqual(["1차"]);
+
+    // 2차 편집 후 곧바로 내보내기 — 여기서 겹쳐 쏘면 "1차"가 "2차"를 덮는다
+    await renameScene("2차");
+    await clickExport();
+
+    expect(putBodies, "진행 중 PUT을 기다리므로 아직 2차를 보내지 않는다").toHaveLength(1);
+    expect(calls, "export도 아직이다").not.toContain("POST /export");
+
+    // 붙잡아 둔 1차 PUT을 놓아준다
+    // 1차 PUT 완료 → 체인 해제 → 2차 PUT → export까지 여러 단계를 거치므로 넉넉히 흘린다
+    await act(async () => {
+      releaseFirstPut!();
+      for (let i = 0; i < 20; i += 1) await flushPromises();
+    });
+
+    expect(putBodies.map((p) => p.scenes[0]?.title), "1차 완료 후 2차를 보낸다").toEqual(["1차", "2차"]);
+    const lastPutIndex = calls.lastIndexOf(calls.filter((c) => c.startsWith("PUT ")).at(-1)!);
+    expect(calls.indexOf("POST /export"), "export는 마지막 PUT 뒤에 온다").toBeGreaterThan(lastPutIndex);
   });
 
   it("선저장이 실패해도 사람이 확인하면 내보낸다 — 차단이 아니라 결정 위임 (제1원칙 1)", async () => {
