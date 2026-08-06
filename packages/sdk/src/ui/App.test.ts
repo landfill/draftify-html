@@ -711,6 +711,8 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
     expect(btn.disabled).toBe(false);
     await act(async () => {
       btn.click();
+      // 선저장 체인(§11 22차)을 거치므로 export 완료까지 마이크로태스크가 더 필요하다
+      await flushPromises();
       await flushPromises();
     });
 
@@ -743,6 +745,214 @@ describe("편집 화면 내보내기 (킥오프 §11 6차 개정)", () => {
     });
 
     expect(fetchSpy.mock.calls.every(([u]) => !String(u).endsWith("/export"))).toBe(true);
+  });
+});
+
+describe("내보내기 전 미저장 편집 선저장 (킥오프 §11 22차, 이슈 #103)", () => {
+  /** 호출 순서를 그대로 기록하는 fetch 목 — PUT이 export보다 앞서는지가 이 계약의 핵심이다. */
+  function mockExportFlow(opts: { putFails?: boolean } = {}): { calls: string[]; putBodies: SpecProject[] } {
+    const calls: string[] = [];
+    const putBodies: SpecProject[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${url.replace(`/__mockspec/api/projects/${project.id}`, "")}`);
+      if (url.endsWith("/export") && method === "POST") {
+        return new Response("<!doctype html><html></html>", {
+          status: 200,
+          headers: { "content-type": "text/html", "content-disposition": `attachment; filename="mockup.html"` },
+        });
+      }
+      if (method === "GET") return jsonResponse(project);
+      const body = JSON.parse(String(init!.body)) as SpecProject;
+      putBodies.push(body);
+      if (opts.putFails) throw new Error("server down");
+      return jsonResponse({ ...body, updatedAt: "2026-07-10T00:00:05.000Z" });
+    });
+    // happy-dom에 없는 다운로드 경로 스텁
+    vi.stubGlobal("URL", Object.assign(Object.create(URL), {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    }));
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    return { calls, putBodies };
+  }
+
+  async function mountAndOpen(): Promise<void> {
+    await act(async () => {
+      render(h(App, { projectId: project.id }), document.getElementById("root")!);
+      await flushPromises();
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(".fab")!.click();
+      await flushPromises();
+    });
+  }
+
+  async function renameScene(title: string): Promise<void> {
+    await act(async () => {
+      const input = document.querySelector<HTMLInputElement>("input.scene__title")!;
+      input.value = title;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+
+  async function clickExport(): Promise<void> {
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>("button.btn--export")!.click();
+      await flushPromises();
+      await flushPromises();
+    });
+  }
+
+  it("디바운스가 끝나기 전에 내보내도 그 편집이 export보다 먼저 PUT된다 — 중복 PUT은 없다", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const { calls, putBodies } = mockExportFlow();
+    await mountAndOpen();
+
+    // 편집 직후 **타이머를 진행시키지 않고** 내보낸다 — 종전에는 이 순간의 편집이 조용히 빠졌다
+    await renameScene("주문 상세");
+    await clickExport();
+
+    const putIndex = calls.findIndex((c) => c.startsWith("PUT "));
+    const exportIndex = calls.findIndex((c) => c === "POST /export");
+    expect(putIndex, "선저장 PUT이 있어야 한다").toBeGreaterThanOrEqual(0);
+    expect(exportIndex, "export가 호출돼야 한다").toBeGreaterThanOrEqual(0);
+    expect(putIndex, "PUT이 export보다 먼저").toBeLessThan(exportIndex);
+    expect(putBodies[0]?.scenes[0]?.title, "방금 한 편집이 실려야 한다").toBe("주문 상세");
+
+    // 예약돼 있던 디바운스 PUT은 취소된다 — 같은 내용을 두 번 보내지 않는다
+    await saveTick();
+    expect(putBodies).toHaveLength(1);
+  });
+
+  it("이미 저장된 상태면 불필요한 PUT을 만들지 않는다", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const { calls } = mockExportFlow();
+    await mountAndOpen();
+
+    await clickExport();
+
+    expect(calls.filter((c) => c.startsWith("PUT ")), "변경이 없으면 PUT 0건").toEqual([]);
+    expect(calls).toContain("POST /export");
+  });
+
+  it("선저장이 실패하면 확인을 거치고, 취소하면 내보내지 않는다 — 편집은 큐에 남는다", async () => {
+    const confirmSpy = vi.fn((msg?: string) => !String(msg).includes("저장하지 못한"));
+    vi.stubGlobal("confirm", confirmSpy);
+    const { calls } = mockExportFlow({ putFails: true });
+    await mountAndOpen();
+
+    await renameScene("주문 상세");
+    await clickExport();
+
+    expect(confirmSpy.mock.calls.some(([m]) => String(m).includes("저장하지 못한 편집이 있습니다"))).toBe(true);
+    expect(calls, "취소했으므로 export는 호출되지 않는다").not.toContain("POST /export");
+    // 실패본은 오프라인 큐에 남는다 (§6.4) — 편집이 유실되지는 않는다
+    const pending = localStorage.getItem(`mockspec:pending:${project.id}`);
+    expect(pending).not.toBeNull();
+    expect((JSON.parse(pending!) as SpecProject).scenes[0]?.title).toBe("주문 상세");
+  });
+
+  it("PUT이 진행 중일 때 추가 편집 후 내보내면, 그 PUT을 기다렸다가 최신본을 보내고 export한다", async () => {
+    // 디바운스 타이머는 취소할 수 있지만 **이미 날아간 요청은 취소되지 않는다.** 겹쳐 보내면
+    // 전체 교체 저장이라 늦게 도착한 옛 문서가 최신 편집을 덮는다 (§11 22차 ①-1).
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const calls: string[] = [];
+    const putBodies: SpecProject[] = [];
+    let releaseFirstPut: (() => void) | null = null;
+    const firstPutSent = { done: false };
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${url.replace(`/__mockspec/api/projects/${project.id}`, "")}`);
+      if (url.endsWith("/export") && method === "POST") {
+        return new Response("<!doctype html><html></html>", {
+          status: 200,
+          headers: { "content-type": "text/html", "content-disposition": `attachment; filename="mockup.html"` },
+        });
+      }
+      if (method === "GET") return jsonResponse(project);
+      const body = JSON.parse(String(init!.body)) as SpecProject;
+      putBodies.push(body);
+      if (!firstPutSent.done) {
+        // 첫 PUT을 붙잡아 "진행 중" 상태를 만든다
+        firstPutSent.done = true;
+        await new Promise<void>((resolve) => { releaseFirstPut = resolve; });
+      }
+      return jsonResponse({ ...body, updatedAt: "2026-07-10T00:00:05.000Z" });
+    });
+    vi.stubGlobal("URL", Object.assign(Object.create(URL), {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    }));
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    await mountAndOpen();
+
+    // 1차 편집 → 디바운스 발화 → PUT이 날아가 붙잡힌다
+    await renameScene("1차");
+    await saveTick();
+    expect(putBodies.map((p) => p.scenes[0]?.title), "1차 PUT이 떠 있다").toEqual(["1차"]);
+
+    // 2차 편집 후 곧바로 내보내기 — 여기서 겹쳐 쏘면 "1차"가 "2차"를 덮는다
+    await renameScene("2차");
+    await clickExport();
+
+    expect(putBodies, "진행 중 PUT을 기다리므로 아직 2차를 보내지 않는다").toHaveLength(1);
+    expect(calls, "export도 아직이다").not.toContain("POST /export");
+
+    // 붙잡아 둔 1차 PUT을 놓아준다
+    // 1차 PUT 완료 → 체인 해제 → 2차 PUT → export까지 여러 단계를 거치므로 넉넉히 흘린다
+    await act(async () => {
+      releaseFirstPut!();
+      for (let i = 0; i < 20; i += 1) await flushPromises();
+    });
+
+    expect(putBodies.map((p) => p.scenes[0]?.title), "1차 완료 후 2차를 보낸다").toEqual(["1차", "2차"]);
+    const lastPutIndex = calls.lastIndexOf(calls.filter((c) => c.startsWith("PUT ")).at(-1)!);
+    expect(calls.indexOf("POST /export"), "export는 마지막 PUT 뒤에 온다").toBeGreaterThan(lastPutIndex);
+  });
+
+  it("부팅 재전송이 실패해 큐가 남아 있으면, 편집이 없어도 선저장을 건너뛰지 않는다", async () => {
+    // 부팅 시 큐 재전송이 실패하면 lastSyncedRef가 **로컬 큐 내용**으로 잡힌 채 남는다.
+    // 그 값은 "서버가 가진 것"이 아니므로 서명 비교만 믿으면 옛 사본이 산출물이 된다 (§11 22차 ①-0).
+    const pending: SpecProject = {
+      ...project,
+      scenes: [{ ...project.scenes[0]!, title: "큐에 남은 제목" }],
+    };
+    localStorage.setItem(`mockspec:pending:${project.id}`, JSON.stringify(pending));
+
+    const confirmSpy = vi.fn((msg?: string) => !String(msg).includes("저장하지 못한"));
+    vi.stubGlobal("confirm", confirmSpy);
+    const { calls, putBodies } = mockExportFlow({ putFails: true });
+    await mountAndOpen();
+
+    // 부팅 재전송이 실패해 큐가 그대로 남아 있다
+    expect(localStorage.getItem(`mockspec:pending:${project.id}`), "큐 유지").not.toBeNull();
+    const putsAfterBoot = putBodies.length;
+
+    // 편집을 전혀 하지 않고 내보낸다 — 서명은 같지만 서버는 뒤처져 있다
+    await clickExport();
+
+    expect(putBodies.length, "편집이 없어도 선저장을 시도한다").toBeGreaterThan(putsAfterBoot);
+    // 횟수만으로는 부족하다 — 서버의 옛 사본을 되보내도 횟수는 늘어난다.
+    // 큐에 남아 있던 최신 내용을 보내는지까지 봐야 이 계약이 지켜진 것이다.
+    expect(putBodies.at(-1)?.scenes[0]?.title, "큐에 남은 최신 내용을 보낸다").toBe("큐에 남은 제목");
+    expect(confirmSpy.mock.calls.some(([m]) => String(m).includes("저장하지 못한 편집이 있습니다"))).toBe(true);
+    expect(calls, "취소했으므로 옛 사본을 내보내지 않는다").not.toContain("POST /export");
+  });
+
+  it("선저장이 실패해도 사람이 확인하면 내보낸다 — 차단이 아니라 결정 위임 (제1원칙 1)", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const { calls } = mockExportFlow({ putFails: true });
+    await mountAndOpen();
+
+    await renameScene("주문 상세");
+    await clickExport();
+
+    expect(calls, "확인했으므로 진행한다").toContain("POST /export");
   });
 });
 
